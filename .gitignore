@@ -1,17 +1,80 @@
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# compiled output
+# =============================================================================
+# NODE.JS / BUILD OUTPUTS
+# =============================================================================
 dist
 tmp
 out-tsc
 *.tsbuildinfo
 .expo
 .expo-shared
-
-# dependencies
 node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log*
+.pnpm-store/
 
+# =============================================================================
+# ENVIRONMENT & SECRETS — NEVER COMMIT THESE
+# =============================================================================
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.test
+.env.*.local
+*.pem
+*.key
+*.cert
+
+# =============================================================================
+# COVERAGE & TEST ARTIFACTS
+# =============================================================================
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+junit.xml
+test-results/
+
+# =============================================================================
+# LOGS
+# =============================================================================
+logs/
+*.log
+*.log.*
+
+# =============================================================================
+# MARKET DATA (large files — store in object storage, not git)
+# =============================================================================
+data/raw/
+data/historical/
+data/cache/
+*.csv.gz
+*.parquet
+
+# =============================================================================
+# RESEARCH & BACKTEST ARTIFACTS
+# =============================================================================
+backtest_results/
+*.pkl
+*.h5
+*.hdf5
+
+# =============================================================================
+# DATABASES (local dev)
+# =============================================================================
+*.sqlite
+*.sqlite3
+*.db
+postgres-data/
+redis-data/
+
+# =============================================================================
 # IDEs and editors
+# =============================================================================
 /.idea
 .project
 .classpath
@@ -27,23 +90,39 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
+# Vim
+*.swp
+*.swo
 
-# System Files
+# =============================================================================
+# OS / SYSTEM FILES
+# =============================================================================
 .DS_Store
 Thumbs.db
+/.sass-cache
+/connect.lock
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# =============================================================================
+# REPLIT SPECIFIC
+# =============================================================================
 .cache/
 .local/
+
+# =============================================================================
+# PYTHON (Phase 3+ research environment)
+# =============================================================================
+__pycache__/
+*.py[cod]
+venv/
+env/
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# =============================================================================
+# MISC
+# =============================================================================
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
