@@ -3,12 +3,27 @@ import marketsRouter from "./markets";
 import candlesRouter from "./candles";
 import latestPriceRouter from "./latest-price";
 import ingestionStatusRouter from "./ingestion-status";
+import ingestionJobsRouter from "./ingestion-jobs";
+import providersRouter from "./providers";
+import marketRegistryRouter from "./market-registry";
+import dataQualityRouter from "./data-quality";
+import economicEventsRouter from "./economic-events";
+import newsRouter from "./news";
 
 const v1Router: IRouter = Router();
 
+// Phase 1 endpoints (preserved)
 v1Router.use(marketsRouter);
 v1Router.use(candlesRouter);
 v1Router.use(latestPriceRouter);
 v1Router.use(ingestionStatusRouter);
+
+// Phase 2 endpoints
+v1Router.use(ingestionJobsRouter);
+v1Router.use(providersRouter);
+v1Router.use(marketRegistryRouter);
+v1Router.use(dataQualityRouter);
+v1Router.use(economicEventsRouter);
+v1Router.use(newsRouter);
 
 export default v1Router;

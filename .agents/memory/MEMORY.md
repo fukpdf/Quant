@@ -1,0 +1,2 @@
+- [Routes index mount](routes-index-mount.md) — v1Router must be explicitly mounted in routes/index.ts; omitting it silently kills all /api/v1/* routes.
+- [Esbuild non-top-level imports](esbuild-import-position.md) — esbuild can silently mishandle import statements placed after function declarations; always keep imports at top of file.

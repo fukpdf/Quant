@@ -7,10 +7,14 @@ import {
   logIngestion,
   countCandles,
 } from "../services/market-data";
+import {
+  createIngestionJob,
+  completeIngestionJob,
+} from "../services/ingestion-jobs";
 
 /**
  * Ingestion configuration per interval.
- * limit: how many candles to fetch per run (incremental)
+ * limit: how many candles to fetch per incremental run
  * backfillLimit: how many candles to fetch on first-ever ingestion
  */
 const INGEST_CONFIG: Record<string, { limit: number; backfillLimit: number }> = {
@@ -22,7 +26,7 @@ export const ACTIVE_INTERVALS = Object.keys(INGEST_CONFIG);
 
 /**
  * Ingest candles for a single symbol + interval from Binance.
- * Uses upsert (onConflictDoNothing) — safe to call multiple times.
+ * Writes to both ingestion_logs (Phase 1 compat) and ingestion_jobs (Phase 2).
  */
 export async function ingestSymbol(
   symbol: string,
@@ -34,11 +38,18 @@ export async function ingestSymbol(
   const existingCount = await countCandles(symbol, interval);
   const isFirstRun = existingCount === 0;
   const limit = isFirstRun ? config.backfillLimit : config.limit;
+  const jobType = isFirstRun ? "candle_backfill" : "candle_incremental";
 
-  logger.debug(
-    { symbol, interval, limit, isFirstRun },
-    "Ingesting candles",
-  );
+  logger.debug({ symbol, interval, limit, isFirstRun }, "Ingesting candles");
+
+  // Create job record
+  const jobId = await createIngestionJob({
+    jobType,
+    providerName: "binance",
+    symbol,
+    interval,
+    status: "running",
+  });
 
   try {
     const klines = await binanceClient.fetchKlines({ symbol, interval, limit });
@@ -46,6 +57,7 @@ export async function ingestSymbol(
     const valid = filterValidCandles(candles, "binance");
     const inserted = await insertCandles(valid);
 
+    // Phase 1 compat log
     await logIngestion({
       source: "binance",
       symbol,
@@ -54,6 +66,13 @@ export async function ingestSymbol(
       candlesFetched: valid.length,
       candlesInserted: inserted,
       durationMs: Date.now() - start,
+    });
+
+    // Phase 2 job completion
+    await completeIngestionJob(jobId, {
+      status: "success",
+      recordsProcessed: valid.length,
+      recordsInserted: inserted,
     });
 
     logger.info(
@@ -76,9 +95,14 @@ export async function ingestSymbol(
       candlesInserted: 0,
       errorMessage,
       durationMs: Date.now() - start,
-    }).catch(() => {
-      // Best-effort — don't crash if log write fails
-    });
+    }).catch(() => {});
+
+    await completeIngestionJob(jobId, {
+      status: "failed",
+      recordsProcessed: 0,
+      recordsInserted: 0,
+      errorDetails: JSON.stringify({ message: errorMessage }),
+    }).catch(() => {});
 
     return { fetched: 0, inserted: 0 };
   }
@@ -86,7 +110,6 @@ export async function ingestSymbol(
 
 /**
  * Ingest all active crypto markets for all configured intervals.
- * Called by the scheduler on each tick.
  */
 export async function ingestAllActive(): Promise<void> {
   const markets = await listMarkets({ active: true, type: "crypto" });
@@ -103,7 +126,6 @@ export async function ingestAllActive(): Promise<void> {
 
   for (const market of markets) {
     for (const interval of ACTIVE_INTERVALS) {
-      // Sequential per symbol to avoid rate limits — Binance allows ~1200 req/min
       await ingestSymbol(market.symbol, interval);
       // Small delay between requests to be a good API citizen
       await new Promise((resolve) => setTimeout(resolve, 250));

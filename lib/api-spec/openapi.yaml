@@ -2,14 +2,30 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: QuantForge API — multi-market data platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: markets
+    description: Market instruments catalog
+  - name: candles
+    description: OHLCV candle data
+  - name: providers
+    description: Market data providers and health monitoring
+  - name: market-registry
+    description: Extended market registry with provider info
+  - name: data-quality
+    description: Data quality validation results
+  - name: ingestion
+    description: Ingestion jobs and status
+  - name: economic-events
+    description: Economic calendar events
+  - name: news
+    description: Financial news items
 paths:
   /healthz:
     get:
@@ -24,8 +40,411 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /v1/markets:
+    get:
+      operationId: listMarkets
+      tags: [markets]
+      summary: List market instruments
+      description: Returns all market instruments, optionally filtered
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [crypto, forex, stock, index, commodity]
+        - name: active
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+      responses:
+        "200":
+          description: Market list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/candles:
+    get:
+      operationId: getCandles
+      tags: [candles]
+      summary: Get OHLCV candles
+      description: Returns candle data for a symbol and interval
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: interval
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Candle data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandleListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/latest-price:
+    get:
+      operationId: getLatestPrice
+      tags: [candles]
+      summary: Get latest price for a symbol
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest price
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LatestPriceResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ingestion/status:
+    get:
+      operationId: getIngestionStatus
+      tags: [ingestion]
+      summary: Get recent ingestion log entries (Phase 1 legacy)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Ingestion log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionStatusResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/ingestion/jobs:
+    get:
+      operationId: listIngestionJobs
+      tags: [ingestion]
+      summary: List ingestion jobs
+      description: Returns structured ingestion job records with start/end times and detailed status
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: symbol
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, success, failed, partial]
+        - name: jobType
+          in: query
+          schema:
+            type: string
+            enum: [candle_backfill, candle_incremental, quality_check, provider_health]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Ingestion jobs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionJobListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: List all market data providers
+      description: Returns all registered providers with their current status and capabilities
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, degraded, error]
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/providers/health:
+    get:
+      operationId: getProvidersHealth
+      tags: [providers]
+      summary: Get provider health records
+      description: Returns time-series health check records for providers
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Provider health records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderHealthListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/market-registry:
+    get:
+      operationId: getMarketRegistry
+      tags: [market-registry]
+      summary: Full market registry with provider info
+      description: Returns markets with enriched provider information and metadata
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [crypto, forex, stock, index, commodity]
+        - name: active
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: provider
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Market registry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketRegistryResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/data-quality:
+    get:
+      operationId: getDataQuality
+      tags: [data-quality]
+      summary: Get data quality check results
+      description: Returns results of automated data quality validation runs
+      parameters:
+        - name: symbol
+          in: query
+          schema:
+            type: string
+        - name: interval
+          in: query
+          schema:
+            type: string
+        - name: checkType
+          in: query
+          schema:
+            type: string
+            enum:
+              - missing_candles
+              - timestamp_gaps
+              - duplicate_candles
+              - outlier_prices
+              - invalid_volumes
+              - future_timestamps
+              - ohlc_consistency
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pass, fail, warning]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Data quality results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataQualityListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/economic-events:
+    get:
+      operationId: listEconomicEvents
+      tags: [economic-events]
+      summary: List economic calendar events
+      description: Returns economic calendar events, filterable by country, impact, and date range
+      parameters:
+        - name: country
+          in: query
+          schema:
+            type: string
+        - name: impact
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Economic events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EconomicEventListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/news:
+    get:
+      operationId: listNews
+      tags: [news]
+      summary: List financial news items
+      description: Returns news items, filterable by source, category, and date range
+      parameters:
+        - name: source
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: News items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
 components:
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [error]
+
     HealthStatus:
       type: object
       properties:
@@ -34,3 +453,471 @@ components:
       required:
         - status
 
+    # -------------------------------------------------------------------------
+    # Markets
+    # -------------------------------------------------------------------------
+    Market:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        exchange:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, symbol, name, type, exchange, active, createdAt, updatedAt]
+
+    MarketListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Market"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Candles
+    # -------------------------------------------------------------------------
+    Candle:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        open:
+          type: string
+        high:
+          type: string
+        low:
+          type: string
+        close:
+          type: string
+        volume:
+          type: string
+        interval:
+          type: string
+        source:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, timestamp, open, high, low, close, volume, interval, source, createdAt]
+
+    CandleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candle"
+        total:
+          type: integer
+        symbol:
+          type: string
+        interval:
+          type: string
+      required: [data, total, symbol, interval]
+
+    LatestPriceResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        price:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        interval:
+          type: string
+        source:
+          type: string
+      required: [symbol, price, timestamp, interval, source]
+
+    # -------------------------------------------------------------------------
+    # Ingestion
+    # -------------------------------------------------------------------------
+    IngestionLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        symbol:
+          type: string
+        interval:
+          type: string
+        status:
+          type: string
+        candlesFetched:
+          type: integer
+          nullable: true
+        candlesInserted:
+          type: integer
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        durationMs:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, source, status, createdAt]
+
+    IngestionStatusResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngestionLogEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    IngestionJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+        providerName:
+          type: string
+        symbol:
+          type: string
+          nullable: true
+        interval:
+          type: string
+          nullable: true
+        status:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        recordsProcessed:
+          type: integer
+        recordsInserted:
+          type: integer
+        errorDetails:
+          type: string
+          nullable: true
+        durationMs:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, jobType, providerName, status, startedAt, recordsProcessed, recordsInserted, createdAt]
+
+    IngestionJobListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/IngestionJob"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Providers
+    # -------------------------------------------------------------------------
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+          nullable: true
+        supportedTypes:
+          type: string
+        status:
+          type: string
+        baseUrl:
+          type: string
+          nullable: true
+        requiresAuth:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, displayName, supportedTypes, status, requiresAuth, createdAt, updatedAt]
+
+    ProviderListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Provider"
+        total:
+          type: integer
+      required: [data, total]
+
+    ProviderHealthEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        status:
+          type: string
+        latencyMs:
+          type: integer
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        checkedAt:
+          type: string
+          format: date-time
+      required: [id, providerName, status, checkedAt]
+
+    ProviderHealthListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderHealthEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Market Registry
+    # -------------------------------------------------------------------------
+    MarketRegistryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        exchange:
+          type: string
+        active:
+          type: boolean
+        providerName:
+          type: string
+          nullable: true
+        providerStatus:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+          properties:
+            sector:
+              type: string
+              nullable: true
+            currency:
+              type: string
+              nullable: true
+            timezone:
+              type: string
+              nullable: true
+            marketCapUsd:
+              type: string
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, symbol, name, type, exchange, active, createdAt, updatedAt]
+
+    MarketRegistryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketRegistryEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Data Quality
+    # -------------------------------------------------------------------------
+    DataQualityCheck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        interval:
+          type: string
+        checkType:
+          type: string
+        status:
+          type: string
+        candleCount:
+          type: integer
+        issueCount:
+          type: integer
+        details:
+          type: string
+          nullable: true
+        checkedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, interval, checkType, status, candleCount, issueCount, checkedAt, createdAt]
+
+    DataQualityListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataQualityCheck"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Economic Events
+    # -------------------------------------------------------------------------
+    EconomicEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        country:
+          type: string
+        impact:
+          type: string
+        eventType:
+          type: string
+          nullable: true
+        scheduledAt:
+          type: string
+          format: date-time
+        actualValue:
+          type: string
+          nullable: true
+        forecastValue:
+          type: string
+          nullable: true
+        previousValue:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, country, impact, scheduledAt, createdAt, updatedAt]
+
+    EconomicEventListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EconomicEvent"
+        total:
+          type: integer
+      required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # News
+    # -------------------------------------------------------------------------
+    NewsItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+        sentimentScore:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, source, title, publishedAt, createdAt]
+
+    NewsListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsItem"
+        total:
+          type: integer
+      required: [data, total]
