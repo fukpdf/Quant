@@ -14,3 +14,12 @@ export * from "./strategy-versions";
 export * from "./backtest-runs";
 export * from "./backtest-trades";
 export * from "./performance-metrics";
+// Phase 4 — Professional Backtesting & Validation Engine
+export * from "./trade-cost-models";
+export * from "./position-sizing-profiles";
+export * from "./portfolio-backtests";
+export * from "./equity-curves";
+export * from "./walk-forward-runs";
+export * from "./monte-carlo-runs";
+export * from "./validation-results";
+export * from "./research-snapshots";

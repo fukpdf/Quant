@@ -7,8 +7,11 @@ import {
   saveBacktestTrades,
   savePerformanceMetrics,
 } from "./research-db";
+import { saveEquityCurve } from "./equity-curve-service";
 import { createStrategy, resolveParams } from "../strategies/registry";
 import type { OhlcvCandle, StrategyParams } from "../strategies/types";
+import type { CostModelConfig } from "./cost-model";
+import type { PositionSizingConfig } from "./position-sizer";
 import { logger } from "../lib/logger";
 
 export interface BacktestRequest {
@@ -19,6 +22,10 @@ export interface BacktestRequest {
   endDate: Date;
   params?: Partial<StrategyParams>;
   initialCapital?: number;
+  /** Optional Phase 4 cost model (defaults to zero cost) */
+  costModel?: CostModelConfig;
+  /** Optional Phase 4 position sizing (defaults to 100% fixed percentage) */
+  positionSizing?: PositionSizingConfig;
 }
 
 export interface BacktestJobResult {
@@ -32,13 +39,10 @@ export interface BacktestJobResult {
  *  1. Validate the strategy exists.
  *  2. Create a DB record (pending).
  *  3. Load historical candles from the candles table.
- *  4. Run the backtest engine.
- *  5. Calculate performance metrics.
- *  6. Persist trades and metrics.
+ *  4. Run the backtest engine (with optional cost model + position sizing).
+ *  5. Calculate performance metrics (Phase 3 + Phase 4 advanced).
+ *  6. Persist trades, metrics, and equity curve.
  *  7. Update run status to completed or failed.
- *
- * Runs synchronously inside the HTTP request handler — suitable for the current
- * phase workload. Async job queue will be introduced in a later phase when needed.
  */
 export async function executeBacktest(
   request: BacktestRequest,
@@ -51,17 +55,13 @@ export async function executeBacktest(
     endDate,
     params = {},
     initialCapital = 10_000,
+    costModel,
+    positionSizing,
   } = request;
 
-  // ---------------------------------------------------------------------------
-  // Validate strategy
-  // ---------------------------------------------------------------------------
-  const strategy = createStrategy(strategyName); // throws if unknown
+  const strategy = createStrategy(strategyName);
   const resolvedParams = resolveParams(strategy, params);
 
-  // ---------------------------------------------------------------------------
-  // Persist the run record
-  // ---------------------------------------------------------------------------
   const run = await createBacktestRun({
     strategyName,
     symbol: symbol.toUpperCase(),
@@ -79,9 +79,6 @@ export async function executeBacktest(
   try {
     await updateBacktestRunStatus(runId, "running");
 
-    // -------------------------------------------------------------------------
-    // Load candles from the historical data store
-    // -------------------------------------------------------------------------
     const rawCandles = await queryCandles({
       symbol: symbol.toUpperCase(),
       interval,
@@ -96,7 +93,6 @@ export async function executeBacktest(
       );
     }
 
-    // Convert Drizzle candle rows → OhlcvCandle
     const candles: OhlcvCandle[] = rawCandles
       .map((c) => ({
         timestamp: c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp),
@@ -106,28 +102,30 @@ export async function executeBacktest(
         close: parseFloat(String(c.close)),
         volume: parseFloat(String(c.volume)),
       }))
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()); // ensure chronological order
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-    // -------------------------------------------------------------------------
-    // Run the backtest engine
-    // -------------------------------------------------------------------------
-    const { trades, equityCurve, candlesProcessed } = await runBacktest({
-      candles,
-      strategy,
-      params: resolvedParams,
+    const {
+      trades,
+      equityCurve,
+      candlesProcessed,
+      totalCommission,
+      totalSlippage,
+    } = await runBacktest(
+      { candles, strategy, params: resolvedParams, initialCapital },
+      { costModel, positionSizing },
+    );
+
+    const metrics = calculateMetrics(
+      trades,
+      equityCurve,
       initialCapital,
-    });
+      totalCommission,
+      totalSlippage,
+    );
 
-    // -------------------------------------------------------------------------
-    // Calculate metrics
-    // -------------------------------------------------------------------------
-    const metrics = calculateMetrics(trades, equityCurve, initialCapital);
-
-    // -------------------------------------------------------------------------
-    // Persist results
-    // -------------------------------------------------------------------------
     await saveBacktestTrades(runId, trades);
     await savePerformanceMetrics(runId, metrics);
+    await saveEquityCurve({ backtestRunId: runId }, equityCurve, initialCapital);
     await updateBacktestRunStatus(runId, "completed", {
       candlesProcessed,
       completedAt: new Date(),
@@ -139,6 +137,7 @@ export async function executeBacktest(
         candlesProcessed,
         totalTrades: metrics.totalTrades,
         totalReturnPct: metrics.totalReturnPct,
+        totalCommission: metrics.totalCommission,
       },
       "Backtest run completed",
     );
@@ -147,12 +146,10 @@ export async function executeBacktest(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error({ runId, err }, "Backtest run failed");
-
     await updateBacktestRunStatus(runId, "failed", {
       errorMessage: message,
       completedAt: new Date(),
     });
-
     return { runId, status: "failed", errorMessage: message };
   }
 }

@@ -577,6 +577,260 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Portfolio Backtesting
+  # ---------------------------------------------------------------------------
+  /v1/research/portfolio-backtest:
+    post:
+      operationId: runPortfolioBacktest
+      tags: [research]
+      summary: Run a portfolio backtest
+      description: Run a strategy across multiple symbols simultaneously with portfolio-level tracking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioBacktestRequest"
+      responses:
+        "200":
+          description: Portfolio backtest completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioBacktestJobResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Portfolio backtest failed
+
+  /v1/research/portfolio-backtest/{id}:
+    get:
+      operationId: getPortfolioBacktest
+      tags: [research]
+      summary: Get portfolio backtest result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Portfolio backtest detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioBacktestDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Walk-Forward Testing
+  # ---------------------------------------------------------------------------
+  /v1/research/walk-forward:
+    post:
+      operationId: runWalkForward
+      tags: [research]
+      summary: Run a walk-forward validation test
+      description: Splits the historical window into IS/OOS sub-periods and tests consistency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalkForwardRequest"
+      responses:
+        "200":
+          description: Walk-forward test completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalkForwardJobResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Walk-forward test failed
+
+  /v1/research/walk-forward/{id}:
+    get:
+      operationId: getWalkForwardRun
+      tags: [research]
+      summary: Get walk-forward run result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Walk-forward run detail with all window results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalkForwardDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Monte Carlo Simulation
+  # ---------------------------------------------------------------------------
+  /v1/research/monte-carlo:
+    post:
+      operationId: runMonteCarlo
+      tags: [research]
+      summary: Run a Monte Carlo simulation
+      description: Shuffles trade sequence N times to estimate return distribution and probability of ruin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonteCarloRequest"
+      responses:
+        "200":
+          description: Monte Carlo simulation completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonteCarloJobResult"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Simulation failed
+
+  /v1/research/monte-carlo/{id}:
+    get:
+      operationId: getMonteCarloRun
+      tags: [research]
+      summary: Get Monte Carlo simulation result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Monte Carlo run detail with percentiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonteCarloDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Equity Curves
+  # ---------------------------------------------------------------------------
+  /v1/research/equity-curve/{id}:
+    get:
+      operationId: getEquityCurve
+      tags: [research]
+      summary: Get equity curve for a backtest or portfolio run
+      description: |
+        Returns expanded equity curve points for a run.
+        Pass `?type=portfolio` query param (not in spec) to look up a portfolio backtest.
+        Pass `?format=compact` query param (not in spec) for raw compact JSON.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Equity curve data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquityCurveResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Validation
+  # ---------------------------------------------------------------------------
+  /v1/research/validation:
+    post:
+      operationId: generateValidation
+      tags: [research]
+      summary: Generate a strategy validation report
+      description: Analyses a completed backtest for overfitting, sample size, drawdown, and other red flags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidationRequest"
+      responses:
+        "200":
+          description: Validation report generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationDetailResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/research/validation/{id}:
+    get:
+      operationId: getValidationResult
+      tags: [research]
+      summary: Get validation result for a run
+      description: Retrieves the most recent validation report for a backtest or walk-forward run ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Backtest run ID or walk-forward run ID
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Phase 4 — Rankings
+  # ---------------------------------------------------------------------------
+  /v1/research/rankings:
+    get:
+      operationId: getResearchRankings
+      tags: [research]
+      summary: Get strategy performance rankings
+      description: Returns completed backtest runs ranked by Sharpe Ratio (desc), then Total Return
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Ranked research results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankingsResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
 components:
   responses:
     ValidationError:
@@ -1332,10 +1586,38 @@ components:
         expectancy:
           type: string
           nullable: true
+        calmarRatio:
+          type: string
+          nullable: true
+        recoveryFactor:
+          type: string
+          nullable: true
+        ulcerIndex:
+          type: string
+          nullable: true
+        marRatio:
+          type: string
+          nullable: true
+        exposureTimePct:
+          type: string
+          nullable: true
+        avgTradeDurationDays:
+          type: string
+          nullable: true
+        ulcerPerformanceIndex:
+          type: string
+          nullable: true
+        probabilityOfRuin:
+          type: string
+          nullable: true
+        totalCommission:
+          type: string
+        totalSlippage:
+          type: string
         createdAt:
           type: string
           format: date-time
-      required: [id, backtestRunId, totalReturnPct, winRate, maxDrawdownPct, totalTrades, winningTrades, losingTrades, createdAt]
+      required: [id, backtestRunId, totalReturnPct, winRate, maxDrawdownPct, totalTrades, winningTrades, losingTrades, totalCommission, totalSlippage, createdAt]
 
     BacktestDetailResponse:
       type: object
@@ -1424,3 +1706,535 @@ components:
           type: string
           nullable: true
       required: [runIds, summaries, comparisons]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Cost Models & Position Sizing (inline sub-schemas)
+    # -------------------------------------------------------------------------
+    CostModelInput:
+      type: object
+      properties:
+        commissionType:
+          type: string
+          enum: [flat, percentage, maker_taker]
+          default: percentage
+        commissionValue:
+          type: number
+          minimum: 0
+          default: 0
+        makerFee:
+          type: number
+          minimum: 0
+          default: 0
+        takerFee:
+          type: number
+          minimum: 0
+          default: 0
+        slippageType:
+          type: string
+          enum: [fixed, percentage, volatility_based, volume_based]
+          default: percentage
+        slippageValue:
+          type: number
+          minimum: 0
+          default: 0
+
+    PositionSizingInput:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: [fixed_dollar, fixed_percentage, risk_percentage, volatility_based, kelly]
+          default: fixed_percentage
+        value:
+          type: number
+          exclusiveMinimum: 0
+          default: 1.0
+        maxPositionPct:
+          type: number
+          minimum: 0.01
+          maximum: 1.0
+          default: 1.0
+        atrPeriod:
+          type: integer
+          minimum: 2
+          maximum: 200
+          default: 14
+        atrRiskMultiple:
+          type: number
+          exclusiveMinimum: 0
+          default: 2.0
+        kellyFraction:
+          type: number
+          minimum: 0.01
+          maximum: 1.0
+          default: 0.25
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Portfolio Backtest
+    # -------------------------------------------------------------------------
+    PortfolioBacktestRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        strategyName:
+          type: string
+        symbols:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+        interval:
+          type: string
+          enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        initialCapital:
+          type: number
+          exclusiveMinimum: 0
+          default: 10000
+        params:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: number
+              - type: boolean
+        costModel:
+          $ref: "#/components/schemas/CostModelInput"
+        positionSizing:
+          $ref: "#/components/schemas/PositionSizingInput"
+      required: [strategyName, symbols, interval, startDate, endDate]
+
+    PortfolioBacktestJobResult:
+      type: object
+      properties:
+        portfolioRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed, failed]
+        errorMessage:
+          type: string
+          nullable: true
+      required: [portfolioRunId, status]
+
+    SymbolResult:
+      type: object
+      properties:
+        symbol:
+          type: string
+        tradeCount:
+          type: integer
+        finalEquity:
+          type: number
+        metrics:
+          type: object
+          description: ComputedMetrics for this symbol
+      required: [symbol, tradeCount, finalEquity, metrics]
+
+    PortfolioMetrics:
+      type: object
+      properties:
+        totalReturnPct:
+          type: number
+        annualizedReturnPct:
+          type: number
+          nullable: true
+        maxDrawdownPct:
+          type: number
+        sharpeRatio:
+          type: number
+          nullable: true
+        sortinoRatio:
+          type: number
+          nullable: true
+        calmarRatio:
+          type: number
+          nullable: true
+        ulcerIndex:
+          type: number
+          nullable: true
+        exposureTimePct:
+          type: number
+          nullable: true
+        totalTrades:
+          type: integer
+        winRate:
+          type: number
+        profitFactor:
+          type: number
+          nullable: true
+        initialCapital:
+          type: number
+        finalEquity:
+          type: number
+        totalCommission:
+          type: number
+        totalSlippage:
+          type: number
+        symbolResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/SymbolResult"
+      required: [totalReturnPct, maxDrawdownPct, totalTrades, winRate, initialCapital, finalEquity, totalCommission, totalSlippage, symbolResults]
+
+    PortfolioBacktestDetailResponse:
+      type: object
+      properties:
+        run:
+          type: object
+          description: PortfolioBacktest record
+        portfolioMetrics:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PortfolioMetrics"
+        equityCurve:
+          nullable: true
+          type: object
+          description: Equity curve summary
+      required: [run]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Walk-Forward
+    # -------------------------------------------------------------------------
+    WalkForwardRequest:
+      type: object
+      properties:
+        strategyName:
+          type: string
+        symbol:
+          type: string
+        interval:
+          type: string
+          enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        initialCapital:
+          type: number
+          exclusiveMinimum: 0
+          default: 10000
+        params:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: number
+              - type: boolean
+        inSamplePct:
+          type: number
+          minimum: 0.4
+          maximum: 0.95
+          default: 0.7
+        windowCount:
+          type: integer
+          minimum: 2
+          maximum: 20
+          default: 5
+        windowType:
+          type: string
+          enum: [rolling, expanding]
+          default: rolling
+      required: [strategyName, symbol, interval, startDate, endDate]
+
+    WalkForwardJobResult:
+      type: object
+      properties:
+        walkForwardRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed, failed]
+        errorMessage:
+          type: string
+          nullable: true
+      required: [walkForwardRunId, status]
+
+    WalkForwardWindowResult:
+      type: object
+      properties:
+        windowIndex:
+          type: integer
+        isStart:
+          type: string
+          format: date-time
+        isEnd:
+          type: string
+          format: date-time
+        oosStart:
+          type: string
+          format: date-time
+        oosEnd:
+          type: string
+          format: date-time
+        isTotalReturnPct:
+          type: number
+        oosTotalReturnPct:
+          type: number
+        isSharpe:
+          type: number
+          nullable: true
+        oosSharpe:
+          type: number
+          nullable: true
+        isTrades:
+          type: integer
+        oosTrades:
+          type: integer
+      required: [windowIndex, isStart, isEnd, oosStart, oosEnd, isTotalReturnPct, oosTotalReturnPct, isTrades, oosTrades]
+
+    WalkForwardDetailResponse:
+      type: object
+      properties:
+        run:
+          type: object
+          description: WalkForwardRun record (without windowResults blob)
+        windowResults:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/WalkForwardWindowResult"
+      required: [run]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Monte Carlo
+    # -------------------------------------------------------------------------
+    MonteCarloRequest:
+      type: object
+      properties:
+        backtestRunId:
+          type: string
+          format: uuid
+        simulations:
+          type: integer
+          minimum: 100
+          maximum: 10000
+          default: 1000
+        seed:
+          type: integer
+          description: Random seed for reproducibility
+        ruinThreshold:
+          type: number
+          minimum: 0.01
+          maximum: 0.99
+          default: 0.5
+          description: Capital fraction below which a simulation is counted as ruin
+      required: [backtestRunId]
+
+    MonteCarloJobResult:
+      type: object
+      properties:
+        monteCarloRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed, failed]
+        errorMessage:
+          type: string
+          nullable: true
+      required: [monteCarloRunId, status]
+
+    MonteCarloPercentiles:
+      type: object
+      properties:
+        p5:
+          type: number
+        p10:
+          type: number
+        p25:
+          type: number
+        p50:
+          type: number
+        p75:
+          type: number
+        p90:
+          type: number
+        p95:
+          type: number
+      required: [p5, p10, p25, p50, p75, p90, p95]
+
+    MonteCarloDetailResponse:
+      type: object
+      properties:
+        run:
+          type: object
+          description: MonteCarloRun record (without percentiles blob)
+        percentiles:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/MonteCarloPercentiles"
+      required: [run]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Equity Curve
+    # -------------------------------------------------------------------------
+    EquityCurvePoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        equity:
+          type: number
+      required: [timestamp, equity]
+
+    EquityCurveResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        backtestRunId:
+          type: string
+          format: uuid
+          nullable: true
+        portfolioBacktestId:
+          type: string
+          format: uuid
+          nullable: true
+        totalPoints:
+          type: integer
+        startEquity:
+          type: string
+        endEquity:
+          type: string
+        peakEquity:
+          type: string
+        maxDrawdownPct:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquityCurvePoint"
+          description: Present when format=expanded (default)
+        curveData:
+          type: array
+          items:
+            type: object
+          description: Present when format=compact (raw compact points)
+      required: [id, totalPoints, startEquity, endEquity, peakEquity, maxDrawdownPct, generatedAt]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Validation
+    # -------------------------------------------------------------------------
+    ValidationRequest:
+      type: object
+      properties:
+        backtestRunId:
+          type: string
+          format: uuid
+        walkForwardRunId:
+          type: string
+          format: uuid
+        minTradesThreshold:
+          type: integer
+          minimum: 5
+          maximum: 1000
+          default: 30
+        maxDrawdownThreshold:
+          type: number
+          minimum: 0.05
+          maximum: 1.0
+          default: 0.3
+
+    ValidationFinding:
+      type: object
+      properties:
+        flag:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+      required: [flag, severity, message]
+
+    ValidationDetailResponse:
+      type: object
+      properties:
+        validation:
+          type: object
+          description: ValidationResult record (without findings blob)
+          properties:
+            id:
+              type: string
+              format: uuid
+            backtestRunId:
+              type: string
+              format: uuid
+              nullable: true
+            portfolioBacktestId:
+              type: string
+              format: uuid
+              nullable: true
+            walkForwardRunId:
+              type: string
+              format: uuid
+              nullable: true
+            overallScore:
+              type: integer
+              minimum: 0
+              maximum: 100
+            grade:
+              type: string
+              enum: [A, B, C, D, F]
+            overfittingFlag:
+              type: boolean
+            insufficientSampleFlag:
+              type: boolean
+            excessiveDrawdownFlag:
+              type: boolean
+            lowTradeCountFlag:
+              type: boolean
+            strategyInstabilityFlag:
+              type: boolean
+            recommendation:
+              type: string
+            generatedAt:
+              type: string
+              format: date-time
+          required: [id, overallScore, grade, overfittingFlag, insufficientSampleFlag, excessiveDrawdownFlag, lowTradeCountFlag, strategyInstabilityFlag, recommendation, generatedAt]
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationFinding"
+      required: [validation, findings]
+
+    # -------------------------------------------------------------------------
+    # Phase 4 — Rankings
+    # -------------------------------------------------------------------------
+    RankedResult:
+      type: object
+      properties:
+        rank:
+          type: integer
+        run:
+          $ref: "#/components/schemas/BacktestRun"
+        metrics:
+          $ref: "#/components/schemas/PerformanceMetrics"
+      required: [rank, run, metrics]
+
+    RankingsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedResult"
+        total:
+          type: integer
+      required: [data, total]

@@ -88,9 +88,25 @@ Deliverables:
 - [x] Strategy definitions DB table with auto-seeding
 - [x] Comparison engine (side-by-side multi-run analysis)
 
-**Next Phase: Phase 4 — Backtesting Engine (Enhanced)**
+**Phase 4 — Professional Backtesting & Validation Engine** ✅ Complete
 
-Goal: Add cost modeling (commissions, slippage), fill model improvements, and walk-forward validation.
+Goal: Upgrade the research platform to institutional-grade backtesting with realistic cost modeling, professional risk metrics, portfolio simulation, and statistical validation.
+
+Deliverables:
+- [x] Cost modeling engine (commission: flat/percentage/maker_taker; slippage: fixed/percentage/volatility/volume-based; 5 exchange presets)
+- [x] Position sizing framework (5 methods: Fixed Dollar, Fixed Percentage, Risk/ATR, Volatility-Based, Kelly Criterion)
+- [x] Advanced metrics (Calmar, Recovery Factor, Ulcer Index, MAR, Exposure Time, Avg Trade Duration, UPI, Probability of Ruin)
+- [x] Portfolio engine (multi-symbol simulation, equal capital allocation, timestamp-merged equity curve)
+- [x] Walk-forward validation (rolling + expanding windows, IS/OOS split, consistency scoring)
+- [x] Monte Carlo analysis (trade shuffling, seeded PRNG, percentile distribution, probability of ruin)
+- [x] Validation engine (5 checks, A–F grading, severity-tagged findings, structured recommendations)
+- [x] Equity curve service (compact JSON storage, expanded API output)
+- [x] Research API extended (10 new endpoints: portfolio backtest, walk-forward, Monte Carlo, equity curve, validation, rankings)
+- [x] 8 new DB tables + 10 new performance_metrics columns
+
+**Next Phase: Phase 5 — Paper Trading**
+
+Goal: Real-time strategy execution simulation against live market data with virtual account management.
 
 ---
 

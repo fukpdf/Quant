@@ -116,23 +116,32 @@ After completing any code change, every AI agent MUST:
 
 ## Phase Awareness
 
-The project is currently in **Phase 3 — Research Laboratory** (complete).
-Next: **Phase 4 — Backtesting Engine (Enhanced)**.
+The project is currently in **Phase 4 — Professional Backtesting & Validation Engine** (complete).
+Next: **Phase 5 — Paper Trading**.
 
-### What AI agents MAY do in Phase 3 / Phase 4:
+### What AI agents MAY do in Phase 4 / Phase 5:
 - Add or extend strategy implementations
 - Improve backtesting engine accuracy (cost models, fill models)
 - Add indicator library functions
 - Add or modify research API endpoints
-- Extend performance metrics
+- Extend performance metrics and validation checks
 - Write tests for strategies and the engine
+- Implement paper trading simulation (virtual account, simulated fills — no real capital)
+- Implement virtual order management and position tracking for paper trading
 
-### What AI agents MUST NOT do until Phase 5+:
-- Implement paper trading or live trading
-- Implement position sizing for real capital
-- Implement broker connectivity
-- Implement portfolio management for live money
+### What AI agents MUST NOT do until Phase 6+:
+- Implement live trading against real capital
+- Implement real broker connectivity
 - Implement risk engine enforcement on real orders
+- Implement portfolio management for live money
+
+### Key Phase 4 Architecture Notes (read before extending):
+- Cost models and position sizing profiles are **research-only** — they size simulated positions, not real capital (ADR-010)
+- Monte Carlo uses trade shuffling (bootstrap), not price-path simulation (ADR-011)
+- Equity curves are stored as compact JSONB (`{ t, e, d }`), not row-per-point (ADR-012)
+- Validation engine requires `ComputedMetrics` (number fields) — not DB numeric strings; callers must convert
+- Walk-forward and Monte Carlo routes are async-like but run synchronously in-process (no job queue yet)
+- All 10 Phase 4 endpoints are mounted under `/v1/research/` prefix via `routes/v1/index.ts`
 
 ---
 

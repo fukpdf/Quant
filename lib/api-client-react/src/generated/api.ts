@@ -29,12 +29,14 @@ import type {
   ComparisonResponse,
   DataQualityListResponse,
   EconomicEventListResponse,
+  EquityCurveResponse,
   GetCandlesParams,
   GetDataQualityParams,
   GetIngestionStatusParams,
   GetLatestPriceParams,
   GetMarketRegistryParams,
   GetProvidersHealthParams,
+  GetResearchRankingsParams,
   HealthStatus,
   IngestionJobListResponse,
   IngestionStatusResponse,
@@ -48,13 +50,25 @@ import type {
   ListResearchRunsParams,
   MarketListResponse,
   MarketRegistryResponse,
+  MonteCarloDetailResponse,
+  MonteCarloJobResult,
+  MonteCarloRequest,
   NewsListResponse,
   NotFoundResponse,
+  PortfolioBacktestDetailResponse,
+  PortfolioBacktestJobResult,
+  PortfolioBacktestRequest,
   ProviderHealthListResponse,
   ProviderListResponse,
+  RankingsResponse,
   ResearchResultListResponse,
   ResearchStrategyListResponse,
-  ValidationErrorResponse
+  ValidationDetailResponse,
+  ValidationErrorResponse,
+  ValidationRequest,
+  WalkForwardDetailResponse,
+  WalkForwardJobResult,
+  WalkForwardRequest
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1551,6 +1565,769 @@ export function useCompareBacktestRuns<TData = Awaited<ReturnType<typeof compare
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getCompareBacktestRunsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunPortfolioBacktestUrl = () => {
+
+
+
+
+  return `/api/v1/research/portfolio-backtest`
+}
+
+/**
+ * Run a strategy across multiple symbols simultaneously with portfolio-level tracking
+ * @summary Run a portfolio backtest
+ */
+export const runPortfolioBacktest = async (portfolioBacktestRequest: PortfolioBacktestRequest, options?: RequestInit): Promise<PortfolioBacktestJobResult> => {
+
+  return customFetch<PortfolioBacktestJobResult>(getRunPortfolioBacktestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      portfolioBacktestRequest,)
+  }
+);}
+
+
+
+
+export const getRunPortfolioBacktestMutationOptions = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPortfolioBacktest>>, TError,{data: BodyType<PortfolioBacktestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runPortfolioBacktest>>, TError,{data: BodyType<PortfolioBacktestRequest>}, TContext> => {
+
+const mutationKey = ['runPortfolioBacktest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runPortfolioBacktest>>, {data: BodyType<PortfolioBacktestRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runPortfolioBacktest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunPortfolioBacktestMutationResult = NonNullable<Awaited<ReturnType<typeof runPortfolioBacktest>>>
+    export type RunPortfolioBacktestMutationBody = BodyType<PortfolioBacktestRequest>
+    export type RunPortfolioBacktestMutationError = ErrorType<ValidationErrorResponse | void>
+
+    /**
+ * @summary Run a portfolio backtest
+ */
+export const useRunPortfolioBacktest = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPortfolioBacktest>>, TError,{data: BodyType<PortfolioBacktestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runPortfolioBacktest>>,
+        TError,
+        {data: BodyType<PortfolioBacktestRequest>},
+        TContext
+      > => {
+      return useMutation(getRunPortfolioBacktestMutationOptions(options));
+    }
+
+export const getGetPortfolioBacktestUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/portfolio-backtest/${id}`
+}
+
+/**
+ * @summary Get portfolio backtest result
+ */
+export const getPortfolioBacktest = async (id: string, options?: RequestInit): Promise<PortfolioBacktestDetailResponse> => {
+
+  return customFetch<PortfolioBacktestDetailResponse>(getGetPortfolioBacktestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortfolioBacktestQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/portfolio-backtest/${id}`
+    ] as const;
+    }
+
+
+export const getGetPortfolioBacktestQueryOptions = <TData = Awaited<ReturnType<typeof getPortfolioBacktest>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolioBacktest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortfolioBacktestQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortfolioBacktest>>> = ({ signal }) => getPortfolioBacktest(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortfolioBacktest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortfolioBacktestQueryResult = NonNullable<Awaited<ReturnType<typeof getPortfolioBacktest>>>
+export type GetPortfolioBacktestQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get portfolio backtest result
+ */
+
+export function useGetPortfolioBacktest<TData = Awaited<ReturnType<typeof getPortfolioBacktest>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortfolioBacktest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortfolioBacktestQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunWalkForwardUrl = () => {
+
+
+
+
+  return `/api/v1/research/walk-forward`
+}
+
+/**
+ * Splits the historical window into IS/OOS sub-periods and tests consistency
+ * @summary Run a walk-forward validation test
+ */
+export const runWalkForward = async (walkForwardRequest: WalkForwardRequest, options?: RequestInit): Promise<WalkForwardJobResult> => {
+
+  return customFetch<WalkForwardJobResult>(getRunWalkForwardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      walkForwardRequest,)
+  }
+);}
+
+
+
+
+export const getRunWalkForwardMutationOptions = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runWalkForward>>, TError,{data: BodyType<WalkForwardRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runWalkForward>>, TError,{data: BodyType<WalkForwardRequest>}, TContext> => {
+
+const mutationKey = ['runWalkForward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runWalkForward>>, {data: BodyType<WalkForwardRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runWalkForward(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunWalkForwardMutationResult = NonNullable<Awaited<ReturnType<typeof runWalkForward>>>
+    export type RunWalkForwardMutationBody = BodyType<WalkForwardRequest>
+    export type RunWalkForwardMutationError = ErrorType<ValidationErrorResponse | void>
+
+    /**
+ * @summary Run a walk-forward validation test
+ */
+export const useRunWalkForward = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runWalkForward>>, TError,{data: BodyType<WalkForwardRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runWalkForward>>,
+        TError,
+        {data: BodyType<WalkForwardRequest>},
+        TContext
+      > => {
+      return useMutation(getRunWalkForwardMutationOptions(options));
+    }
+
+export const getGetWalkForwardRunUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/walk-forward/${id}`
+}
+
+/**
+ * @summary Get walk-forward run result
+ */
+export const getWalkForwardRun = async (id: string, options?: RequestInit): Promise<WalkForwardDetailResponse> => {
+
+  return customFetch<WalkForwardDetailResponse>(getGetWalkForwardRunUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWalkForwardRunQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/walk-forward/${id}`
+    ] as const;
+    }
+
+
+export const getGetWalkForwardRunQueryOptions = <TData = Awaited<ReturnType<typeof getWalkForwardRun>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalkForwardRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWalkForwardRunQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWalkForwardRun>>> = ({ signal }) => getWalkForwardRun(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWalkForwardRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWalkForwardRunQueryResult = NonNullable<Awaited<ReturnType<typeof getWalkForwardRun>>>
+export type GetWalkForwardRunQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get walk-forward run result
+ */
+
+export function useGetWalkForwardRun<TData = Awaited<ReturnType<typeof getWalkForwardRun>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWalkForwardRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWalkForwardRunQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunMonteCarloUrl = () => {
+
+
+
+
+  return `/api/v1/research/monte-carlo`
+}
+
+/**
+ * Shuffles trade sequence N times to estimate return distribution and probability of ruin
+ * @summary Run a Monte Carlo simulation
+ */
+export const runMonteCarlo = async (monteCarloRequest: MonteCarloRequest, options?: RequestInit): Promise<MonteCarloJobResult> => {
+
+  return customFetch<MonteCarloJobResult>(getRunMonteCarloUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      monteCarloRequest,)
+  }
+);}
+
+
+
+
+export const getRunMonteCarloMutationOptions = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runMonteCarlo>>, TError,{data: BodyType<MonteCarloRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runMonteCarlo>>, TError,{data: BodyType<MonteCarloRequest>}, TContext> => {
+
+const mutationKey = ['runMonteCarlo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runMonteCarlo>>, {data: BodyType<MonteCarloRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runMonteCarlo(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunMonteCarloMutationResult = NonNullable<Awaited<ReturnType<typeof runMonteCarlo>>>
+    export type RunMonteCarloMutationBody = BodyType<MonteCarloRequest>
+    export type RunMonteCarloMutationError = ErrorType<ValidationErrorResponse | void>
+
+    /**
+ * @summary Run a Monte Carlo simulation
+ */
+export const useRunMonteCarlo = <TError = ErrorType<ValidationErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runMonteCarlo>>, TError,{data: BodyType<MonteCarloRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runMonteCarlo>>,
+        TError,
+        {data: BodyType<MonteCarloRequest>},
+        TContext
+      > => {
+      return useMutation(getRunMonteCarloMutationOptions(options));
+    }
+
+export const getGetMonteCarloRunUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/monte-carlo/${id}`
+}
+
+/**
+ * @summary Get Monte Carlo simulation result
+ */
+export const getMonteCarloRun = async (id: string, options?: RequestInit): Promise<MonteCarloDetailResponse> => {
+
+  return customFetch<MonteCarloDetailResponse>(getGetMonteCarloRunUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMonteCarloRunQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/monte-carlo/${id}`
+    ] as const;
+    }
+
+
+export const getGetMonteCarloRunQueryOptions = <TData = Awaited<ReturnType<typeof getMonteCarloRun>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonteCarloRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMonteCarloRunQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMonteCarloRun>>> = ({ signal }) => getMonteCarloRun(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMonteCarloRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMonteCarloRunQueryResult = NonNullable<Awaited<ReturnType<typeof getMonteCarloRun>>>
+export type GetMonteCarloRunQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get Monte Carlo simulation result
+ */
+
+export function useGetMonteCarloRun<TData = Awaited<ReturnType<typeof getMonteCarloRun>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMonteCarloRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMonteCarloRunQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetEquityCurveUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/equity-curve/${id}`
+}
+
+/**
+ * Returns expanded equity curve points for a run.
+Pass `?type=portfolio` query param (not in spec) to look up a portfolio backtest.
+Pass `?format=compact` query param (not in spec) for raw compact JSON.
+
+ * @summary Get equity curve for a backtest or portfolio run
+ */
+export const getEquityCurve = async (id: string, options?: RequestInit): Promise<EquityCurveResponse> => {
+
+  return customFetch<EquityCurveResponse>(getGetEquityCurveUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEquityCurveQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/equity-curve/${id}`
+    ] as const;
+    }
+
+
+export const getGetEquityCurveQueryOptions = <TData = Awaited<ReturnType<typeof getEquityCurve>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEquityCurve>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEquityCurveQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEquityCurve>>> = ({ signal }) => getEquityCurve(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEquityCurve>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEquityCurveQueryResult = NonNullable<Awaited<ReturnType<typeof getEquityCurve>>>
+export type GetEquityCurveQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get equity curve for a backtest or portfolio run
+ */
+
+export function useGetEquityCurve<TData = Awaited<ReturnType<typeof getEquityCurve>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEquityCurve>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEquityCurveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGenerateValidationUrl = () => {
+
+
+
+
+  return `/api/v1/research/validation`
+}
+
+/**
+ * Analyses a completed backtest for overfitting, sample size, drawdown, and other red flags
+ * @summary Generate a strategy validation report
+ */
+export const generateValidation = async (validationRequest: ValidationRequest, options?: RequestInit): Promise<ValidationDetailResponse> => {
+
+  return customFetch<ValidationDetailResponse>(getGenerateValidationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      validationRequest,)
+  }
+);}
+
+
+
+
+export const getGenerateValidationMutationOptions = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateValidation>>, TError,{data: BodyType<ValidationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateValidation>>, TError,{data: BodyType<ValidationRequest>}, TContext> => {
+
+const mutationKey = ['generateValidation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateValidation>>, {data: BodyType<ValidationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateValidation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateValidationMutationResult = NonNullable<Awaited<ReturnType<typeof generateValidation>>>
+    export type GenerateValidationMutationBody = BodyType<ValidationRequest>
+    export type GenerateValidationMutationError = ErrorType<ValidationErrorResponse | NotFoundResponse>
+
+    /**
+ * @summary Generate a strategy validation report
+ */
+export const useGenerateValidation = <TError = ErrorType<ValidationErrorResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateValidation>>, TError,{data: BodyType<ValidationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateValidation>>,
+        TError,
+        {data: BodyType<ValidationRequest>},
+        TContext
+      > => {
+      return useMutation(getGenerateValidationMutationOptions(options));
+    }
+
+export const getGetValidationResultUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/validation/${id}`
+}
+
+/**
+ * Retrieves the most recent validation report for a backtest or walk-forward run ID
+ * @summary Get validation result for a run
+ */
+export const getValidationResult = async (id: string, options?: RequestInit): Promise<ValidationDetailResponse> => {
+
+  return customFetch<ValidationDetailResponse>(getGetValidationResultUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetValidationResultQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/validation/${id}`
+    ] as const;
+    }
+
+
+export const getGetValidationResultQueryOptions = <TData = Awaited<ReturnType<typeof getValidationResult>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getValidationResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetValidationResultQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getValidationResult>>> = ({ signal }) => getValidationResult(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getValidationResult>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetValidationResultQueryResult = NonNullable<Awaited<ReturnType<typeof getValidationResult>>>
+export type GetValidationResultQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get validation result for a run
+ */
+
+export function useGetValidationResult<TData = Awaited<ReturnType<typeof getValidationResult>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getValidationResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetValidationResultQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetResearchRankingsUrl = (params?: GetResearchRankingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/research/rankings?${stringifiedParams}` : `/api/v1/research/rankings`
+}
+
+/**
+ * Returns completed backtest runs ranked by Sharpe Ratio (desc), then Total Return
+ * @summary Get strategy performance rankings
+ */
+export const getResearchRankings = async (params?: GetResearchRankingsParams, options?: RequestInit): Promise<RankingsResponse> => {
+
+  return customFetch<RankingsResponse>(getGetResearchRankingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResearchRankingsQueryKey = (params?: GetResearchRankingsParams,) => {
+    return [
+    `/api/v1/research/rankings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetResearchRankingsQueryOptions = <TData = Awaited<ReturnType<typeof getResearchRankings>>, TError = ErrorType<ValidationErrorResponse>>(params?: GetResearchRankingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResearchRankings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResearchRankingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResearchRankings>>> = ({ signal }) => getResearchRankings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResearchRankings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResearchRankingsQueryResult = NonNullable<Awaited<ReturnType<typeof getResearchRankings>>>
+export type GetResearchRankingsQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary Get strategy performance rankings
+ */
+
+export function useGetResearchRankings<TData = Awaited<ReturnType<typeof getResearchRankings>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: GetResearchRankingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResearchRankings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResearchRankingsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

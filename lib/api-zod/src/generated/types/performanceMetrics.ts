@@ -22,5 +22,15 @@ export interface PerformanceMetrics {
   winningTrades: number;
   losingTrades: number;
   expectancy?: string | null;
+  calmarRatio?: string | null;
+  recoveryFactor?: string | null;
+  ulcerIndex?: string | null;
+  marRatio?: string | null;
+  exposureTimePct?: string | null;
+  avgTradeDurationDays?: string | null;
+  ulcerPerformanceIndex?: string | null;
+  probabilityOfRuin?: string | null;
+  totalCommission: string;
+  totalSlippage: string;
   createdAt: Date;
 }

@@ -25,10 +25,6 @@ import { logger } from "../lib/logger";
 // Strategy Definitions
 // ---------------------------------------------------------------------------
 
-/**
- * Seed strategy_definitions from the in-process registry.
- * Idempotent — safe to call on every startup.
- */
 export async function seedStrategyDefinitions(): Promise<void> {
   const strategies = getAllStrategies();
 
@@ -132,14 +128,12 @@ export async function listBacktestRuns(filters: BacktestRunFilter = {}): Promise
     conditions.push(eq(backtestRunsTable.status, filters.status));
   }
 
-  const query = db
+  return db
     .select()
     .from(backtestRunsTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(backtestRunsTable.createdAt))
     .limit(filters.limit ?? 50);
-
-  return query;
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +162,6 @@ export async function saveBacktestTrades(
     candleIndexExit: t.candleIndexExit ?? null,
   }));
 
-  // Insert in batches
   const BATCH = 500;
   for (let i = 0; i < rows.length; i += BATCH) {
     await db.insert(backtestTradesTable).values(rows.slice(i, i + BATCH));
@@ -207,6 +200,20 @@ export async function savePerformanceMetrics(
     winningTrades: metrics.winningTrades,
     losingTrades: metrics.losingTrades,
     expectancy: metrics.expectancy !== null ? String(metrics.expectancy) : null,
+    // Phase 4 additions
+    calmarRatio: metrics.calmarRatio !== null ? String(metrics.calmarRatio) : null,
+    recoveryFactor: metrics.recoveryFactor !== null ? String(metrics.recoveryFactor) : null,
+    ulcerIndex: metrics.ulcerIndex !== null ? String(metrics.ulcerIndex) : null,
+    marRatio: metrics.marRatio !== null ? String(metrics.marRatio) : null,
+    exposureTimePct: metrics.exposureTimePct !== null ? String(metrics.exposureTimePct) : null,
+    avgTradeDurationDays:
+      metrics.avgTradeDurationDays !== null ? String(metrics.avgTradeDurationDays) : null,
+    ulcerPerformanceIndex:
+      metrics.ulcerPerformanceIndex !== null ? String(metrics.ulcerPerformanceIndex) : null,
+    probabilityOfRuin:
+      metrics.probabilityOfRuin !== null ? String(metrics.probabilityOfRuin) : null,
+    totalCommission: String(metrics.totalCommission),
+    totalSlippage: String(metrics.totalSlippage),
   };
 
   await db
@@ -233,11 +240,9 @@ export interface MetricsFilter {
   limit?: number;
 }
 
-/** Returns performance metrics joined with their backtest run metadata */
 export async function listPerformanceResults(
   filters: MetricsFilter = {},
 ): Promise<Array<{ run: BacktestRun; metrics: PerformanceMetrics }>> {
-  // Get completed runs first, then fetch metrics
   const runFilters: BacktestRunFilter = {
     status: "completed",
     limit: filters.limit ?? 50,
@@ -261,4 +266,87 @@ export async function listPerformanceResults(
       return m ? { run, metrics: m } : null;
     })
     .filter((x): x is { run: BacktestRun; metrics: PerformanceMetrics } => x !== null);
+}
+
+// ---------------------------------------------------------------------------
+// Comparison Engine (unchanged from Phase 3)
+// ---------------------------------------------------------------------------
+
+export interface MetricComparison {
+  label: string;
+  values: Record<string, number>;
+  winnerId: string | null;
+  higherIsBetter: boolean;
+}
+
+export interface ComparisonResult {
+  runIds: string[];
+  comparisons: MetricComparison[];
+  overallWinnerId: string | null;
+}
+
+export async function compareRuns(runIds: string[]): Promise<ComparisonResult> {
+  if (runIds.length < 2) {
+    throw new Error("compareRuns requires at least 2 run IDs");
+  }
+
+  const metricsRows = await db
+    .select()
+    .from(performanceMetricsTable)
+    .where(inArray(performanceMetricsTable.backtestRunId, runIds));
+
+  if (metricsRows.length < 2) {
+    throw new Error("Could not find metrics for at least 2 of the provided run IDs");
+  }
+
+  const metricDefs: Array<{
+    label: string;
+    field: keyof PerformanceMetrics;
+    higherIsBetter: boolean;
+  }> = [
+    { label: "Total Return", field: "totalReturnPct", higherIsBetter: true },
+    { label: "Annualized Return", field: "annualizedReturnPct", higherIsBetter: true },
+    { label: "Win Rate", field: "winRate", higherIsBetter: true },
+    { label: "Profit Factor", field: "profitFactor", higherIsBetter: true },
+    { label: "Max Drawdown", field: "maxDrawdownPct", higherIsBetter: false },
+    { label: "Sharpe Ratio", field: "sharpeRatio", higherIsBetter: true },
+    { label: "Sortino Ratio", field: "sortinoRatio", higherIsBetter: true },
+    { label: "Calmar Ratio", field: "calmarRatio", higherIsBetter: true },
+    { label: "Ulcer Index", field: "ulcerIndex", higherIsBetter: false },
+    { label: "Recovery Factor", field: "recoveryFactor", higherIsBetter: true },
+    { label: "Expectancy", field: "expectancy", higherIsBetter: true },
+  ];
+
+  const winCounts: Record<string, number> = {};
+  for (const m of metricsRows) {
+    winCounts[m.backtestRunId] = 0;
+  }
+
+  const comparisons: MetricComparison[] = metricDefs.map((def) => {
+    const values: Record<string, number> = {};
+
+    for (const m of metricsRows) {
+      const raw = m[def.field];
+      if (raw !== null && raw !== undefined) {
+        values[m.backtestRunId] = parseFloat(String(raw));
+      }
+    }
+
+    const ids = Object.keys(values);
+    if (ids.length < 2) return { label: def.label, values, winnerId: null, higherIsBetter: def.higherIsBetter };
+
+    const sortedIds = [...ids].sort((a, b) =>
+      def.higherIsBetter ? values[b]! - values[a]! : values[a]! - values[b]!,
+    );
+
+    const winnerId = sortedIds[0]!;
+    winCounts[winnerId] = (winCounts[winnerId] ?? 0) + 1;
+
+    return { label: def.label, values, winnerId, higherIsBetter: def.higherIsBetter };
+  });
+
+  const overallWinnerId =
+    Object.entries(winCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  return { runIds, comparisons, overallWinnerId };
 }

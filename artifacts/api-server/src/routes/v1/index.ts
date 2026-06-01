@@ -15,6 +15,13 @@ import researchBacktestRouter from "./research-backtest";
 import researchRunsRouter from "./research-runs";
 import researchResultsRouter from "./research-results";
 import researchCompareRouter from "./research-compare";
+// Phase 4 — Professional Backtesting & Validation Engine
+import researchPortfolioBacktestRouter from "./research-portfolio-backtest";
+import researchWalkForwardRouter from "./research-walk-forward";
+import researchMonteCarloRouter from "./research-monte-carlo";
+import researchEquityCurveRouter from "./research-equity-curve";
+import researchValidationRouter from "./research-validation";
+import researchRankingsRouter from "./research-rankings";
 
 const v1Router: IRouter = Router();
 
@@ -38,5 +45,13 @@ v1Router.use(researchBacktestRouter);
 v1Router.use(researchRunsRouter);
 v1Router.use(researchResultsRouter);
 v1Router.use(researchCompareRouter);
+
+// Phase 4 endpoints
+v1Router.use(researchPortfolioBacktestRouter);
+v1Router.use(researchWalkForwardRouter);
+v1Router.use(researchMonteCarloRouter);
+v1Router.use(researchEquityCurveRouter);
+v1Router.use(researchValidationRouter);
+v1Router.use(researchRankingsRouter);
 
 export default v1Router;

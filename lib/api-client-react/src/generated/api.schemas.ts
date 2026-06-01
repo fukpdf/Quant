@@ -370,6 +370,16 @@ export interface PerformanceMetrics {
   winningTrades: number;
   losingTrades: number;
   expectancy?: string | null;
+  calmarRatio?: string | null;
+  recoveryFactor?: string | null;
+  ulcerIndex?: string | null;
+  marRatio?: string | null;
+  exposureTimePct?: string | null;
+  avgTradeDurationDays?: string | null;
+  ulcerPerformanceIndex?: string | null;
+  probabilityOfRuin?: string | null;
+  totalCommission: string;
+  totalSlippage: string;
   createdAt: string;
 }
 
@@ -420,6 +430,412 @@ export interface ComparisonResponse {
   summaries: ComparisonRunSummary[];
   comparisons: MetricComparison[];
   overallWinnerId?: string | null;
+}
+
+export type CostModelInputCommissionType = typeof CostModelInputCommissionType[keyof typeof CostModelInputCommissionType];
+
+
+export const CostModelInputCommissionType = {
+  flat: 'flat',
+  percentage: 'percentage',
+  maker_taker: 'maker_taker',
+} as const;
+
+export type CostModelInputSlippageType = typeof CostModelInputSlippageType[keyof typeof CostModelInputSlippageType];
+
+
+export const CostModelInputSlippageType = {
+  fixed: 'fixed',
+  percentage: 'percentage',
+  volatility_based: 'volatility_based',
+  volume_based: 'volume_based',
+} as const;
+
+export interface CostModelInput {
+  commissionType?: CostModelInputCommissionType;
+  /** @minimum 0 */
+  commissionValue?: number;
+  /** @minimum 0 */
+  makerFee?: number;
+  /** @minimum 0 */
+  takerFee?: number;
+  slippageType?: CostModelInputSlippageType;
+  /** @minimum 0 */
+  slippageValue?: number;
+}
+
+export type PositionSizingInputMethod = typeof PositionSizingInputMethod[keyof typeof PositionSizingInputMethod];
+
+
+export const PositionSizingInputMethod = {
+  fixed_dollar: 'fixed_dollar',
+  fixed_percentage: 'fixed_percentage',
+  risk_percentage: 'risk_percentage',
+  volatility_based: 'volatility_based',
+  kelly: 'kelly',
+} as const;
+
+export interface PositionSizingInput {
+  method?: PositionSizingInputMethod;
+  /** @exclusiveMinimum 0 */
+  value?: number;
+  /**
+     * @minimum 0.01
+     * @maximum 1
+     */
+  maxPositionPct?: number;
+  /**
+     * @minimum 2
+     * @maximum 200
+     */
+  atrPeriod?: number;
+  /** @exclusiveMinimum 0 */
+  atrRiskMultiple?: number;
+  /**
+     * @minimum 0.01
+     * @maximum 1
+     */
+  kellyFraction?: number;
+}
+
+export type PortfolioBacktestRequestInterval = typeof PortfolioBacktestRequestInterval[keyof typeof PortfolioBacktestRequestInterval];
+
+
+export const PortfolioBacktestRequestInterval = {
+  '1m': '1m',
+  '5m': '5m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '1w': '1w',
+} as const;
+
+export type PortfolioBacktestRequestParams = {[key: string]: number | boolean};
+
+export interface PortfolioBacktestRequest {
+  /** @maxLength 200 */
+  name?: string;
+  strategyName: string;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  symbols: string[];
+  interval: PortfolioBacktestRequestInterval;
+  startDate: string;
+  endDate: string;
+  /** @exclusiveMinimum 0 */
+  initialCapital?: number;
+  params?: PortfolioBacktestRequestParams;
+  costModel?: CostModelInput;
+  positionSizing?: PositionSizingInput;
+}
+
+export type PortfolioBacktestJobResultStatus = typeof PortfolioBacktestJobResultStatus[keyof typeof PortfolioBacktestJobResultStatus];
+
+
+export const PortfolioBacktestJobResultStatus = {
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface PortfolioBacktestJobResult {
+  portfolioRunId: string;
+  status: PortfolioBacktestJobResultStatus;
+  errorMessage?: string | null;
+}
+
+/**
+ * ComputedMetrics for this symbol
+ */
+export type SymbolResultMetrics = { [key: string]: unknown };
+
+export interface SymbolResult {
+  symbol: string;
+  tradeCount: number;
+  finalEquity: number;
+  /** ComputedMetrics for this symbol */
+  metrics: SymbolResultMetrics;
+}
+
+export interface PortfolioMetrics {
+  totalReturnPct: number;
+  annualizedReturnPct?: number | null;
+  maxDrawdownPct: number;
+  sharpeRatio?: number | null;
+  sortinoRatio?: number | null;
+  calmarRatio?: number | null;
+  ulcerIndex?: number | null;
+  exposureTimePct?: number | null;
+  totalTrades: number;
+  winRate: number;
+  profitFactor?: number | null;
+  initialCapital: number;
+  finalEquity: number;
+  totalCommission: number;
+  totalSlippage: number;
+  symbolResults: SymbolResult[];
+}
+
+/**
+ * PortfolioBacktest record
+ */
+export type PortfolioBacktestDetailResponseRun = { [key: string]: unknown };
+
+/**
+ * Equity curve summary
+ */
+export type PortfolioBacktestDetailResponseEquityCurve = { [key: string]: unknown } | null;
+
+export interface PortfolioBacktestDetailResponse {
+  /** PortfolioBacktest record */
+  run: PortfolioBacktestDetailResponseRun;
+  portfolioMetrics?: PortfolioMetrics | null;
+  /** Equity curve summary */
+  equityCurve?: PortfolioBacktestDetailResponseEquityCurve;
+}
+
+export type WalkForwardRequestInterval = typeof WalkForwardRequestInterval[keyof typeof WalkForwardRequestInterval];
+
+
+export const WalkForwardRequestInterval = {
+  '1m': '1m',
+  '5m': '5m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '1w': '1w',
+} as const;
+
+export type WalkForwardRequestParams = {[key: string]: number | boolean};
+
+export type WalkForwardRequestWindowType = typeof WalkForwardRequestWindowType[keyof typeof WalkForwardRequestWindowType];
+
+
+export const WalkForwardRequestWindowType = {
+  rolling: 'rolling',
+  expanding: 'expanding',
+} as const;
+
+export interface WalkForwardRequest {
+  strategyName: string;
+  symbol: string;
+  interval: WalkForwardRequestInterval;
+  startDate: string;
+  endDate: string;
+  /** @exclusiveMinimum 0 */
+  initialCapital?: number;
+  params?: WalkForwardRequestParams;
+  /**
+     * @minimum 0.4
+     * @maximum 0.95
+     */
+  inSamplePct?: number;
+  /**
+     * @minimum 2
+     * @maximum 20
+     */
+  windowCount?: number;
+  windowType?: WalkForwardRequestWindowType;
+}
+
+export type WalkForwardJobResultStatus = typeof WalkForwardJobResultStatus[keyof typeof WalkForwardJobResultStatus];
+
+
+export const WalkForwardJobResultStatus = {
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface WalkForwardJobResult {
+  walkForwardRunId: string;
+  status: WalkForwardJobResultStatus;
+  errorMessage?: string | null;
+}
+
+export interface WalkForwardWindowResult {
+  windowIndex: number;
+  isStart: string;
+  isEnd: string;
+  oosStart: string;
+  oosEnd: string;
+  isTotalReturnPct: number;
+  oosTotalReturnPct: number;
+  isSharpe?: number | null;
+  oosSharpe?: number | null;
+  isTrades: number;
+  oosTrades: number;
+}
+
+/**
+ * WalkForwardRun record (without windowResults blob)
+ */
+export type WalkForwardDetailResponseRun = { [key: string]: unknown };
+
+export interface WalkForwardDetailResponse {
+  /** WalkForwardRun record (without windowResults blob) */
+  run: WalkForwardDetailResponseRun;
+  windowResults?: WalkForwardWindowResult[] | null;
+}
+
+export interface MonteCarloRequest {
+  backtestRunId: string;
+  /**
+     * @minimum 100
+     * @maximum 10000
+     */
+  simulations?: number;
+  /** Random seed for reproducibility */
+  seed?: number;
+  /**
+     * Capital fraction below which a simulation is counted as ruin
+     * @minimum 0.01
+     * @maximum 0.99
+     */
+  ruinThreshold?: number;
+}
+
+export type MonteCarloJobResultStatus = typeof MonteCarloJobResultStatus[keyof typeof MonteCarloJobResultStatus];
+
+
+export const MonteCarloJobResultStatus = {
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface MonteCarloJobResult {
+  monteCarloRunId: string;
+  status: MonteCarloJobResultStatus;
+  errorMessage?: string | null;
+}
+
+export interface MonteCarloPercentiles {
+  p5: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+  p95: number;
+}
+
+/**
+ * MonteCarloRun record (without percentiles blob)
+ */
+export type MonteCarloDetailResponseRun = { [key: string]: unknown };
+
+export interface MonteCarloDetailResponse {
+  /** MonteCarloRun record (without percentiles blob) */
+  run: MonteCarloDetailResponseRun;
+  percentiles?: MonteCarloPercentiles | null;
+}
+
+export interface EquityCurvePoint {
+  timestamp: string;
+  equity: number;
+}
+
+export type EquityCurveResponseCurveDataItem = { [key: string]: unknown };
+
+export interface EquityCurveResponse {
+  id: string;
+  backtestRunId?: string | null;
+  portfolioBacktestId?: string | null;
+  totalPoints: number;
+  startEquity: string;
+  endEquity: string;
+  peakEquity: string;
+  maxDrawdownPct: string;
+  generatedAt: string;
+  /** Present when format=expanded (default) */
+  points?: EquityCurvePoint[];
+  /** Present when format=compact (raw compact points) */
+  curveData?: EquityCurveResponseCurveDataItem[];
+}
+
+export interface ValidationRequest {
+  backtestRunId?: string;
+  walkForwardRunId?: string;
+  /**
+     * @minimum 5
+     * @maximum 1000
+     */
+  minTradesThreshold?: number;
+  /**
+     * @minimum 0.05
+     * @maximum 1
+     */
+  maxDrawdownThreshold?: number;
+}
+
+export type ValidationFindingSeverity = typeof ValidationFindingSeverity[keyof typeof ValidationFindingSeverity];
+
+
+export const ValidationFindingSeverity = {
+  info: 'info',
+  warning: 'warning',
+  critical: 'critical',
+} as const;
+
+export interface ValidationFinding {
+  flag: string;
+  severity: ValidationFindingSeverity;
+  message: string;
+}
+
+export type ValidationDetailResponseValidationGrade = typeof ValidationDetailResponseValidationGrade[keyof typeof ValidationDetailResponseValidationGrade];
+
+
+export const ValidationDetailResponseValidationGrade = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  D: 'D',
+  F: 'F',
+} as const;
+
+/**
+ * ValidationResult record (without findings blob)
+ */
+export type ValidationDetailResponseValidation = {
+  id: string;
+  backtestRunId?: string | null;
+  portfolioBacktestId?: string | null;
+  walkForwardRunId?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  overallScore: number;
+  grade: ValidationDetailResponseValidationGrade;
+  overfittingFlag: boolean;
+  insufficientSampleFlag: boolean;
+  excessiveDrawdownFlag: boolean;
+  lowTradeCountFlag: boolean;
+  strategyInstabilityFlag: boolean;
+  recommendation: string;
+  generatedAt: string;
+};
+
+export interface ValidationDetailResponse {
+  /** ValidationResult record (without findings blob) */
+  validation: ValidationDetailResponseValidation;
+  findings: ValidationFinding[];
+}
+
+export interface RankedResult {
+  rank: number;
+  run: BacktestRun;
+  metrics: PerformanceMetrics;
+}
+
+export interface RankingsResponse {
+  data: RankedResult[];
+  total: number;
 }
 
 /**
@@ -678,5 +1094,13 @@ export type CompareBacktestRunsParams = {
  * Comma-separated list of backtest run IDs (minimum 2)
  */
 ids: string;
+};
+
+export type GetResearchRankingsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
 };
 

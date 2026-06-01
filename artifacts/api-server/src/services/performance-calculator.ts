@@ -1,13 +1,18 @@
 import type { SimulatedTrade, EquityCurvePoint } from "../strategies/types";
 import { stdDev, downsideDeviation } from "../strategies/indicators";
+import {
+  calculateAdvancedMetrics,
+  type AdvancedMetrics,
+} from "./advanced-metrics";
 
 /**
- * Performance metrics calculator.
+ * Performance metrics calculator — Phase 4 upgrade.
  * Takes completed trades and an equity curve and produces risk-adjusted metrics.
  * All percentage outputs are expressed as decimal fractions (0.15 = 15%).
  */
 
 export interface ComputedMetrics {
+  // --- Phase 3 metrics ---
   totalReturnPct: number;
   annualizedReturnPct: number | null;
   winRate: number;
@@ -21,15 +26,30 @@ export interface ComputedMetrics {
   winningTrades: number;
   losingTrades: number;
   expectancy: number | null;
+  // --- Phase 4 additions ---
+  calmarRatio: number | null;
+  recoveryFactor: number | null;
+  ulcerIndex: number | null;
+  marRatio: number | null;
+  exposureTimePct: number | null;
+  avgTradeDurationDays: number | null;
+  ulcerPerformanceIndex: number | null;
+  probabilityOfRuin: number | null;
+  /** Total commission paid across all trades (absolute dollars) */
+  totalCommission: number;
+  /** Total slippage impact across all trades (absolute dollars) */
+  totalSlippage: number;
 }
 
-const RISK_FREE_RATE_ANNUAL = 0.0; // Simplified: 0% risk-free rate for Sharpe calculation
+const RISK_FREE_RATE_ANNUAL = 0.0;
 const TRADING_DAYS_PER_YEAR = 252;
 
 export function calculateMetrics(
   trades: SimulatedTrade[],
   equityCurve: EquityCurvePoint[],
   initialCapital: number,
+  totalCommission = 0,
+  totalSlippage = 0,
 ): ComputedMetrics {
   const completedTrades = trades.filter((t) => t.pnl !== null && t.pnlPct !== null);
   const totalTrades = completedTrades.length;
@@ -51,7 +71,7 @@ export function calculateMetrics(
   const totalReturnPct = (finalEquity - initialCapital) / initialCapital;
 
   // ---------------------------------------------------------------------------
-  // Annualized return (CAGR) — only if equity curve spans at least 1 day
+  // Annualized return (CAGR)
   // ---------------------------------------------------------------------------
   let annualizedReturnPct: number | null = null;
   if (equityCurve.length >= 2) {
@@ -95,7 +115,7 @@ export function calculateMetrics(
   }
 
   // ---------------------------------------------------------------------------
-  // Sharpe ratio — uses daily equity returns from the curve
+  // Sharpe + Sortino — daily equity returns
   // ---------------------------------------------------------------------------
   let sharpeRatio: number | null = null;
   let sortinoRatio: number | null = null;
@@ -105,14 +125,11 @@ export function calculateMetrics(
     for (let i = 1; i < equityCurve.length; i++) {
       const prev = equityCurve[i - 1]!.equity;
       const curr = equityCurve[i]!.equity;
-      if (prev > 0) {
-        dailyReturns.push((curr - prev) / prev);
-      }
+      if (prev > 0) dailyReturns.push((curr - prev) / prev);
     }
 
     if (dailyReturns.length >= 2) {
-      const meanReturn =
-        dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+      const meanReturn = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
       const sd = stdDev(dailyReturns);
       const dailyRiskFree = RISK_FREE_RATE_ANNUAL / TRADING_DAYS_PER_YEAR;
 
@@ -129,12 +146,24 @@ export function calculateMetrics(
   }
 
   // ---------------------------------------------------------------------------
-  // Expectancy = avgWin * winRate + avgLoss * (1 - winRate)
+  // Expectancy
   // ---------------------------------------------------------------------------
   let expectancy: number | null = null;
   if (avgWinPct !== null && avgLossPct !== null) {
     expectancy = avgWinPct * winRate + avgLossPct * (1 - winRate);
   }
+
+  // ---------------------------------------------------------------------------
+  // Advanced metrics (Phase 4)
+  // ---------------------------------------------------------------------------
+  const advanced: AdvancedMetrics = calculateAdvancedMetrics(
+    completedTrades,
+    equityCurve,
+    equityCurve.length,
+    annualizedReturnPct,
+    totalReturnPct,
+    maxDrawdownPct,
+  );
 
   return {
     totalReturnPct,
@@ -150,5 +179,15 @@ export function calculateMetrics(
     winningTrades,
     losingTrades,
     expectancy,
+    calmarRatio: advanced.calmarRatio,
+    recoveryFactor: advanced.recoveryFactor,
+    ulcerIndex: advanced.ulcerIndex,
+    marRatio: advanced.marRatio,
+    exposureTimePct: advanced.exposureTimePct,
+    avgTradeDurationDays: advanced.avgTradeDurationDays,
+    ulcerPerformanceIndex: advanced.ulcerPerformanceIndex,
+    probabilityOfRuin: null,
+    totalCommission,
+    totalSlippage,
   };
 }

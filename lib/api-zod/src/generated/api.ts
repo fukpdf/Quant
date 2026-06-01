@@ -432,6 +432,16 @@ export const GetBacktestResultResponse = zod.object({
   "winningTrades": zod.number(),
   "losingTrades": zod.number(),
   "expectancy": zod.string().nullish(),
+  "calmarRatio": zod.string().nullish(),
+  "recoveryFactor": zod.string().nullish(),
+  "ulcerIndex": zod.string().nullish(),
+  "marRatio": zod.string().nullish(),
+  "exposureTimePct": zod.string().nullish(),
+  "avgTradeDurationDays": zod.string().nullish(),
+  "ulcerPerformanceIndex": zod.string().nullish(),
+  "probabilityOfRuin": zod.string().nullish(),
+  "totalCommission": zod.string(),
+  "totalSlippage": zod.string(),
   "createdAt": zod.coerce.date()
 }).nullish(),
   "trades": zod.array(zod.object({
@@ -537,6 +547,16 @@ export const ListResearchResultsResponse = zod.object({
   "winningTrades": zod.number(),
   "losingTrades": zod.number(),
   "expectancy": zod.string().nullish(),
+  "calmarRatio": zod.string().nullish(),
+  "recoveryFactor": zod.string().nullish(),
+  "ulcerIndex": zod.string().nullish(),
+  "marRatio": zod.string().nullish(),
+  "exposureTimePct": zod.string().nullish(),
+  "avgTradeDurationDays": zod.string().nullish(),
+  "ulcerPerformanceIndex": zod.string().nullish(),
+  "probabilityOfRuin": zod.string().nullish(),
+  "totalCommission": zod.string(),
+  "totalSlippage": zod.string(),
   "createdAt": zod.coerce.date()
 })
 })),
@@ -586,6 +606,16 @@ export const CompareBacktestRunsResponse = zod.object({
   "winningTrades": zod.number(),
   "losingTrades": zod.number(),
   "expectancy": zod.string().nullish(),
+  "calmarRatio": zod.string().nullish(),
+  "recoveryFactor": zod.string().nullish(),
+  "ulcerIndex": zod.string().nullish(),
+  "marRatio": zod.string().nullish(),
+  "exposureTimePct": zod.string().nullish(),
+  "avgTradeDurationDays": zod.string().nullish(),
+  "ulcerPerformanceIndex": zod.string().nullish(),
+  "probabilityOfRuin": zod.string().nullish(),
+  "totalCommission": zod.string(),
+  "totalSlippage": zod.string(),
   "createdAt": zod.coerce.date()
 }).nullish()
 })),
@@ -598,6 +628,425 @@ export const CompareBacktestRunsResponse = zod.object({
   "winnerId": zod.string().nullish()
 })),
   "overallWinnerId": zod.string().nullish()
+})
+
+
+/**
+ * Run a strategy across multiple symbols simultaneously with portfolio-level tracking
+ * @summary Run a portfolio backtest
+ */
+export const runPortfolioBacktestBodyNameMax = 200;
+
+export const runPortfolioBacktestBodySymbolsMax = 20;
+
+export const runPortfolioBacktestBodyInitialCapitalDefault = 10000;
+export const runPortfolioBacktestBodyInitialCapitalExclusiveMin = 0;
+
+export const runPortfolioBacktestBodyCostModelCommissionTypeDefault = `percentage`;
+export const runPortfolioBacktestBodyCostModelCommissionValueDefault = 0;
+export const runPortfolioBacktestBodyCostModelCommissionValueMin = 0;
+
+export const runPortfolioBacktestBodyCostModelMakerFeeDefault = 0;
+export const runPortfolioBacktestBodyCostModelMakerFeeMin = 0;
+
+export const runPortfolioBacktestBodyCostModelTakerFeeDefault = 0;
+export const runPortfolioBacktestBodyCostModelTakerFeeMin = 0;
+
+export const runPortfolioBacktestBodyCostModelSlippageTypeDefault = `percentage`;
+export const runPortfolioBacktestBodyCostModelSlippageValueDefault = 0;
+export const runPortfolioBacktestBodyCostModelSlippageValueMin = 0;
+
+export const runPortfolioBacktestBodyPositionSizingMethodDefault = `fixed_percentage`;
+export const runPortfolioBacktestBodyPositionSizingValueDefault = 1;
+export const runPortfolioBacktestBodyPositionSizingValueExclusiveMin = 0;
+
+export const runPortfolioBacktestBodyPositionSizingMaxPositionPctDefault = 1;
+export const runPortfolioBacktestBodyPositionSizingMaxPositionPctMin = 0.01;
+export const runPortfolioBacktestBodyPositionSizingMaxPositionPctMax = 1;
+
+export const runPortfolioBacktestBodyPositionSizingAtrPeriodDefault = 14;
+export const runPortfolioBacktestBodyPositionSizingAtrPeriodMin = 2;
+export const runPortfolioBacktestBodyPositionSizingAtrPeriodMax = 200;
+
+export const runPortfolioBacktestBodyPositionSizingAtrRiskMultipleDefault = 2;
+export const runPortfolioBacktestBodyPositionSizingAtrRiskMultipleExclusiveMin = 0;
+
+export const runPortfolioBacktestBodyPositionSizingKellyFractionDefault = 0.25;
+export const runPortfolioBacktestBodyPositionSizingKellyFractionMin = 0.01;
+export const runPortfolioBacktestBodyPositionSizingKellyFractionMax = 1;
+
+
+
+export const RunPortfolioBacktestBody = zod.object({
+  "name": zod.string().max(runPortfolioBacktestBodyNameMax).optional(),
+  "strategyName": zod.string(),
+  "symbols": zod.array(zod.string()).min(1).max(runPortfolioBacktestBodySymbolsMax),
+  "interval": zod.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "initialCapital": zod.number().gt(runPortfolioBacktestBodyInitialCapitalExclusiveMin).default(runPortfolioBacktestBodyInitialCapitalDefault),
+  "params": zod.record(zod.string(), zod.union([zod.number(),zod.boolean()])).optional(),
+  "costModel": zod.object({
+  "commissionType": zod.enum(['flat', 'percentage', 'maker_taker']).default(runPortfolioBacktestBodyCostModelCommissionTypeDefault),
+  "commissionValue": zod.number().min(runPortfolioBacktestBodyCostModelCommissionValueMin).default(runPortfolioBacktestBodyCostModelCommissionValueDefault),
+  "makerFee": zod.number().min(runPortfolioBacktestBodyCostModelMakerFeeMin).default(runPortfolioBacktestBodyCostModelMakerFeeDefault),
+  "takerFee": zod.number().min(runPortfolioBacktestBodyCostModelTakerFeeMin).default(runPortfolioBacktestBodyCostModelTakerFeeDefault),
+  "slippageType": zod.enum(['fixed', 'percentage', 'volatility_based', 'volume_based']).default(runPortfolioBacktestBodyCostModelSlippageTypeDefault),
+  "slippageValue": zod.number().min(runPortfolioBacktestBodyCostModelSlippageValueMin).default(runPortfolioBacktestBodyCostModelSlippageValueDefault)
+}).optional(),
+  "positionSizing": zod.object({
+  "method": zod.enum(['fixed_dollar', 'fixed_percentage', 'risk_percentage', 'volatility_based', 'kelly']).default(runPortfolioBacktestBodyPositionSizingMethodDefault),
+  "value": zod.number().gt(runPortfolioBacktestBodyPositionSizingValueExclusiveMin).default(runPortfolioBacktestBodyPositionSizingValueDefault),
+  "maxPositionPct": zod.number().min(runPortfolioBacktestBodyPositionSizingMaxPositionPctMin).max(runPortfolioBacktestBodyPositionSizingMaxPositionPctMax).default(runPortfolioBacktestBodyPositionSizingMaxPositionPctDefault),
+  "atrPeriod": zod.number().min(runPortfolioBacktestBodyPositionSizingAtrPeriodMin).max(runPortfolioBacktestBodyPositionSizingAtrPeriodMax).default(runPortfolioBacktestBodyPositionSizingAtrPeriodDefault),
+  "atrRiskMultiple": zod.number().gt(runPortfolioBacktestBodyPositionSizingAtrRiskMultipleExclusiveMin).default(runPortfolioBacktestBodyPositionSizingAtrRiskMultipleDefault),
+  "kellyFraction": zod.number().min(runPortfolioBacktestBodyPositionSizingKellyFractionMin).max(runPortfolioBacktestBodyPositionSizingKellyFractionMax).default(runPortfolioBacktestBodyPositionSizingKellyFractionDefault)
+}).optional()
+})
+
+export const RunPortfolioBacktestResponse = zod.object({
+  "portfolioRunId": zod.string().uuid(),
+  "status": zod.enum(['completed', 'failed']),
+  "errorMessage": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get portfolio backtest result
+ */
+export const GetPortfolioBacktestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetPortfolioBacktestResponse = zod.object({
+  "run": zod.object({
+
+}).passthrough().describe('PortfolioBacktest record'),
+  "portfolioMetrics": zod.object({
+  "totalReturnPct": zod.number(),
+  "annualizedReturnPct": zod.number().nullish(),
+  "maxDrawdownPct": zod.number(),
+  "sharpeRatio": zod.number().nullish(),
+  "sortinoRatio": zod.number().nullish(),
+  "calmarRatio": zod.number().nullish(),
+  "ulcerIndex": zod.number().nullish(),
+  "exposureTimePct": zod.number().nullish(),
+  "totalTrades": zod.number(),
+  "winRate": zod.number(),
+  "profitFactor": zod.number().nullish(),
+  "initialCapital": zod.number(),
+  "finalEquity": zod.number(),
+  "totalCommission": zod.number(),
+  "totalSlippage": zod.number(),
+  "symbolResults": zod.array(zod.object({
+  "symbol": zod.string(),
+  "tradeCount": zod.number(),
+  "finalEquity": zod.number(),
+  "metrics": zod.object({
+
+}).passthrough().describe('ComputedMetrics for this symbol')
+}))
+}).nullish(),
+  "equityCurve": zod.object({
+
+}).passthrough().nullish().describe('Equity curve summary')
+})
+
+
+/**
+ * Splits the historical window into IS/OOS sub-periods and tests consistency
+ * @summary Run a walk-forward validation test
+ */
+export const runWalkForwardBodyInitialCapitalDefault = 10000;
+export const runWalkForwardBodyInitialCapitalExclusiveMin = 0;
+
+export const runWalkForwardBodyInSamplePctDefault = 0.7;
+export const runWalkForwardBodyInSamplePctMin = 0.4;
+export const runWalkForwardBodyInSamplePctMax = 0.95;
+
+export const runWalkForwardBodyWindowCountDefault = 5;
+export const runWalkForwardBodyWindowCountMin = 2;
+export const runWalkForwardBodyWindowCountMax = 20;
+
+export const runWalkForwardBodyWindowTypeDefault = `rolling`;
+
+export const RunWalkForwardBody = zod.object({
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "initialCapital": zod.number().gt(runWalkForwardBodyInitialCapitalExclusiveMin).default(runWalkForwardBodyInitialCapitalDefault),
+  "params": zod.record(zod.string(), zod.union([zod.number(),zod.boolean()])).optional(),
+  "inSamplePct": zod.number().min(runWalkForwardBodyInSamplePctMin).max(runWalkForwardBodyInSamplePctMax).default(runWalkForwardBodyInSamplePctDefault),
+  "windowCount": zod.number().min(runWalkForwardBodyWindowCountMin).max(runWalkForwardBodyWindowCountMax).default(runWalkForwardBodyWindowCountDefault),
+  "windowType": zod.enum(['rolling', 'expanding']).default(runWalkForwardBodyWindowTypeDefault)
+})
+
+export const RunWalkForwardResponse = zod.object({
+  "walkForwardRunId": zod.string().uuid(),
+  "status": zod.enum(['completed', 'failed']),
+  "errorMessage": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get walk-forward run result
+ */
+export const GetWalkForwardRunParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetWalkForwardRunResponse = zod.object({
+  "run": zod.object({
+
+}).passthrough().describe('WalkForwardRun record (without windowResults blob)'),
+  "windowResults": zod.array(zod.object({
+  "windowIndex": zod.number(),
+  "isStart": zod.coerce.date(),
+  "isEnd": zod.coerce.date(),
+  "oosStart": zod.coerce.date(),
+  "oosEnd": zod.coerce.date(),
+  "isTotalReturnPct": zod.number(),
+  "oosTotalReturnPct": zod.number(),
+  "isSharpe": zod.number().nullish(),
+  "oosSharpe": zod.number().nullish(),
+  "isTrades": zod.number(),
+  "oosTrades": zod.number()
+})).nullish()
+})
+
+
+/**
+ * Shuffles trade sequence N times to estimate return distribution and probability of ruin
+ * @summary Run a Monte Carlo simulation
+ */
+export const runMonteCarloBodySimulationsDefault = 1000;
+export const runMonteCarloBodySimulationsMin = 100;
+export const runMonteCarloBodySimulationsMax = 10000;
+
+export const runMonteCarloBodyRuinThresholdDefault = 0.5;
+export const runMonteCarloBodyRuinThresholdMin = 0.01;
+export const runMonteCarloBodyRuinThresholdMax = 0.99;
+
+
+
+export const RunMonteCarloBody = zod.object({
+  "backtestRunId": zod.string().uuid(),
+  "simulations": zod.number().min(runMonteCarloBodySimulationsMin).max(runMonteCarloBodySimulationsMax).default(runMonteCarloBodySimulationsDefault),
+  "seed": zod.number().optional().describe('Random seed for reproducibility'),
+  "ruinThreshold": zod.number().min(runMonteCarloBodyRuinThresholdMin).max(runMonteCarloBodyRuinThresholdMax).default(runMonteCarloBodyRuinThresholdDefault).describe('Capital fraction below which a simulation is counted as ruin')
+})
+
+export const RunMonteCarloResponse = zod.object({
+  "monteCarloRunId": zod.string().uuid(),
+  "status": zod.enum(['completed', 'failed']),
+  "errorMessage": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get Monte Carlo simulation result
+ */
+export const GetMonteCarloRunParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetMonteCarloRunResponse = zod.object({
+  "run": zod.object({
+
+}).passthrough().describe('MonteCarloRun record (without percentiles blob)'),
+  "percentiles": zod.object({
+  "p5": zod.number(),
+  "p10": zod.number(),
+  "p25": zod.number(),
+  "p50": zod.number(),
+  "p75": zod.number(),
+  "p90": zod.number(),
+  "p95": zod.number()
+}).nullish()
+})
+
+
+/**
+ * Returns expanded equity curve points for a run.
+Pass `?type=portfolio` query param (not in spec) to look up a portfolio backtest.
+Pass `?format=compact` query param (not in spec) for raw compact JSON.
+
+ * @summary Get equity curve for a backtest or portfolio run
+ */
+export const GetEquityCurveParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetEquityCurveResponse = zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid().nullish(),
+  "portfolioBacktestId": zod.string().uuid().nullish(),
+  "totalPoints": zod.number(),
+  "startEquity": zod.string(),
+  "endEquity": zod.string(),
+  "peakEquity": zod.string(),
+  "maxDrawdownPct": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "points": zod.array(zod.object({
+  "timestamp": zod.coerce.date(),
+  "equity": zod.number()
+})).optional().describe('Present when format=expanded (default)'),
+  "curveData": zod.array(zod.object({
+
+}).passthrough()).optional().describe('Present when format=compact (raw compact points)')
+})
+
+
+/**
+ * Analyses a completed backtest for overfitting, sample size, drawdown, and other red flags
+ * @summary Generate a strategy validation report
+ */
+export const generateValidationBodyMinTradesThresholdDefault = 30;
+export const generateValidationBodyMinTradesThresholdMin = 5;
+export const generateValidationBodyMinTradesThresholdMax = 1000;
+
+export const generateValidationBodyMaxDrawdownThresholdDefault = 0.3;
+export const generateValidationBodyMaxDrawdownThresholdMin = 0.05;
+export const generateValidationBodyMaxDrawdownThresholdMax = 1;
+
+
+
+export const GenerateValidationBody = zod.object({
+  "backtestRunId": zod.string().uuid().optional(),
+  "walkForwardRunId": zod.string().uuid().optional(),
+  "minTradesThreshold": zod.number().min(generateValidationBodyMinTradesThresholdMin).max(generateValidationBodyMinTradesThresholdMax).default(generateValidationBodyMinTradesThresholdDefault),
+  "maxDrawdownThreshold": zod.number().min(generateValidationBodyMaxDrawdownThresholdMin).max(generateValidationBodyMaxDrawdownThresholdMax).default(generateValidationBodyMaxDrawdownThresholdDefault)
+})
+
+export const generateValidationResponseValidationOverallScoreMin = 0;
+export const generateValidationResponseValidationOverallScoreMax = 100;
+
+
+
+export const GenerateValidationResponse = zod.object({
+  "validation": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid().nullish(),
+  "portfolioBacktestId": zod.string().uuid().nullish(),
+  "walkForwardRunId": zod.string().uuid().nullish(),
+  "overallScore": zod.number().min(generateValidationResponseValidationOverallScoreMin).max(generateValidationResponseValidationOverallScoreMax),
+  "grade": zod.enum(['A', 'B', 'C', 'D', 'F']),
+  "overfittingFlag": zod.boolean(),
+  "insufficientSampleFlag": zod.boolean(),
+  "excessiveDrawdownFlag": zod.boolean(),
+  "lowTradeCountFlag": zod.boolean(),
+  "strategyInstabilityFlag": zod.boolean(),
+  "recommendation": zod.string(),
+  "generatedAt": zod.coerce.date()
+}).describe('ValidationResult record (without findings blob)'),
+  "findings": zod.array(zod.object({
+  "flag": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'critical']),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * Retrieves the most recent validation report for a backtest or walk-forward run ID
+ * @summary Get validation result for a run
+ */
+export const GetValidationResultParams = zod.object({
+  "id": zod.coerce.string().uuid().describe('Backtest run ID or walk-forward run ID')
+})
+
+export const getValidationResultResponseValidationOverallScoreMin = 0;
+export const getValidationResultResponseValidationOverallScoreMax = 100;
+
+
+
+export const GetValidationResultResponse = zod.object({
+  "validation": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid().nullish(),
+  "portfolioBacktestId": zod.string().uuid().nullish(),
+  "walkForwardRunId": zod.string().uuid().nullish(),
+  "overallScore": zod.number().min(getValidationResultResponseValidationOverallScoreMin).max(getValidationResultResponseValidationOverallScoreMax),
+  "grade": zod.enum(['A', 'B', 'C', 'D', 'F']),
+  "overfittingFlag": zod.boolean(),
+  "insufficientSampleFlag": zod.boolean(),
+  "excessiveDrawdownFlag": zod.boolean(),
+  "lowTradeCountFlag": zod.boolean(),
+  "strategyInstabilityFlag": zod.boolean(),
+  "recommendation": zod.string(),
+  "generatedAt": zod.coerce.date()
+}).describe('ValidationResult record (without findings blob)'),
+  "findings": zod.array(zod.object({
+  "flag": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'critical']),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * Returns completed backtest runs ranked by Sharpe Ratio (desc), then Total Return
+ * @summary Get strategy performance rankings
+ */
+export const getResearchRankingsQueryLimitDefault = 20;
+export const getResearchRankingsQueryLimitMax = 100;
+
+
+
+export const GetResearchRankingsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(getResearchRankingsQueryLimitMax).default(getResearchRankingsQueryLimitDefault)
+})
+
+export const GetResearchRankingsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "rank": zod.number(),
+  "run": zod.object({
+  "id": zod.string().uuid(),
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "parameters": zod.string().describe('JSON-encoded strategy parameters'),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "candlesProcessed": zod.number(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "metrics": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid(),
+  "totalReturnPct": zod.string(),
+  "annualizedReturnPct": zod.string().nullish(),
+  "winRate": zod.string(),
+  "profitFactor": zod.string().nullish(),
+  "avgWinPct": zod.string().nullish(),
+  "avgLossPct": zod.string().nullish(),
+  "maxDrawdownPct": zod.string(),
+  "sharpeRatio": zod.string().nullish(),
+  "sortinoRatio": zod.string().nullish(),
+  "totalTrades": zod.number(),
+  "winningTrades": zod.number(),
+  "losingTrades": zod.number(),
+  "expectancy": zod.string().nullish(),
+  "calmarRatio": zod.string().nullish(),
+  "recoveryFactor": zod.string().nullish(),
+  "ulcerIndex": zod.string().nullish(),
+  "marRatio": zod.string().nullish(),
+  "exposureTimePct": zod.string().nullish(),
+  "avgTradeDurationDays": zod.string().nullish(),
+  "ulcerPerformanceIndex": zod.string().nullish(),
+  "probabilityOfRuin": zod.string().nullish(),
+  "totalCommission": zod.string(),
+  "totalSlippage": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+})),
+  "total": zod.number()
 })
 
 

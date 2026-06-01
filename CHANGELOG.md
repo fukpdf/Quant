@@ -23,6 +23,73 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.0] — 2026-06-01
+
+### Phase 4 — Professional Backtesting & Validation Engine
+
+#### Added
+
+**Database Tables (8 new)**
+- `trade_cost_models` — named commission + slippage configuration profiles (flat, percentage, maker_taker, fixed, percentage, volatility-based, volume-based)
+- `position_sizing_profiles` — named position sizing strategy profiles (5 methods: fixed_dollar, fixed_percentage, risk_percentage, volatility_based, kelly)
+- `portfolio_backtests` — multi-symbol portfolio backtest runs with per-symbol capital allocation and portfolio-level metrics JSON blob
+- `equity_curves` — compact JSON equity time-series storage for both single-strategy and portfolio backtests
+- `walk_forward_runs` — walk-forward validation orchestration: rolling and expanding window types, per-window IS/OOS results, consistency scoring
+- `monte_carlo_runs` — Monte Carlo simulation results with percentile distribution, probability of ruin, and seeded reproducibility
+- `validation_results` — structured strategy validation reports with 5 red-flag indicators, letter grade (A–F), and recommendation text
+- `research_snapshots` — named research configuration snapshots for reproducibility and recall
+
+**Extended `performance_metrics` Table**
+- 10 new columns: `calmar_ratio`, `recovery_factor`, `ulcer_index`, `mar_ratio`, `exposure_time_pct`, `avg_trade_duration_days`, `ulcer_performance_index`, `probability_of_ruin`, `total_commission`, `total_slippage`
+
+**Core Services (3 new)**
+- `cost-model.ts` — commission and slippage engine; 5 preset exchange profiles (Binance Spot, Binance Futures, Forex ECN, US Stocks, Zero Cost); `applySlippage()` and `computeRoundTripCost()` helpers
+- `position-sizer.ts` — 5 position sizing methods; ATR computation (Wilder's smoothing); Kelly Criterion formula; hard cap enforcement via `maxPositionPct`
+- `advanced-metrics.ts` — Calmar Ratio, Recovery Factor, Ulcer Index, MAR Ratio, Exposure Time %, Average Trade Duration (days), Ulcer Performance Index
+
+**Upgraded Services (3 updated)**
+- `backtesting-engine.ts` — integrated CostModel + PositionSizer; per-trade commission and slippage tracking; exports `BacktestOutputExtended` with `totalCommission` and `totalSlippage`; Phase 3 backward-compatible via `positionSizeFraction` shim
+- `performance-calculator.ts` — extended `ComputedMetrics` with all 10 Phase 4 fields; delegates advanced metrics to `advanced-metrics.ts`; `totalCommission` / `totalSlippage` threaded through from engine
+- `research-runner.ts` — threads `costModel` and `positionSizing` options through to the backtesting engine; saves equity curve after each run
+
+**New Services (4 new)**
+- `portfolio-engine.ts` — multi-symbol portfolio simulation; equal capital allocation; per-symbol independent backtest; portfolio equity curve by timestamp-aligned merge; portfolio-level aggregated metrics
+- `equity-curve-service.ts` — compact JSON storage and retrieval of equity time-series; `{ t, e, d }` format; supports both single-strategy and portfolio backtest curves
+- `walk-forward-runner.ts` — rolling and expanding window split; parallel IS/OOS backtest execution per window; consistency score (OOS/IS ratio); pass/fail validation
+- `monte-carlo-runner.ts` — seeded mulberry32 PRNG for reproducibility; trade-sequence shuffling; percentile computation (p5–p95); probability of ruin estimation
+- `validation-engine.ts` — 5 checks: trade count, sample size, drawdown, negative expectancy, overfitting (IS vs OOS Sharpe), instability (OOS return variance); A–F grading
+- `phase4-db.ts` — complete data access layer for all Phase 4 tables; rankings query (Sharpe-sorted)
+
+**API Endpoints (9 new)**
+- `POST /v1/research/portfolio-backtest` — run strategy across multiple symbols with optional cost model and position sizing
+- `GET /v1/research/portfolio-backtest/:id` — portfolio run detail with portfolio metrics and equity curve
+- `POST /v1/research/walk-forward` — walk-forward validation (rolling or expanding, 2–20 windows)
+- `GET /v1/research/walk-forward/:id` — walk-forward detail with all per-window results
+- `POST /v1/research/monte-carlo` — Monte Carlo simulation on a completed backtest's trades (100–10,000 simulations)
+- `GET /v1/research/monte-carlo/:id` — simulation detail with percentile distribution
+- `GET /v1/research/equity-curve/:id` — equity curve for any completed run (expanded or compact format)
+- `POST /v1/research/validation` — generate strategy validation report from backtest + optional walk-forward data
+- `GET /v1/research/validation/:id` — retrieve most recent validation result for a run
+- `GET /v1/research/rankings` — Sharpe-sorted leaderboard across all completed backtests (up to 100)
+
+**OpenAPI Spec**
+- 9 new path entries with full request/response schemas
+- 16 new component schemas: `CostModelInput`, `PositionSizingInput`, `PortfolioBacktestRequest`, `PortfolioBacktestJobResult`, `PortfolioMetrics`, `SymbolResult`, `PortfolioBacktestDetailResponse`, `WalkForwardRequest`, `WalkForwardJobResult`, `WalkForwardWindowResult`, `WalkForwardDetailResponse`, `MonteCarloRequest`, `MonteCarloJobResult`, `MonteCarloPercentiles`, `MonteCarloDetailResponse`, `EquityCurvePoint`, `EquityCurveResponse`, `ValidationRequest`, `ValidationFinding`, `ValidationDetailResponse`, `RankedResult`, `RankingsResponse`
+- `PerformanceMetrics` schema extended with 10 new Phase 4 fields
+- Codegen regenerated (Zod schemas + React Query hooks)
+
+#### Changed
+- `backtesting-engine.ts` — added cost model and position sizing integration; trades now include commission, slippage, grossPnl, netPnl fields
+- `performance-calculator.ts` — extended return type with Phase 4 metrics; signature updated to accept `totalCommission` and `totalSlippage`
+- `research-runner.ts` — now saves equity curve after each run; threads Phase 4 options to engine
+- `research-db.ts` — `savePerformanceMetrics` updated to persist all 10 new Phase 4 metric columns
+- `lib/db/src/schema/index.ts` — exports all 8 new Phase 4 schema files
+
+#### Fixed
+- OpenAPI codegen conflict (`GetEquityCurveParams` ambiguity between zod api.ts value export and types/ type export) resolved by removing duplicate query params from the equity curve GET spec; query params still supported at runtime
+
+---
+
 ## [0.3.0] — 2026-06-01
 
 ### Phase 3 — Quant Research Laboratory & Backtesting Foundation

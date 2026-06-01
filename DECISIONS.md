@@ -318,3 +318,94 @@ PostgreSQL `numeric` is arbitrary-precision and lossless. Drizzle ORM maps `nume
 
 **Review Trigger**
 A downstream consumer encounters significant friction from string parsing, at which point a `Decimal.js` utility layer will be considered.
+
+---
+
+### ADR-010 — Position Sizing Integrated into Backtesting Engine (Simulation Only)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent (Phase 4 implementation)
+
+**Decision**
+Position sizing is implemented as a backtesting-time calculation inside the engine. It sizes simulated entries only — it does not enforce risk limits on real capital.
+
+**Context**
+Phase 4 adds a position sizing framework with 5 methods (Fixed Dollar, Fixed Percentage, Risk Percentage/ATR, Volatility-Based, Kelly Criterion). The question arose whether this sizing engine should be reused in Phase 5 (paper trading) or Phase 6 (risk engine) directly.
+
+**Rationale**
+Phase 4's position sizer sizes hypothetical positions for historical replay. It does not interact with any real account, broker, or capital. Reusing it in paper trading or live risk management would conflate research sizing (what *would* have worked) with execution sizing (what we *will* do). The Phase 6 risk engine will implement its own position sizing that is capital-aware, account-balance-aware, and integrated with the risk limit system.
+
+**Alternatives Considered**
+- Shared sizing service for backtest + paper trading — couples research and execution too early
+- Defer all sizing to Phase 6 — misses the research value of simulating different sizing strategies in backtest
+
+**Consequences**
+- `position-sizer.ts` and `position-sizing-profiles` table are scoped to the research namespace
+- Phase 6 risk engine will have its own position sizing implementation with live-capital semantics
+- Research results can compare different sizing methods historically without risk engine dependency
+
+**Review Trigger**
+Phase 5/6 implementation reveals enough shared logic that a common sizing abstraction is clearly beneficial.
+
+---
+
+### ADR-011 — Monte Carlo Via Trade Shuffling (Not Price Path Simulation)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent (Phase 4 implementation)
+
+**Decision**
+Monte Carlo analysis is implemented by randomly reordering the sequence of trades from a completed backtest (bootstrap resampling), not by simulating alternative price paths.
+
+**Context**
+Two common Monte Carlo approaches exist for strategy validation: (1) resample the trade P&L sequence to estimate the distribution of equity curves, or (2) generate synthetic price paths via GBM or similar and re-run the strategy. Both test robustness but answer different questions.
+
+**Rationale**
+Trade shuffling is computationally cheap (microseconds per simulation), requires no additional market data or price model assumptions, directly tests the sensitivity of the equity curve to trade ordering luck, and is the standard approach in retail quant tools. Price-path simulation is more theoretically correct but requires calibrating a return distribution model and re-running the full strategy on each path — orders of magnitude more expensive. For the validation use case (detecting excessive luck or drawdown sensitivity), trade shuffling is sufficient and more interpretable.
+
+**Alternatives Considered**
+- GBM price-path simulation — more rigorous but expensive; deferred to future advanced validation module
+- Historical block bootstrap — preserves autocorrelation structure; complexity not justified at this stage
+- Parametric (normal distribution) — fast but assumes normality; financial returns are fat-tailed
+
+**Consequences**
+- Simulations complete in milliseconds for typical trade sets (< 10,000 trades)
+- Seeded PRNG (mulberry32) makes results exactly reproducible
+- Results test ordering-luck sensitivity, not parameter sensitivity or price-path sensitivity
+- Parameter sensitivity testing is a separate concern (grid search / optimization — future phase)
+
+**Review Trigger**
+Researchers need price-path sensitivity analysis, at which point a GBM or block-bootstrap module will be added.
+
+---
+
+### ADR-012 — Equity Curves Stored as Compact JSON (Not Row-Per-Point)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent (Phase 4 implementation)
+
+**Decision**
+Equity curve time-series are stored as a single JSONB column (`compact_json`) in the `equity_curves` table, using a compact `{ t, e, d }` format (timestamp, equity, drawdown). One row per run — not one row per time point.
+
+**Context**
+A typical daily backtest over 3 years produces ~1,000 equity points. A 20-symbol portfolio backtest could produce 20,000 points. Storing these as individual rows would require a join and significant row overhead per retrieval.
+
+**Rationale**
+For read-heavy research use (displaying a chart, computing statistics), bulk retrieval of the entire time-series is far more common than point queries. A single row with compressed JSON achieves: (1) O(1) retrieval cost regardless of series length, (2) no JOIN needed, (3) PostgreSQL JSONB is indexed and queryable if point queries are ever needed, (4) compact format reduces storage to ~30 bytes per point vs ~200 bytes per row. The `{ t, e, d }` format is chosen over full ISO timestamps to minimize JSON payload size.
+
+**Alternatives Considered**
+- Separate `equity_curve_points` table (one row per point) — easy to query individual points but slow bulk retrieval; 6–7× more storage
+- TimescaleDB hypertable — optimal for time-series but adds infrastructure dependency
+- CSV/Parquet file in object storage — efficient but adds I/O complexity and no direct DB query support
+
+**Consequences**
+- Equity curve retrieval is a single SELECT by run ID — O(1) regardless of series length
+- The compact format must be expanded server-side before serving to API consumers
+- Point-level SQL queries on equity curves are possible via `jsonb_array_elements` but expensive
+- Maximum practical series length is bounded by PostgreSQL row size limit (~1GB); effectively unlimited for backtest use
+
+**Review Trigger**
+Equity curves grow beyond ~100,000 points per run (multi-year tick-level backtests), at which point partitioned row storage or object storage will be evaluated.

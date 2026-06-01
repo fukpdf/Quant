@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-01
-> Current phase: **Phase 3 — Quant Research Laboratory & Backtesting Foundation**
+> Current phase: **Phase 4 — Professional Backtesting & Validation Engine** ✅ COMPLETE
 
 ---
 
@@ -164,28 +164,93 @@
 
 ---
 
-## Phase 4 — Backtesting Engine (Enhanced)
+## Phase 4 — Professional Backtesting & Validation Engine ✅ COMPLETE
 
-**Goal**: Rigorous, realistic event-driven backtesting with proper cost modeling.
+**Goal**: Upgrade the research platform to institutional-grade backtesting with realistic cost modeling, professional risk metrics, portfolio simulation, and statistical validation.
 
-### Engine Architecture
-- [ ] Order book simulation
-- [ ] Fill modeling (market, limit, stop orders)
+### Database Tables (8 new)
+- [x] `trade_cost_models` — commission + slippage configuration profiles
+- [x] `position_sizing_profiles` — position sizing strategy profiles (5 methods)
+- [x] `portfolio_backtests` — multi-symbol portfolio backtest runs
+- [x] `equity_curves` — compact equity time-series storage
+- [x] `walk_forward_runs` — walk-forward validation orchestration
+- [x] `monte_carlo_runs` — Monte Carlo simulation results
+- [x] `validation_results` — strategy validation reports with A–F grading
+- [x] `research_snapshots` — named research configuration snapshots
+- [x] `performance_metrics` extended with 10 new Phase 4 columns
 
-### Cost Modeling
-- [ ] Configurable commission models (flat, percentage, per-share)
-- [ ] Slippage models (fixed, variable, volume-based)
-- [ ] Financing cost model for overnight positions
+### Cost & Execution Modeling
+- [x] Configurable commission models: flat, percentage, maker_taker
+- [x] Slippage models: fixed, percentage, volatility-based, volume-based
+- [x] 5 exchange preset profiles (Binance Spot, Binance Futures, Forex ECN, US Stocks, Zero Cost)
+- [x] Per-trade cost tracking (commission + slippage) in backtesting engine
 
-### Execution Simulation
-- [ ] Limit order simulation with queue position
-- [ ] Stop order simulation
-- [ ] Order rejection scenarios
+### Position Sizing Framework
+- [x] Fixed Dollar sizing
+- [x] Fixed Percentage sizing
+- [x] Risk Percentage sizing (ATR-based stop)
+- [x] Volatility-Based sizing (inverse ATR)
+- [x] Kelly Criterion (fractional Kelly with configurable multiplier)
+- [x] Hard cap enforcement (`maxPositionPct`)
+
+### Advanced Performance Metrics
+- [x] Calmar Ratio (CAGR / Max Drawdown)
+- [x] Recovery Factor (Total Return / Max Drawdown)
+- [x] Ulcer Index (RMS of drawdown time-series)
+- [x] MAR Ratio
+- [x] Exposure Time % (fraction of candles in position)
+- [x] Average Trade Duration (days)
+- [x] Ulcer Performance Index (Return / Ulcer Index)
+- [x] Total Commission + Total Slippage tracking
+
+### Portfolio Engine
+- [x] Multi-symbol portfolio simulation (up to 20 symbols)
+- [x] Equal capital allocation across symbols
+- [x] Per-symbol independent backtesting
+- [x] Portfolio equity curve (timestamp-aligned merge)
+- [x] Portfolio-level aggregated metrics
 
 ### Walk-Forward Validation
-- [ ] In-sample / out-of-sample split
-- [ ] Walk-forward optimization framework
-- [ ] Monte Carlo simulation for result robustness
+- [x] Rolling window walk-forward
+- [x] Expanding window walk-forward
+- [x] IS/OOS split with configurable fraction (40%–95%)
+- [x] Per-window Sharpe and return tracking
+- [x] Consistency score (OOS/IS ratio)
+- [x] Automatic pass/fail determination
+
+### Monte Carlo Analysis
+- [x] Trade sequence shuffling simulation (100–10,000 iterations)
+- [x] Seeded PRNG for reproducibility
+- [x] Percentile distribution (p5, p10, p25, p50, p75, p90, p95)
+- [x] Probability of ruin estimation
+
+### Validation Engine
+- [x] Trade count check (< 10 trades = critical)
+- [x] Sample size check (< 30 trades = warning)
+- [x] Excessive drawdown check (> 30% = warning/critical)
+- [x] Negative expectancy check
+- [x] Overfitting detection (IS vs OOS Sharpe ratio)
+- [x] Strategy instability detection (OOS return variance)
+- [x] A–F letter grading system
+- [x] Structured findings with severity levels
+
+### API Endpoints (9 new)
+- [x] `POST /v1/research/portfolio-backtest`
+- [x] `GET /v1/research/portfolio-backtest/:id`
+- [x] `POST /v1/research/walk-forward`
+- [x] `GET /v1/research/walk-forward/:id`
+- [x] `POST /v1/research/monte-carlo`
+- [x] `GET /v1/research/monte-carlo/:id`
+- [x] `GET /v1/research/equity-curve/:id`
+- [x] `POST /v1/research/validation`
+- [x] `GET /v1/research/validation/:id`
+- [x] `GET /v1/research/rankings`
+
+### OpenAPI & Codegen
+- [x] 9 new path entries
+- [x] 22 new component schemas
+- [x] PerformanceMetrics schema extended (10 new fields)
+- [x] Codegen regenerated (Zod + React Query)
 
 ---
 
