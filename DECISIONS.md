@@ -514,3 +514,27 @@ Keeping profiles account-wide simplifies the pre-trade engine: one profile looku
 - Operators who want different risk tolerances for different strategies must create separate paper accounts
 - One profile can be the default (`isDefault: true`); accounts without an explicit profile inherit the default
 - Phase 7 can introduce per-strategy overlays as additive constraints (strategy overlay ≤ account profile limit)
+
+---
+
+## ADR-017: Portfolio Analytics Uses Computed Snapshots, Not Real-Time Aggregation
+
+**Decision**
+All portfolio analytics (performance metrics, health scores, attribution, recommendations) are computed asynchronously by background schedulers and stored as snapshots in the database. API endpoints read pre-computed results; they do not recompute on request by default.
+
+**Context**
+Two viable approaches: (A) compute all metrics on-demand at query time by reading raw trade/position data; (B) compute on a schedule, store results, and serve from the analytics tables. The on-demand approach is simpler to implement but expensive at query time for large portfolios; the snapshot approach adds latency to "freshness" but is O(1) at read time regardless of portfolio size.
+
+**Rationale**
+Phase 7 targets portfolios with months of trade history and multiple concurrent strategies. Computing TWR from raw fills for a 1-year portfolio on every API call would be unacceptably slow. The scheduler approach also allows retroactive recomputation (e.g. after a data correction) without coupling the API to heavy computation. All endpoints expose a `POST .../compute` trigger for on-demand refresh when needed.
+
+**Alternatives Considered**
+- Pure on-demand aggregation — simple but O(N) at read time, not viable for large portfolios
+- Materialized views — database-level, but hard to implement incremental TWR correctly; less flexible than application-layer computation
+- Hybrid: cache in Redis — adds infra complexity not justified for a personal platform
+
+**Consequences**
+- Analytics data is at most 1 schedule-interval stale (health: 1h, performance: 1d, allocation: 15m)
+- Each analytics domain exposes a `POST .../compute` endpoint for immediate refresh
+- `analytics_audit_log` records every computation event, so freshness is always auditable
+- Phase 8+ can switch to streaming/real-time for specific hot metrics without changing the API contract

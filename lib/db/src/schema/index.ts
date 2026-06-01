@@ -47,3 +47,16 @@ export * from "./drawdown-events";
 export * from "./circuit-breaker-events";
 export * from "./kill-switch-events";
 export * from "./risk-audit-log";
+// Phase 7 — Portfolio Intelligence & Analytics Platform
+export * from "./portfolio-analytics";
+export * from "./portfolio-performance";
+export * from "./portfolio-benchmarks";
+export * from "./portfolio-attribution";
+export * from "./strategy-attribution";
+export * from "./asset-attribution";
+export * from "./portfolio-health-scores";
+export * from "./portfolio-recommendations";
+export * from "./allocation-snapshots";
+export * from "./benchmark-snapshots";
+export * from "./performance-periods";
+export * from "./analytics-audit-log";

@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.6.0
-  description: QuantForge API — multi-market data platform with paper trading and institutional risk engine
+  version: 0.7.0
+  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, and portfolio analytics
 servers:
   - url: /api
     description: Base API path
@@ -32,6 +32,8 @@ tags:
     description: Paper trading — virtual accounts, simulated orders, position tracking, and performance analytics
   - name: risk
     description: Risk engine — pre-trade capital protection, drawdown monitoring, circuit breakers, kill switch, and audit log
+  - name: portfolio
+    description: Portfolio intelligence — performance analytics, health scoring, attribution, benchmarks, diversification, recommendations
 paths:
   /healthz:
     get:
@@ -1727,6 +1729,568 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RiskAuditLogListResponse"
+
+  # Phase 7 — Portfolio Intelligence & Analytics Platform
+
+  /v1/portfolio/analytics/{accountId}:
+    get:
+      operationId: getPortfolioAnalytics
+      tags: [portfolio]
+      summary: Get latest analytics snapshot for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Portfolio analytics snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioAnalyticsResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/analytics/{accountId}/compute:
+    post:
+      operationId: computePortfolioAnalytics
+      tags: [portfolio]
+      summary: Trigger on-demand analytics computation for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Computation triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /v1/portfolio/performance/{accountId}:
+    get:
+      operationId: getPortfolioPerformance
+      tags: [portfolio]
+      summary: Get performance metrics (TWR, MWR, Sharpe, Alpha, Beta, etc.)
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioPerformanceResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/performance/{accountId}/periods:
+    get:
+      operationId: getPerformancePeriods
+      tags: [portfolio]
+      summary: Get performance broken down by time periods (1d, 7d, 30d, 90d, 1y)
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Performance periods
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformancePeriodsResponse"
+
+  /v1/portfolio/health/{accountId}:
+    get:
+      operationId: getPortfolioHealth
+      tags: [portfolio]
+      summary: Get latest health score for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Health score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioHealthResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/health/{accountId}/history:
+    get:
+      operationId: getPortfolioHealthHistory
+      tags: [portfolio]
+      summary: Get health score history for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 30
+      responses:
+        "200":
+          description: Health score history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioHealthHistoryResponse"
+
+  /v1/portfolio/attribution/{accountId}:
+    get:
+      operationId: getPortfolioAttribution
+      tags: [portfolio]
+      summary: Get latest return attribution summary for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Attribution summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioAttributionResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/attribution/{accountId}/strategies:
+    get:
+      operationId: getStrategyAttribution
+      tags: [portfolio]
+      summary: Get per-strategy attribution breakdown
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Strategy attribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyAttributionListResponse"
+
+  /v1/portfolio/attribution/{accountId}/assets:
+    get:
+      operationId: getAssetAttribution
+      tags: [portfolio]
+      summary: Get per-asset attribution breakdown
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Asset attribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetAttributionListResponse"
+
+  /v1/portfolio/benchmarks:
+    get:
+      operationId: listBenchmarks
+      tags: [portfolio]
+      summary: List all available benchmarks
+      parameters:
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Benchmark list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkListResponse"
+    post:
+      operationId: createBenchmark
+      tags: [portfolio]
+      summary: Create a custom benchmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBenchmarkRequest"
+      responses:
+        "201":
+          description: Benchmark created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/portfolio/benchmarks/{benchmarkId}:
+    get:
+      operationId: getBenchmark
+      tags: [portfolio]
+      summary: Get benchmark detail
+      parameters:
+        - name: benchmarkId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Benchmark detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/benchmarks/{benchmarkId}/snapshots:
+    get:
+      operationId: getBenchmarkSnapshots
+      tags: [portfolio]
+      summary: Get price/return snapshot history for a benchmark
+      parameters:
+        - name: benchmarkId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 90
+      responses:
+        "200":
+          description: Benchmark snapshots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkSnapshotListResponse"
+
+  /v1/portfolio/benchmarks/{benchmarkId}/refresh:
+    post:
+      operationId: refreshBenchmark
+      tags: [portfolio]
+      summary: Refresh benchmark price data from market candles
+      parameters:
+        - name: benchmarkId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Refresh triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/diversification/{accountId}:
+    get:
+      operationId: getPortfolioDiversification
+      tags: [portfolio]
+      summary: Get diversification analysis (HHI, asset and strategy concentration)
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Diversification analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiversificationResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/allocation/{accountId}:
+    get:
+      operationId: getPortfolioAllocation
+      tags: [portfolio]
+      summary: Get current portfolio allocation breakdown
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Current allocation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/allocation/{accountId}/history:
+    get:
+      operationId: getAllocationHistory
+      tags: [portfolio]
+      summary: Get allocation snapshot history
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 48
+      responses:
+        "200":
+          description: Allocation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationHistoryResponse"
+
+  /v1/portfolio/allocation/{accountId}/drift:
+    get:
+      operationId: getAllocationDrift
+      tags: [portfolio]
+      summary: Get drift from target allocation weights
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Allocation drift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationDriftResponse"
+
+  /v1/portfolio/recommendations/{accountId}:
+    get:
+      operationId: getRecommendations
+      tags: [portfolio]
+      summary: Get active recommendations for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, dismissed, actioned]
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationListResponse"
+
+  /v1/portfolio/recommendations/{accountId}/generate:
+    post:
+      operationId: generateRecommendations
+      tags: [portfolio]
+      summary: Trigger on-demand recommendation generation
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Generation triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /v1/portfolio/recommendations/{accountId}/{recommendationId}/dismiss:
+    patch:
+      operationId: dismissRecommendation
+      tags: [portfolio]
+      summary: Dismiss a recommendation
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recommendationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Recommendation dismissed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/portfolio/rankings:
+    get:
+      operationId: getPortfolioRankings
+      tags: [portfolio]
+      summary: Get portfolio rankings sorted by return, health score, or Sharpe ratio
+      parameters:
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [return, health, sharpe, maxDrawdown]
+            default: return
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Portfolio rankings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioRankingsResponse"
+
+  /v1/portfolio/rankings/leaders:
+    get:
+      operationId: getPortfolioLeaders
+      tags: [portfolio]
+      summary: Get leaderboard view — top performers across key metrics
+      responses:
+        "200":
+          description: Portfolio leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioLeadersResponse"
+
+  /v1/portfolio/audit-log:
+    get:
+      operationId: listAnalyticsAuditLog
+      tags: [portfolio]
+      summary: Retrieve the analytics computation audit log
+      parameters:
+        - name: eventType
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsAuditLogResponse"
+
+  /v1/portfolio/audit-log/{accountId}:
+    get:
+      operationId: listAccountAnalyticsAuditLog
+      tags: [portfolio]
+      summary: Retrieve analytics audit log for a specific account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsAuditLogResponse"
 
 components:
   responses:
@@ -4468,6 +5032,690 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RiskAuditEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    # ─── Phase 7 — Portfolio Analytics Schemas ───────────────────────────────
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    PortfolioAnalyticsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            accountId:
+              type: string
+              format: uuid
+            computedAt:
+              type: string
+              format: date-time
+            totalReturnPct:
+              type: string
+              nullable: true
+            twr:
+              type: string
+              nullable: true
+            mwr:
+              type: string
+              nullable: true
+            sharpeRatio:
+              type: string
+              nullable: true
+            sortinoRatio:
+              type: string
+              nullable: true
+            calmarRatio:
+              type: string
+              nullable: true
+            maxDrawdownPct:
+              type: string
+              nullable: true
+            healthScore:
+              type: string
+              nullable: true
+            diversificationScore:
+              type: string
+              nullable: true
+      required: [data]
+
+    PortfolioPerformanceResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            accountId:
+              type: string
+              format: uuid
+            periodStart:
+              type: string
+              format: date-time
+            periodEnd:
+              type: string
+              format: date-time
+            twr:
+              type: string
+              nullable: true
+            mwr:
+              type: string
+              nullable: true
+            sharpeRatio:
+              type: string
+              nullable: true
+            sortinoRatio:
+              type: string
+              nullable: true
+            calmarRatio:
+              type: string
+              nullable: true
+            alpha:
+              type: string
+              nullable: true
+            beta:
+              type: string
+              nullable: true
+            informationRatio:
+              type: string
+              nullable: true
+            maxDrawdownPct:
+              type: string
+              nullable: true
+            volatilityPct:
+              type: string
+              nullable: true
+            totalReturnPct:
+              type: string
+              nullable: true
+            benchmarkReturnPct:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+      required: [data]
+
+    PerformancePeriod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        period:
+          type: string
+          enum: [1d, 7d, 30d, 90d, 1y, inception]
+        returnPct:
+          type: string
+          nullable: true
+        benchmarkReturnPct:
+          type: string
+          nullable: true
+        alpha:
+          type: string
+          nullable: true
+        computedAt:
+          type: string
+          format: date-time
+      required: [id, accountId, period, computedAt]
+
+    PerformancePeriodsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PerformancePeriod"
+      required: [data]
+
+    PortfolioHealthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            accountId:
+              type: string
+              format: uuid
+            overallScore:
+              type: string
+            diversificationScore:
+              type: string
+              nullable: true
+            performanceScore:
+              type: string
+              nullable: true
+            riskScore:
+              type: string
+              nullable: true
+            activityScore:
+              type: string
+              nullable: true
+            drawdownScore:
+              type: string
+              nullable: true
+            grade:
+              type: string
+              enum: [A, B, C, D, F]
+            computedAt:
+              type: string
+              format: date-time
+      required: [data]
+
+    PortfolioHealthEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        overallScore:
+          type: string
+        diversificationScore:
+          type: string
+          nullable: true
+        performanceScore:
+          type: string
+          nullable: true
+        riskScore:
+          type: string
+          nullable: true
+        activityScore:
+          type: string
+          nullable: true
+        drawdownScore:
+          type: string
+          nullable: true
+        grade:
+          type: string
+          enum: [A, B, C, D, F]
+        computedAt:
+          type: string
+          format: date-time
+
+    PortfolioHealthHistoryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioHealthEntry"
+      required: [data]
+
+    PortfolioAttributionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            accountId:
+              type: string
+              format: uuid
+            periodStart:
+              type: string
+              format: date-time
+            periodEnd:
+              type: string
+              format: date-time
+            totalReturnPct:
+              type: string
+              nullable: true
+            benchmarkReturnPct:
+              type: string
+              nullable: true
+            activeReturnPct:
+              type: string
+              nullable: true
+            allocationEffectPct:
+              type: string
+              nullable: true
+            selectionEffectPct:
+              type: string
+              nullable: true
+            computedAt:
+              type: string
+              format: date-time
+      required: [data]
+
+    StrategyAttributionEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        attributionId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+        weightPct:
+          type: string
+          nullable: true
+        returnPct:
+          type: string
+          nullable: true
+        contributionPct:
+          type: string
+          nullable: true
+        allocationEffectPct:
+          type: string
+          nullable: true
+        selectionEffectPct:
+          type: string
+          nullable: true
+      required: [id, attributionId, strategyName]
+
+    StrategyAttributionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrategyAttributionEntry"
+      required: [data]
+
+    AssetAttributionEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        attributionId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        weightPct:
+          type: string
+          nullable: true
+        returnPct:
+          type: string
+          nullable: true
+        contributionPct:
+          type: string
+          nullable: true
+      required: [id, attributionId, symbol]
+
+    AssetAttributionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetAttributionEntry"
+      required: [data]
+
+    BenchmarkEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        benchmarkType:
+          type: string
+          enum: [btc, eth, sol, custom_basket, equal_weight]
+        symbol:
+          type: string
+          nullable: true
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        latestPrice:
+          type: string
+          nullable: true
+        return30dPct:
+          type: string
+          nullable: true
+        return90dPct:
+          type: string
+          nullable: true
+        volatilityPct:
+          type: string
+          nullable: true
+        maxDrawdownPct:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, benchmarkType, isDefault, isActive, createdAt]
+
+    BenchmarkListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BenchmarkEntry"
+      required: [data]
+
+    BenchmarkResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BenchmarkEntry"
+      required: [data]
+
+    CreateBenchmarkRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        benchmarkType:
+          type: string
+          enum: [btc, eth, sol, custom_basket, equal_weight]
+        symbol:
+          type: string
+      required: [name, benchmarkType]
+
+    BenchmarkSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        benchmarkId:
+          type: string
+          format: uuid
+        snapshotDate:
+          type: string
+          format: date
+        price:
+          type: string
+          nullable: true
+        dailyReturnPct:
+          type: string
+          nullable: true
+        cumulativeReturnPct:
+          type: string
+          nullable: true
+      required: [id, benchmarkId, snapshotDate]
+
+    BenchmarkSnapshotListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BenchmarkSnapshot"
+      required: [data]
+
+    DiversificationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            accountId:
+              type: string
+              format: uuid
+            overallScore:
+              type: number
+            hhi:
+              type: number
+              description: Herfindahl-Hirschman Index (0-1, lower is better)
+            assetConcentration:
+              type: number
+            strategyConcentration:
+              type: number
+            topAssetWeight:
+              type: number
+            topStrategyWeight:
+              type: number
+            assetCount:
+              type: integer
+            strategyCount:
+              type: integer
+            computedAt:
+              type: string
+              format: date-time
+      required: [data]
+
+    AllocationEntry:
+      type: object
+      properties:
+        symbol:
+          type: string
+        strategyName:
+          type: string
+          nullable: true
+        marketValue:
+          type: string
+        weightPct:
+          type: string
+        quantity:
+          type: string
+      required: [symbol, marketValue, weightPct, quantity]
+
+    AllocationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          properties:
+            accountId:
+              type: string
+              format: uuid
+            snapshotAt:
+              type: string
+              format: date-time
+            totalValue:
+              type: string
+            cashPct:
+              type: string
+            allocations:
+              type: array
+              items:
+                $ref: "#/components/schemas/AllocationEntry"
+      required: [data]
+
+    AllocationHistoryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              snapshotAt:
+                type: string
+                format: date-time
+              totalValue:
+                type: string
+              cashPct:
+                type: string
+      required: [data]
+
+    AllocationDriftEntry:
+      type: object
+      properties:
+        symbol:
+          type: string
+        currentWeightPct:
+          type: string
+        targetWeightPct:
+          type: string
+        driftPct:
+          type: string
+        action:
+          type: string
+          enum: [buy, sell, hold]
+      required: [symbol, currentWeightPct, targetWeightPct, driftPct, action]
+
+    AllocationDriftResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationDriftEntry"
+        rebalanceRequired:
+          type: boolean
+      required: [data, rebalanceRequired]
+
+    RecommendationEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [rebalance, reduce_concentration, improve_diversification, drawdown_alert, idle_capital, low_activity]
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, dismissed, actioned]
+        createdAt:
+          type: string
+          format: date-time
+        dismissedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, accountId, type, severity, title, description, status, createdAt]
+
+    RecommendationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecommendationEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    PortfolioRankingEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        accountId:
+          type: string
+          format: uuid
+        totalReturnPct:
+          type: string
+          nullable: true
+        twr:
+          type: string
+          nullable: true
+        sharpeRatio:
+          type: string
+          nullable: true
+        healthScore:
+          type: string
+          nullable: true
+        maxDrawdownPct:
+          type: string
+          nullable: true
+      required: [rank, accountId]
+
+    PortfolioRankingsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioRankingEntry"
+        sortBy:
+          type: string
+        total:
+          type: integer
+      required: [data, sortBy, total]
+
+    PortfolioLeadersResponse:
+      type: object
+      properties:
+        topByReturn:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioRankingEntry"
+        topByHealth:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioRankingEntry"
+        topBySharpe:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioRankingEntry"
+      required: [topByReturn, topByHealth, topBySharpe]
+
+    AnalyticsAuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        eventType:
+          type: string
+        durationMs:
+          type: integer
+          nullable: true
+        success:
+          type: boolean
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, eventType, success, createdAt]
+
+    AnalyticsAuditLogResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsAuditEntry"
         total:
           type: integer
       required: [data, total]

@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-01
-> Current phase: **Phase 5 — Institutional Paper Trading Environment** ✅ COMPLETE
+> Current phase: **Phase 7 — Portfolio Intelligence & Analytics Platform** ✅ COMPLETE
 
 ---
 
@@ -410,20 +410,62 @@
 
 ---
 
-## Phase 7 — Portfolio Analytics
+## Phase 7 — Portfolio Intelligence & Analytics Platform ✅ COMPLETE
 
-**Goal**: Comprehensive performance measurement and attribution.
+**Goal**: Comprehensive performance measurement, attribution, health scoring, and rule-based portfolio recommendations.
 
-### Performance Metrics
-- [ ] Time-weighted return (TWR)
-- [ ] Money-weighted return (MWR / IRR)
-- [ ] Benchmark comparison (alpha, beta, information ratio)
-- [ ] Attribution by strategy, asset class, and time period
+### Database Schema (12 tables)
+- [x] `portfolio_analytics` — per-account analytics snapshots
+- [x] `portfolio_performance` — TWR/MWR/Sharpe/Sortino/Calmar/Alpha/Beta/IR/MaxDD
+- [x] `portfolio_benchmarks` — BTC/ETH/SOL/custom basket benchmark definitions
+- [x] `portfolio_attribution` — top-level attribution per account per period
+- [x] `strategy_attribution` — per-strategy return attribution
+- [x] `asset_attribution` — per-asset return attribution
+- [x] `portfolio_health_scores` — composite health score (0–100) across 5 dimensions
+- [x] `portfolio_recommendations` — rule-based actionable recommendations
+- [x] `allocation_snapshots` — point-in-time portfolio composition snapshots
+- [x] `benchmark_snapshots` — benchmark price/return snapshots
+- [x] `performance_periods` — computed return periods (1d/7d/30d/90d/1y)
+- [x] `analytics_audit_log` — event log for all analytics computations
 
-### Analytics API
-- [ ] `GET /v1/analytics/performance` — performance summary
-- [ ] `GET /v1/analytics/attribution` — return attribution
-- [ ] `GET /v1/analytics/trades` — trade journal
+### Services
+- [x] `performance-engine.ts` — TWR, MWR, Sharpe, Sortino, Calmar, Alpha, Beta, IR, Max Drawdown
+- [x] `benchmark-service.ts` — BTC/ETH/SOL seed + benchmark snapshot refresh
+- [x] `attribution-engine.ts` — Brinson-Hood-Beebower style strategy + asset attribution
+- [x] `health-engine.ts` — composite health score across diversification, performance, risk, activity, drawdown
+- [x] `diversification-engine.ts` — HHI, asset concentration, strategy concentration, correlation-adjusted score
+- [x] `allocation-tracker.ts` — hourly snapshots, drift detection vs. target weights
+- [x] `recommendation-engine.ts` — rule-based: rebalance, concentration, diversification, drawdown, idle capital
+- [x] `analytics-scheduler.ts` — 6 background loops (performance daily, health hourly, attribution daily, allocation 15m, benchmarks 6h, audit cleanup)
+- [x] `analytics-db.ts` — unified DB helper for all analytics read/write
+- [x] `types-analytics.ts` — shared TypeScript types
+
+### API Endpoints (10 route files, 27 endpoints)
+- [x] `GET /api/v1/portfolio/analytics/:accountId` — latest analytics snapshot
+- [x] `POST /api/v1/portfolio/analytics/:accountId/compute` — trigger on-demand computation
+- [x] `GET /api/v1/portfolio/performance/:accountId` — performance metrics (TWR/MWR/ratios)
+- [x] `GET /api/v1/portfolio/performance/:accountId/periods` — performance by time period
+- [x] `GET /api/v1/portfolio/health/:accountId` — latest health score
+- [x] `GET /api/v1/portfolio/health/:accountId/history` — health score history
+- [x] `GET /api/v1/portfolio/attribution/:accountId` — latest attribution
+- [x] `GET /api/v1/portfolio/attribution/:accountId/strategies` — per-strategy attribution
+- [x] `GET /api/v1/portfolio/attribution/:accountId/assets` — per-asset attribution
+- [x] `GET /api/v1/portfolio/benchmarks` — list benchmarks
+- [x] `POST /api/v1/portfolio/benchmarks` — create custom benchmark
+- [x] `GET /api/v1/portfolio/benchmarks/:benchmarkId` — benchmark detail
+- [x] `GET /api/v1/portfolio/benchmarks/:benchmarkId/snapshots` — benchmark price history
+- [x] `POST /api/v1/portfolio/benchmarks/:benchmarkId/refresh` — refresh benchmark prices
+- [x] `GET /api/v1/portfolio/diversification/:accountId` — diversification analysis
+- [x] `GET /api/v1/portfolio/allocation/:accountId` — current allocation
+- [x] `GET /api/v1/portfolio/allocation/:accountId/history` — allocation history
+- [x] `GET /api/v1/portfolio/allocation/:accountId/drift` — drift from target
+- [x] `GET /api/v1/portfolio/recommendations/:accountId` — active recommendations
+- [x] `POST /api/v1/portfolio/recommendations/:accountId/generate` — trigger generation
+- [x] `PATCH /api/v1/portfolio/recommendations/:accountId/:recId/dismiss` — dismiss recommendation
+- [x] `GET /api/v1/portfolio/rankings` — portfolio rankings (by return, health, Sharpe)
+- [x] `GET /api/v1/portfolio/rankings/leaders` — leaderboard view
+- [x] `GET /api/v1/portfolio/audit-log` — analytics audit log
+- [x] `GET /api/v1/portfolio/audit-log/:accountId` — per-account audit log
 
 ---
 

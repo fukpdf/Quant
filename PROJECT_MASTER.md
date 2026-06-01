@@ -92,7 +92,15 @@ Deliverables:
 - [x] Paper trading integration: every BUY/SELL passes through evaluateOrder() before execution
 - [x] OpenAPI spec 0.6.0: `risk` tag + 20 path entries + 30+ schemas; codegen regenerated
 
+**Current Phase:**
+
+**Phase 7 — Portfolio Intelligence & Analytics Platform** ✅ Complete
+- 12 DB tables, performance engine (TWR/MWR/Sharpe/Sortino/Calmar/Alpha/Beta/IR/MaxDD), benchmark service (BTC/ETH/SOL), attribution engine (Brinson-Hood-Beebower), health engine (composite 0–100, A–F grade), diversification engine (HHI), allocation tracker (15m snapshots, drift detection), recommendation engine (rule-based), analytics scheduler (6 loops), 10 route files, 27 endpoints
+
 **Prior Phases Complete:**
+
+**Phase 6 — Institutional Risk Engine & Capital Protection Layer** ✅ Complete
+- 8 DB tables, pre-trade risk engine (5 checks), position sizing enforcement, drawdown monitoring, circuit breakers, kill switch (in-memory), correlation matrix, risk scheduler (5 loops), risk API (25 endpoints)
 
 **Phase 5 — Institutional Paper Trading Environment** ✅ Complete
 - 10 DB tables, execution engine (slippage/commission/jitter), position manager, portfolio tracker, performance service, alert manager, snapshot service, signal engine, paper scheduler (4 loops), paper API (15 endpoints)
@@ -103,9 +111,9 @@ Deliverables:
 **Phase 3 — Research Laboratory** ✅ Complete
 - Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-**Next Phase: Phase 7 — Portfolio Analytics**
+**Next Phase: Phase 8 — Execution Engine**
 
-Goal: Comprehensive performance measurement and attribution — time-weighted return, benchmark comparison, return attribution by strategy/asset/period, and trade journal analytics.
+Goal: Live broker connectivity, order management, fill confirmation, reconciliation, and kill switch integration.
 
 ---
 

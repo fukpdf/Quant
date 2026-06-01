@@ -23,6 +23,34 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.7.0] — 2026-06-01
+
+### Phase 7 — Portfolio Intelligence & Analytics Platform
+
+#### Added
+- **12 new database tables**: `portfolio_analytics`, `portfolio_performance`, `portfolio_benchmarks`, `portfolio_attribution`, `strategy_attribution`, `asset_attribution`, `portfolio_health_scores`, `portfolio_recommendations`, `allocation_snapshots`, `benchmark_snapshots`, `performance_periods`, `analytics_audit_log`
+- **Performance Engine** (`performance-engine.ts`): Time-Weighted Return (TWR), Money-Weighted Return (MWR/IRR), Sharpe/Sortino/Calmar ratios, Alpha, Beta, Information Ratio, Max Drawdown
+- **Benchmark Service** (`benchmark-service.ts`): BTC, ETH, SOL default benchmarks with seeding; benchmark snapshot refresh
+- **Attribution Engine** (`attribution-engine.ts`): Attribution by strategy and asset; Brinson-Hood-Beebower style allocation/selection effects
+- **Health Engine** (`health-engine.ts`): Composite health score (0–100) across 5 dimensions: diversification, performance, risk, activity, drawdown
+- **Diversification Engine** (`diversification-engine.ts`): Herfindahl-Hirschman Index (HHI), asset concentration, strategy concentration, correlation-adjusted score
+- **Allocation Tracker** (`allocation-tracker.ts`): Hourly allocation snapshots; allocation drift detection vs. target weights
+- **Recommendation Engine** (`recommendation-engine.ts`): Rule-based recommendations (rebalance, reduce concentration, improve diversification, drawdown alerts, idle capital)
+- **Analytics Scheduler** (`analytics-scheduler.ts`): 6 background loops (performance daily, health hourly, attribution daily, allocation 15m, benchmarks 6h, audit log cleanup)
+- **10 new route files**: `portfolio-analytics`, `portfolio-performance`, `portfolio-health`, `portfolio-attribution`, `portfolio-benchmarks`, `portfolio-diversification`, `portfolio-allocation`, `portfolio-recommendations`, `portfolio-rankings`, `portfolio-audit`
+- **27 new API endpoints** across all portfolio analytics domains
+- Startup seeding for default benchmarks; analytics scheduler auto-starts on server boot
+- `analytics_audit_log` records all analytics events for auditability
+- `analytics-db.ts`: unified DB helper for all analytics read/write operations
+- `types-analytics.ts`: shared TypeScript types across all Phase 7 services
+
+#### Changed
+- `lib/api-spec/openapi.yaml` bumped to `0.7.0`
+- `artifacts/api-server/src/routes/v1/index.ts` extended with 10 Phase 7 router mounts
+- `artifacts/api-server/src/index.ts` extended with Phase 7 startup hooks
+
+---
+
 ## [0.6.0] — 2026-06-01
 
 ### Phase 6 — Institutional Risk Engine & Capital Protection Layer

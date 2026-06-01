@@ -41,6 +41,17 @@ import riskStrategiesRouter from "./risk-strategies";
 import riskCircuitBreakersRouter from "./risk-circuit-breakers";
 import riskKillSwitchRouter from "./risk-kill-switch";
 import riskAuditRouter from "./risk-audit";
+// Phase 7 — Portfolio Intelligence & Analytics Platform
+import portfolioAnalyticsRouter from "./portfolio-analytics";
+import portfolioPerformanceRouter from "./portfolio-performance";
+import portfolioHealthRouter from "./portfolio-health";
+import portfolioAttributionRouter from "./portfolio-attribution";
+import portfolioBenchmarksRouter from "./portfolio-benchmarks";
+import portfolioDiversificationRouter from "./portfolio-diversification";
+import portfolioAllocationRouter from "./portfolio-allocation";
+import portfolioRecommendationsRouter from "./portfolio-recommendations";
+import portfolioRankingsRouter from "./portfolio-rankings";
+import portfolioAuditRouter from "./portfolio-audit";
 
 const v1Router: IRouter = Router();
 
@@ -93,5 +104,17 @@ v1Router.use(riskStrategiesRouter);
 v1Router.use(riskCircuitBreakersRouter);
 v1Router.use(riskKillSwitchRouter);
 v1Router.use(riskAuditRouter);
+
+// Phase 7 endpoints
+v1Router.use(portfolioAnalyticsRouter);
+v1Router.use(portfolioPerformanceRouter);
+v1Router.use(portfolioHealthRouter);
+v1Router.use(portfolioAttributionRouter);
+v1Router.use(portfolioBenchmarksRouter);
+v1Router.use(portfolioDiversificationRouter);
+v1Router.use(portfolioAllocationRouter);
+v1Router.use(portfolioRecommendationsRouter);
+v1Router.use(portfolioRankingsRouter);
+v1Router.use(portfolioAuditRouter);
 
 export default v1Router;

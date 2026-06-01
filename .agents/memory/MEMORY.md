@@ -4,3 +4,4 @@
 - [Backtest fill model](backtest-fill-model.md) — signals at candle N fill at candle N+1 open; prevents look-ahead bias by construction; deferred to Phase 4 for VWAP/slippage upgrades.
 - [Strategy framework convention](strategy-framework-convention.md) — strategies implement IStrategy, extend BaseStrategy, register in registry.ts; no infrastructure changes needed to add a strategy.
 - [Zod in api-server](zod-explicit-dep.md) — zod must be an explicit dependency in api-server package.json; transitive resolution via @workspace/db is not reliable.
+- [Orval codegen barrel fix](orval-codegen-barrel.md) — orval regenerates lib/api-zod/src/index.ts on every codegen run; post-process it with printf to keep only the api export.

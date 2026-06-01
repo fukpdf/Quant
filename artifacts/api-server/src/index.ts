@@ -7,6 +7,8 @@ import { seedStrategyDefinitions } from "./services/research-db";
 import { startPaperScheduler } from "./services/paper-scheduler";
 import { seedDefaultRiskProfiles } from "./services/risk-profile-service";
 import { startRiskScheduler } from "./services/risk-scheduler";
+import { seedDefaultBenchmarks } from "./services/benchmark-service";
+import { startAnalyticsScheduler } from "./services/analytics-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -66,4 +68,14 @@ app.listen(port, async (err) => {
 
   // Start risk engine scheduler (Phase 6 — snapshots, correlation, scoring, drawdown monitor)
   startRiskScheduler();
+
+  // Seed default benchmarks (Phase 7 — BTC, ETH, SOL)
+  try {
+    await seedDefaultBenchmarks();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed default benchmarks — continuing");
+  }
+
+  // Start analytics scheduler (Phase 7 — performance, health, attribution, allocation, recommendations)
+  startAnalyticsScheduler();
 });
