@@ -439,3 +439,78 @@ For read-heavy research use (displaying a chart, computing statistics), bulk ret
 
 **Review Trigger**
 Equity curves grow beyond ~100,000 points per run (multi-year tick-level backtests), at which point partitioned row storage or object storage will be evaluated.
+
+---
+
+## ADR-014: Kill Switch State is In-Memory, Not Database-Authoritative
+
+**Decision**
+The Phase 6 kill switch service stores its authoritative state in a Node.js in-memory structure (Sets and booleans) within the API server process. The database (`kill_switch_events`) is an immutable audit trail, not the source of truth for real-time trading decisions.
+
+**Context**
+A kill switch must halt trading with zero latency. If the kill switch check required a database round-trip on every pre-trade evaluation, the risk engine would be subject to DB latency, connection pool exhaustion, and network partitions — precisely the failure modes that most require a kill switch.
+
+**Rationale**
+In-memory checks are nanosecond-latency vs. millisecond-latency for DB. The pre-trade path evaluates 13 checks synchronously; adding a DB round-trip would multiply latency. The trade-off is that state is lost on server restart — acceptable because: (1) a restart is an operational event that should be followed by a manual review before resuming trading, (2) the audit log allows reconstruction of state, (3) future phases can add a startup rehydration step from the DB if needed.
+
+**Alternatives Considered**
+- DB-authoritative state (SELECT on every check) — correct but adds latency and availability risk
+- Redis/cache — adds infrastructure dependency for a single-process server; revisit in Phase 8 when multi-process is needed
+- Re-hydrate from DB on startup — valid addition in Phase 7+ but not required for correctness in Phase 6
+
+**Consequences**
+- Kill switch checks are O(1) with no I/O
+- Kill switch state is lost on process restart (server restart implicitly clears all halts)
+- Every activate/resume writes an immutable `kill_switch_events` row for auditing
+- `isSchedulerPaused()` must be checked at the top of every risk scheduler loop
+
+**Review Trigger**
+When the API server moves to a multi-process deployment (Phase 8+), kill switch state must be migrated to Redis or a DB-backed shared store.
+
+---
+
+## ADR-015: Risk Engine Checks are Sequential, Not Parallel
+
+**Decision**
+The 13 pre-trade risk checks in `risk-engine.ts` execute in a fixed priority order, halting at the first failure and returning immediately. Checks are not evaluated in parallel.
+
+**Context**
+Pre-trade validation must return a definitive decision before order execution. The checks have an implicit priority hierarchy: a global trading halt must short-circuit before any account-level check; account checks must complete before position-size checks; etc.
+
+**Rationale**
+Sequential fail-fast evaluation: (1) preserves check priority (a global halt takes precedence over a position-size warning), (2) avoids partial results where two checks both fail but only one is surfaced to the operator, (3) avoids running expensive DB queries (position count, drawdown calculation) when an earlier cheap check (kill switch, circuit breaker) would have rejected the order anyway, (4) produces a single, unambiguous reject reason rather than a list of violations that could be confusing.
+
+**Alternatives Considered**
+- Parallel evaluation + aggregate — surfaces all failures simultaneously but loses priority ordering and may run expensive queries unnecessarily
+- Weighted scoring system — more nuanced but harder to reason about and audit; "approved with score 0.4" is less operationally clear than "rejected: drawdown limit exceeded"
+
+**Consequences**
+- A rejected order always has exactly one primary reason (the first check that failed)
+- Later checks may also be violated but are not surfaced; operators must resolve violations incrementally
+- Check ordering is a contract — changes to the sequence must be documented in DECISIONS.md
+- All decisions (approved or rejected) are stored in `risk_decisions` for post-trade analysis
+
+**Review Trigger**
+When operators request a "full violation report" for a single order, parallel evaluation with aggregated results will be considered.
+
+---
+
+## ADR-016: Risk Profiles are Profile-Wide Defaults, Not Per-Strategy Overrides
+
+**Decision**
+A risk profile defines capital limits for an entire account. There is no mechanism in Phase 6 to apply different limits to different strategies on the same account.
+
+**Context**
+The profile design question was whether limits should be per-account, per-strategy, or per-assignment. Per-strategy limits would allow a research strategy to have relaxed limits while a production strategy has strict ones, on the same account.
+
+**Rationale**
+Keeping profiles account-wide simplifies the pre-trade engine: one profile lookup per account, one set of limits per evaluation. It also enforces a natural mental model: if you want different risk tolerances, use different accounts. This is the institutional standard — desks run separate accounts for different risk mandates, not strategy-level overrides within one account. Per-strategy limits add complexity without solving a problem that can't be addressed by account segregation.
+
+**Alternatives Considered**
+- Per-strategy overrides within an account — more flexible but adds a merge/precedence problem (does the strategy override the account profile or add to it?)
+- Per-assignment limits — even more granular but makes the data model and UI substantially more complex
+
+**Consequences**
+- Operators who want different risk tolerances for different strategies must create separate paper accounts
+- One profile can be the default (`isDefault: true`); accounts without an explicit profile inherit the default
+- Phase 7 can introduce per-strategy overlays as additive constraints (strategy overlay ≤ account profile limit)

@@ -74,24 +74,28 @@ Every stage is audited, versioned, and documented.
 
 ## 5. Current Phase
 
-**Phase 5 — Institutional Paper Trading Environment** ✅ Complete
+**Phase 6 — Institutional Risk Engine & Capital Protection Layer** ✅ Complete
 
-Goal: Real-time strategy execution simulation against live market data with automated signal routing, virtual account management, realistic fill modeling, and institutional-grade performance analytics.
+Goal: Enforce position sizing, exposure limits, and drawdown circuit breakers before any order is executed. The central pre-trade gatekeeper of the platform.
 
 Deliverables:
-- [x] 10 new DB tables: paper_accounts, paper_portfolios, paper_positions, paper_orders, paper_fills, paper_executions, paper_trade_history, paper_daily_snapshots, paper_strategy_assignments, paper_alerts
-- [x] Execution engine: percentage slippage, commission, latency jitter (10–100ms)
-- [x] Position manager: open/close with P&L computation and atomic balance update
-- [x] Portfolio tracker: mark-to-market, drawdown tracking, allocation %
-- [x] Performance service: daily/weekly/monthly/YTD returns, Sharpe, win rate, profit factor
-- [x] Alert manager: drawdown, concentration, execution failure, missed data alerts
-- [x] Snapshot service: EOD equity capture for time-series analytics
-- [x] Signal engine: strategy → candles → signal → order → fill → position → portfolio refresh
-- [x] Scheduler: four independent polling loops (signals 5min, MTM 2min, snapshots 6h, alerts 10min)
-- [x] Paper trading API (15 endpoints across 9 route files)
-- [x] OpenAPI spec updated with `paper` tag + 30 new schemas; codegen regenerated
+- [x] 12 new DB tables: risk_profiles, risk_rules, risk_decisions, risk_events, risk_violations, portfolio_risk_snapshots, strategy_risk_scores, correlation_matrices, drawdown_events, circuit_breaker_events, kill_switch_events, risk_audit_log
+- [x] Pre-trade risk engine: 13 sequential checks (kill switch → circuit breakers → account → position size → exposure → daily loss → drawdown → concentration → open positions → strategy confidence → data freshness)
+- [x] Risk profile system: 4 seeded default profiles (Conservative/Balanced/Aggressive/Research) + custom via API
+- [x] Kill switch: in-memory scoped halt (trading/account/strategy/portfolio/scheduler) with immutable audit trail
+- [x] Circuit breakers: 6 types (loss streak, drawdown, execution failure, volatility, data failure, market closure)
+- [x] Correlation engine: Pearson matrix computation from daily OHLCV with configurable rolling window
+- [x] Strategy risk scorer: 9-component scoring (win rate, drawdown, Sharpe, consistency, frequency, exposure, overall, health, confidence)
+- [x] Drawdown monitor: multi-horizon monitoring (daily/weekly/account) with warning/restriction/halt tiers
+- [x] Risk scheduler: 5 independent polling loops (snapshots 10min, correlation 6h, scoring 1h, exposure 5min, circuit breakers 2min)
+- [x] Risk API: 20 endpoints (profiles CRUD, decisions, events, violations, snapshots, correlations, strategies, circuit breakers, kill switch, audit log)
+- [x] Paper trading integration: every BUY/SELL passes through evaluateOrder() before execution
+- [x] OpenAPI spec 0.6.0: `risk` tag + 20 path entries + 30+ schemas; codegen regenerated
 
 **Prior Phases Complete:**
+
+**Phase 5 — Institutional Paper Trading Environment** ✅ Complete
+- 10 DB tables, execution engine (slippage/commission/jitter), position manager, portfolio tracker, performance service, alert manager, snapshot service, signal engine, paper scheduler (4 loops), paper API (15 endpoints)
 
 **Phase 4 — Professional Backtesting & Validation Engine** ✅ Complete
 - Cost modeling (commission + slippage, 5 exchange presets), position sizing (5 methods including Kelly), advanced metrics (Calmar, Ulcer, MAR, UPI), portfolio engine, walk-forward, Monte Carlo, validation (A–F grading), equity curves, rankings
@@ -99,9 +103,9 @@ Deliverables:
 **Phase 3 — Research Laboratory** ✅ Complete
 - Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-**Next Phase: Phase 6 — Risk Engine**
+**Next Phase: Phase 7 — Portfolio Analytics**
 
-Goal: Enforce position sizing, exposure limits, and drawdown circuit breakers before any order is executed.
+Goal: Comprehensive performance measurement and attribution — time-weighted return, benchmark comparison, return attribution by strategy/asset/period, and trade journal analytics.
 
 ---
 

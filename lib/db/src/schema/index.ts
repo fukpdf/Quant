@@ -34,3 +34,16 @@ export * from "./paper-trade-history";
 export * from "./paper-daily-snapshots";
 export * from "./paper-strategy-assignments";
 export * from "./paper-alerts";
+// Phase 6 — Institutional Risk Engine & Capital Protection Layer
+export * from "./risk-profiles";
+export * from "./risk-rules";
+export * from "./risk-decisions";
+export * from "./risk-events";
+export * from "./risk-violations";
+export * from "./portfolio-risk-snapshots";
+export * from "./strategy-risk-scores";
+export * from "./correlation-matrices";
+export * from "./drawdown-events";
+export * from "./circuit-breaker-events";
+export * from "./kill-switch-events";
+export * from "./risk-audit-log";

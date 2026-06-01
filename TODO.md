@@ -306,19 +306,107 @@
 
 ---
 
-## Phase 6 — Risk Engine
+## Phase 6 — Institutional Risk Engine & Capital Protection Layer ✅ COMPLETE
 
-**Goal**: Enforce position sizing, exposure limits, and drawdown controls before any order is executed.
+**Goal**: Enforce position sizing, exposure limits, and drawdown circuit breakers before any order is executed. The central risk authority of the platform.
 
-### Pre-Trade Risk Checks
-- [ ] Maximum position size (% of portfolio)
-- [ ] Maximum single-asset exposure
-- [ ] Drawdown circuit breaker
+### Database Tables (12 new)
+- [x] `risk_profiles` — named capital protection profiles (Conservative/Balanced/Aggressive/Research/Custom)
+- [x] `risk_rules` — individual risk rules attached to profiles with priority ordering
+- [x] `risk_decisions` — immutable pre-trade decision log (approved/rejected/requires_review)
+- [x] `risk_events` — operational risk events with severity (info/warning/critical)
+- [x] `risk_violations` — confirmed rule breach records
+- [x] `portfolio_risk_snapshots` — periodic portfolio risk state (exposure, concentration, drawdown, health score)
+- [x] `strategy_risk_scores` — computed strategy risk/health/confidence scores from backtest history
+- [x] `correlation_matrices` — Pearson correlation matrix snapshots (NxN asset pairs)
+- [x] `drawdown_events` — drawdown threshold breach events with action tracking
+- [x] `circuit_breaker_events` — circuit breaker state transitions with recovery tracking
+- [x] `kill_switch_events` — kill switch activations and resumptions (immutable audit trail)
+- [x] `risk_audit_log` — immutable audit log for all risk system actions
 
-### Risk Engine API
-- [ ] `POST /v1/risk/check` — pre-trade risk validation
-- [ ] `GET /v1/risk/exposure` — current exposure report
-- [ ] `GET /v1/risk/limits` — current risk limits
+### Core Services (9 new)
+- [x] `risk-db.ts` — full CRUD data access layer for all 12 risk tables
+- [x] `risk-profile-service.ts` — profile management and seeding of 4 default profiles
+- [x] `risk-engine.ts` — pre-trade gatekeeper with 13 sequential risk checks
+- [x] `circuit-breaker-service.ts` — 6 circuit breaker types with in-memory state + DB persistence
+- [x] `kill-switch-service.ts` — in-memory kill switch with scope-based control (trading/account/strategy/portfolio/scheduler)
+- [x] `correlation-engine.ts` — Pearson correlation matrix computation from daily OHLCV data
+- [x] `strategy-risk-scorer.ts` — 9-component strategy risk scoring from backtest history
+- [x] `drawdown-monitor.ts` — multi-horizon drawdown monitoring (daily/weekly/account) with tiered actions
+- [x] `risk-scheduler.ts` — 5 independent risk monitoring loops (snapshots, correlation, scoring, exposure, circuit breakers)
+
+### Pre-Trade Risk Engine (13 checks in order)
+- [x] Global trading kill switch check
+- [x] Account-level kill switch check
+- [x] Strategy-level kill switch check
+- [x] Circuit breaker state check
+- [x] Account status and existence check
+- [x] Position size limit (% of equity)
+- [x] Portfolio exposure limit (total exposure vs equity)
+- [x] Daily loss limit (P&L vs threshold)
+- [x] Account drawdown limit (peak-to-current)
+- [x] Concentration limit (single asset % of portfolio)
+- [x] Max open positions limit
+- [x] Strategy confidence score gate
+- [x] Data freshness check (candle age in minutes)
+
+### Risk Profiles (4 defaults seeded on startup)
+- [x] Conservative (5% position, 50% exposure, 1% daily loss, 10% max drawdown)
+- [x] Balanced (10% position, 75% exposure, 2% daily loss, 15% max drawdown) — default
+- [x] Aggressive (20% position, 95% exposure, 5% daily loss, 30% max drawdown)
+- [x] Research (25% position, 100% exposure, 10% daily loss, 50% max drawdown)
+
+### Circuit Breakers (6 types)
+- [x] `loss_streak` — N consecutive losing trades (threshold: 5)
+- [x] `drawdown` — account drawdown exceeds threshold (threshold: 15%)
+- [x] `execution_failure` — N consecutive fill failures (threshold: 3)
+- [x] `volatility` — market volatility exceeds threshold (placeholder)
+- [x] `data_failure` — data staleness / missing candles
+- [x] `market_closure` — market detected as closed (placeholder)
+
+### Kill Switch System
+- [x] Global trading halt (`trading` scope)
+- [x] Scheduler pause (`scheduler` scope)
+- [x] Per-account halt (`account` scope)
+- [x] Per-strategy halt (`strategy` scope)
+- [x] Portfolio-level halt (`portfolio` scope)
+- [x] Full audit trail in `kill_switch_events` table
+- [x] Immediate in-memory effect (no DB round-trip on order checks)
+
+### API Endpoints (14 new)
+- [x] `GET /v1/risk/profiles` — list risk profiles
+- [x] `POST /v1/risk/profiles` — create risk profile
+- [x] `GET /v1/risk/profiles/:id` — get profile by ID
+- [x] `PATCH /v1/risk/profiles/:id` — update profile
+- [x] `GET /v1/risk/decisions` — list pre-trade decisions (filterable by account, decision type, strategy)
+- [x] `GET /v1/risk/events` — list risk events (filterable by severity, resolved status)
+- [x] `GET /v1/risk/violations` — list rule violations
+- [x] `GET /v1/risk/snapshots` — portfolio risk snapshots per account
+- [x] `GET /v1/risk/drawdown-events` — drawdown threshold breach events
+- [x] `GET /v1/risk/correlations` — list correlation matrices
+- [x] `POST /v1/risk/correlations/compute` — trigger correlation computation
+- [x] `GET /v1/risk/strategies` — list strategy risk scores
+- [x] `GET /v1/risk/strategies/:name` — get strategy risk score
+- [x] `POST /v1/risk/strategies/score` — trigger strategy risk scoring
+- [x] `GET /v1/risk/circuit-breakers` — circuit breaker states + recent events
+- [x] `POST /v1/risk/circuit-breakers/reset` — manually reset a triggered breaker
+- [x] `GET /v1/risk/kill-switch` — current kill switch status
+- [x] `POST /v1/risk/kill-switch` — activate kill switch
+- [x] `POST /v1/risk/resume` — resume (deactivate) kill switch
+- [x] `GET /v1/risk/audit-log` — immutable risk audit log
+
+### Paper Trading Integration
+- [x] `paper-signal-engine.ts` — BUY and SELL orders both pass through `evaluateOrder()` before execution
+- [x] Rejected orders are marked with `status: "rejected"` and `rejectReason` prefixed with "Risk engine: ..."
+- [x] Orders that pass risk checks proceed to execution engine as before
+
+### OpenAPI & Codegen
+- [x] `risk` tag added to spec
+- [x] Version bumped to 0.6.0
+- [x] 20 path entries added
+- [x] 30+ component schemas added
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+- [x] DB schema pushed (`pnpm --filter @workspace/db run push`)
 
 ---
 

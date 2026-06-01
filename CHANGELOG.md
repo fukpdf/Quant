@@ -23,6 +23,38 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.6.0] — 2026-06-01
+
+### Phase 6 — Institutional Risk Engine & Capital Protection Layer
+
+#### Added
+- **12 new DB tables**: `risk_profiles`, `risk_rules`, `risk_decisions`, `risk_events`, `risk_violations`, `portfolio_risk_snapshots`, `strategy_risk_scores`, `correlation_matrices`, `drawdown_events`, `circuit_breaker_events`, `kill_switch_events`, `risk_audit_log`
+- **Risk Profile System**: 4 seeded default profiles (Conservative/Balanced/Aggressive/Research) with configurable limits per profile; custom profiles via API; `isDefault` flag for profile resolution
+- **Pre-Trade Risk Engine** (`risk-engine.ts`): 13-check sequential gatekeeper; returns `{decision, riskScore, triggeredRules, reason}`; every decision stored in `risk_decisions`; violations stored in `risk_violations`
+- **Kill Switch Service** (`kill-switch-service.ts`): in-memory state with 5 scopes (trading/account/strategy/portfolio/scheduler); activate/resume operations; full audit trail in `kill_switch_events`
+- **Circuit Breaker Service** (`circuit-breaker-service.ts`): 6 breaker types; in-memory state machine with DB persistence; streak tracking for loss and execution failures
+- **Correlation Engine** (`correlation-engine.ts`): Pearson correlation matrices from daily OHLCV closes; configurable rolling window (default 30 days); correlation risk score (mean absolute off-diagonal coefficient)
+- **Strategy Risk Scorer** (`strategy-risk-scorer.ts`): 9-component scoring (win rate, drawdown, Sharpe, consistency, frequency, exposure, overall, health, confidence) from backtest history
+- **Drawdown Monitor** (`drawdown-monitor.ts`): daily/weekly/account drawdown monitoring with warning/restriction/halt tiers; automatic deduplication of open events
+- **Risk Scheduler** (`risk-scheduler.ts`): 5 independent polling loops — risk snapshots (10 min), correlation (6 h), strategy scoring (1 h), exposure/drawdown (5 min), circuit breaker monitor (2 min)
+- **Risk DB Layer** (`risk-db.ts`): full CRUD and query layer for all 12 risk tables
+- **14 new risk API route handlers** across 8 route files: profiles CRUD, decisions list, events/violations/snapshots, correlations, strategies, circuit breakers, kill switch, audit log
+- **20 new OpenAPI path entries** under `/v1/risk/` with full schema definitions
+- **30+ new OpenAPI component schemas** for all risk domain objects
+- **Paper trading integration**: every BUY and SELL signal in `paper-signal-engine.ts` now passes through `evaluateOrder()` before execution; rejected orders are persisted with reason but never reach the execution engine
+- Startup seeding of 4 default risk profiles (idempotent)
+- Risk scheduler started alongside paper scheduler on server boot
+
+#### Changed
+- `paper-signal-engine.ts`: BUY and SELL flows now call Phase 6 `evaluateOrder()` pre-trade check
+- `index.ts`: added `seedDefaultRiskProfiles()` and `startRiskScheduler()` to startup sequence
+- `routes/v1/index.ts`: all 8 Phase 6 route files mounted under v1 router
+- OpenAPI spec version bumped from 0.5.0 → 0.6.0
+- API description updated to mention risk engine
+- `lib/db/src/schema/index.ts`: Phase 6 schema exports added
+
+---
+
 ## [0.5.0] — 2026-06-01
 
 ### Phase 5 — Institutional Paper Trading Environment

@@ -5,6 +5,8 @@ import { seedProviders } from "./services/providers-db";
 import { startScheduler } from "./ingestion/scheduler";
 import { seedStrategyDefinitions } from "./services/research-db";
 import { startPaperScheduler } from "./services/paper-scheduler";
+import { seedDefaultRiskProfiles } from "./services/risk-profile-service";
+import { startRiskScheduler } from "./services/risk-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -54,4 +56,14 @@ app.listen(port, async (err) => {
 
   // Start paper trading scheduler (Phase 5 — signal processing, MTM, snapshots, alerts)
   startPaperScheduler();
+
+  // Seed default risk profiles (Phase 6 — idempotent)
+  try {
+    await seedDefaultRiskProfiles();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed risk profiles — continuing");
+  }
+
+  // Start risk engine scheduler (Phase 6 — snapshots, correlation, scoring, drawdown monitor)
+  startRiskScheduler();
 });

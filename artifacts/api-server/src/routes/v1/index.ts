@@ -32,6 +32,15 @@ import paperPortfolioRouter from "./paper-portfolio";
 import paperPerformanceRouter from "./paper-performance";
 import paperAlertsRouter from "./paper-alerts";
 import paperSnapshotsRouter from "./paper-snapshots";
+// Phase 6 — Institutional Risk Engine & Capital Protection Layer
+import riskProfilesRouter from "./risk-profiles";
+import riskDecisionsRouter from "./risk-decisions";
+import riskEventsRouter from "./risk-events";
+import riskCorrelationsRouter from "./risk-correlations";
+import riskStrategiesRouter from "./risk-strategies";
+import riskCircuitBreakersRouter from "./risk-circuit-breakers";
+import riskKillSwitchRouter from "./risk-kill-switch";
+import riskAuditRouter from "./risk-audit";
 
 const v1Router: IRouter = Router();
 
@@ -74,5 +83,15 @@ v1Router.use(paperPortfolioRouter);
 v1Router.use(paperPerformanceRouter);
 v1Router.use(paperAlertsRouter);
 v1Router.use(paperSnapshotsRouter);
+
+// Phase 6 endpoints
+v1Router.use(riskProfilesRouter);
+v1Router.use(riskDecisionsRouter);
+v1Router.use(riskEventsRouter);
+v1Router.use(riskCorrelationsRouter);
+v1Router.use(riskStrategiesRouter);
+v1Router.use(riskCircuitBreakersRouter);
+v1Router.use(riskKillSwitchRouter);
+v1Router.use(riskAuditRouter);
 
 export default v1Router;

@@ -18,6 +18,7 @@ import {
 import { refreshPortfolio } from "./paper-portfolio-tracker";
 import { markToMarket } from "./paper-position-manager";
 import { alertStrategyFailure, alertMissedData, alertExecutionFailure } from "./paper-alert-manager";
+import { evaluateOrder as evaluateRiskOrder } from "./risk-engine";
 import type { PaperStrategyAssignment } from "@workspace/db";
 
 /**
@@ -171,6 +172,38 @@ export async function processAssignment(assignment: PaperStrategyAssignment): Pr
       return;
     }
 
+    // ------------------------------------------------------------------
+    // Phase 6 — Pre-trade risk engine check (MANDATORY)
+    // No order may reach execution without risk approval.
+    // ------------------------------------------------------------------
+    const latestCandleTs = latestCandle.timestamp instanceof Date
+      ? latestCandle.timestamp
+      : new Date(latestCandle.timestamp);
+    const dataAgeMinutes = (Date.now() - latestCandleTs.getTime()) / 60_000;
+
+    const riskDecision = await evaluateRiskOrder({
+      accountId,
+      strategyName,
+      strategyAssignmentId: assignmentId,
+      symbol,
+      side: "buy",
+      quantity,
+      notional: tradeNotional,
+      dataAgeMinutes,
+    });
+
+    if (riskDecision.decision === "rejected") {
+      await updatePaperOrder(order.id, {
+        status: "rejected",
+        rejectReason: `Risk engine: ${riskDecision.reason}`,
+      });
+      logger.info(
+        { accountId, strategyName, symbol, reason: riskDecision.reason },
+        "Phase 6 risk engine rejected BUY order — not executing",
+      );
+      return;
+    }
+
     // Execute the order
     const execResult = executeOrder({
       side: "buy",
@@ -279,6 +312,38 @@ export async function processAssignment(assignment: PaperStrategyAssignment): Pr
     });
 
     const qty = parseFloat(existingPosition.quantity);
+    const sellNotional = qty * marketPrice;
+
+    // ------------------------------------------------------------------
+    // Phase 6 — Pre-trade risk engine check for SELL (MANDATORY)
+    // ------------------------------------------------------------------
+    const latestCandleTsSell = latestCandle.timestamp instanceof Date
+      ? latestCandle.timestamp
+      : new Date(latestCandle.timestamp);
+    const dataAgeMinutesSell = (Date.now() - latestCandleTsSell.getTime()) / 60_000;
+
+    const riskDecisionSell = await evaluateRiskOrder({
+      accountId,
+      strategyName,
+      strategyAssignmentId: assignmentId,
+      symbol,
+      side: "sell",
+      quantity: qty,
+      notional: sellNotional,
+      dataAgeMinutes: dataAgeMinutesSell,
+    });
+
+    if (riskDecisionSell.decision === "rejected") {
+      await updatePaperOrder(order.id, {
+        status: "rejected",
+        rejectReason: `Risk engine: ${riskDecisionSell.reason}`,
+      });
+      logger.info(
+        { accountId, strategyName, symbol, reason: riskDecisionSell.reason },
+        "Phase 6 risk engine rejected SELL order — not executing",
+      );
+      return;
+    }
 
     const execResult = executeOrder({
       side: "sell",

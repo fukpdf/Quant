@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.5.0
-  description: QuantForge API — multi-market data platform with paper trading
+  version: 0.6.0
+  description: QuantForge API — multi-market data platform with paper trading and institutional risk engine
 servers:
   - url: /api
     description: Base API path
@@ -30,6 +30,8 @@ tags:
     description: Quantitative research laboratory — strategy definitions, backtesting, and performance analysis
   - name: paper
     description: Paper trading — virtual accounts, simulated orders, position tracking, and performance analytics
+  - name: risk
+    description: Risk engine — pre-trade capital protection, drawdown monitoring, circuit breakers, kill switch, and audit log
 paths:
   /healthz:
     get:
@@ -1224,6 +1226,508 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  # -----------------------------------------------------------------------
+  # Phase 6 — Institutional Risk Engine & Capital Protection Layer
+  # -----------------------------------------------------------------------
+
+  /v1/risk/profiles:
+    get:
+      operationId: listRiskProfiles
+      tags: [risk]
+      summary: List risk profiles
+      parameters:
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Risk profiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskProfileListResponse"
+    post:
+      operationId: createRiskProfile
+      tags: [risk]
+      summary: Create a risk profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRiskProfileRequest"
+      responses:
+        "201":
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskProfileResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/risk/profiles/{id}:
+    get:
+      operationId: getRiskProfile
+      tags: [risk]
+      summary: Get a risk profile by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Risk profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskProfileResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateRiskProfile
+      tags: [risk]
+      summary: Update a risk profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRiskProfileRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskProfileResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/risk/decisions:
+    get:
+      operationId: listRiskDecisions
+      tags: [risk]
+      summary: List pre-trade risk decisions
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: decision
+          in: query
+          schema:
+            type: string
+            enum: [approved, rejected, requires_review]
+        - name: strategyName
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Risk decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskDecisionListResponse"
+
+  /v1/risk/events:
+    get:
+      operationId: listRiskEvents
+      tags: [risk]
+      summary: List operational risk events
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Risk events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskEventListResponse"
+
+  /v1/risk/violations:
+    get:
+      operationId: listRiskViolations
+      tags: [risk]
+      summary: List confirmed risk rule violations
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: ruleType
+          in: query
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [warning, critical]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+      responses:
+        "200":
+          description: Risk violations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskViolationListResponse"
+
+  /v1/risk/snapshots:
+    get:
+      operationId: listRiskSnapshots
+      tags: [risk]
+      summary: List portfolio risk snapshots for an account
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 90
+      responses:
+        "200":
+          description: Risk snapshots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskSnapshotListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/risk/drawdown-events:
+    get:
+      operationId: listDrawdownEvents
+      tags: [risk]
+      summary: List drawdown threshold breach events
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Drawdown events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrawdownEventListResponse"
+
+  /v1/risk/correlations:
+    get:
+      operationId: listCorrelationMatrices
+      tags: [risk]
+      summary: List stored correlation matrices
+      parameters:
+        - name: latest
+          in: query
+          schema:
+            type: boolean
+        - name: windowDays
+          in: query
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 365
+            default: 30
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 30
+      responses:
+        "200":
+          description: Correlation matrices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorrelationMatrixListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/risk/correlations/compute:
+    post:
+      operationId: computeCorrelationMatrix
+      tags: [risk]
+      summary: Manually trigger correlation matrix computation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComputeCorrelationRequest"
+      responses:
+        "201":
+          description: Correlation matrix computed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorrelationMatrixResponse"
+        "422":
+          $ref: "#/components/responses/InsufficientData"
+
+  /v1/risk/strategies:
+    get:
+      operationId: listStrategyRiskScores
+      tags: [risk]
+      summary: List latest strategy risk scores
+      responses:
+        "200":
+          description: Strategy risk scores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyRiskScoreListResponse"
+
+  /v1/risk/strategies/{name}:
+    get:
+      operationId: getStrategyRiskScore
+      tags: [risk]
+      summary: Get latest risk score for a specific strategy
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Strategy risk score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyRiskScoreResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/risk/strategies/score:
+    post:
+      operationId: scoreStrategy
+      tags: [risk]
+      summary: Manually trigger risk scoring for one or all strategies
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreStrategyRequest"
+      responses:
+        "201":
+          description: Scoring complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyRiskScoreListResponse"
+        "422":
+          $ref: "#/components/responses/InsufficientData"
+
+  /v1/risk/circuit-breakers:
+    get:
+      operationId: listCircuitBreakers
+      tags: [risk]
+      summary: Get current circuit breaker states and recent events
+      parameters:
+        - name: breakerType
+          in: query
+          schema:
+            type: string
+            enum: [loss_streak, drawdown, execution_failure, volatility, data_failure, market_closure]
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [active, triggered, recovering, disabled]
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Circuit breaker states and events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitBreakerResponse"
+
+  /v1/risk/circuit-breakers/reset:
+    post:
+      operationId: resetCircuitBreaker
+      tags: [risk]
+      summary: Manually reset a triggered circuit breaker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetCircuitBreakerRequest"
+      responses:
+        "200":
+          description: Breaker reset to active
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircuitBreakerResetResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/risk/kill-switch:
+    get:
+      operationId: getKillSwitchStatus
+      tags: [risk]
+      summary: Get current kill switch status and recent events
+      responses:
+        "200":
+          description: Kill switch status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KillSwitchStatusResponse"
+    post:
+      operationId: activateKillSwitch
+      tags: [risk]
+      summary: Activate a kill switch (halt trading at specified scope)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KillSwitchRequest"
+      responses:
+        "201":
+          description: Kill switch activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KillSwitchActionResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/risk/resume:
+    post:
+      operationId: resumeKillSwitch
+      tags: [risk]
+      summary: Resume (deactivate) a kill switch at specified scope
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KillSwitchRequest"
+      responses:
+        "200":
+          description: Kill switch resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KillSwitchActionResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/risk/audit-log:
+    get:
+      operationId: listRiskAuditLog
+      tags: [risk]
+      summary: Retrieve the immutable risk system audit log
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskAuditLogListResponse"
+
 components:
   responses:
     ValidationError:
@@ -1234,6 +1738,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InsufficientData:
+      description: Not enough data to perform computation
       content:
         application/json:
           schema:
@@ -3192,3 +3702,772 @@ components:
           type: string
           format: uuid
       required: [accountId]
+
+    # -----------------------------------------------------------------------
+    # Phase 6 — Risk Engine Schemas
+    # -----------------------------------------------------------------------
+
+    RiskProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        profileType:
+          type: string
+          enum: [conservative, balanced, aggressive, research, custom]
+        maxPositionSizePct:
+          type: string
+        maxPortfolioExposurePct:
+          type: string
+        maxDailyLossPct:
+          type: string
+        maxDrawdownPct:
+          type: string
+        maxLeverage:
+          type: string
+        concentrationLimitPct:
+          type: string
+        maxWeeklyLossPct:
+          type: string
+        minStrategyConfidenceScore:
+          type: string
+        maxOpenPositions:
+          type: integer
+        riskToleranceScore:
+          type: integer
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, profileType, maxPositionSizePct, maxPortfolioExposurePct, maxDailyLossPct, maxDrawdownPct, isDefault, isActive, createdAt, updatedAt]
+
+    CreateRiskProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        profileType:
+          type: string
+          enum: [conservative, balanced, aggressive, research, custom]
+          default: custom
+        maxPositionSizePct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 10
+        maxPortfolioExposurePct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 80
+        maxDailyLossPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 3
+        maxDrawdownPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 20
+        maxLeverage:
+          type: number
+          minimum: 0
+          maximum: 10
+          default: 1
+        concentrationLimitPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 25
+        maxWeeklyLossPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 7
+        minStrategyConfidenceScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 0
+        maxOpenPositions:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 20
+        riskToleranceScore:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+        isDefault:
+          type: boolean
+          default: false
+        isActive:
+          type: boolean
+          default: true
+      required: [name]
+
+    UpdateRiskProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        maxPositionSizePct:
+          type: number
+        maxPortfolioExposurePct:
+          type: number
+        maxDailyLossPct:
+          type: number
+        maxDrawdownPct:
+          type: number
+        concentrationLimitPct:
+          type: number
+        maxWeeklyLossPct:
+          type: number
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+
+    RiskProfileResponse:
+      type: object
+      properties:
+        profile:
+          $ref: "#/components/schemas/RiskProfile"
+      required: [profile]
+
+    RiskProfileListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskProfile"
+        total:
+          type: integer
+      required: [data, total]
+
+    RiskDecision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyAssignmentId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: string
+        notional:
+          type: string
+          nullable: true
+        decision:
+          type: string
+          enum: [approved, rejected, requires_review]
+        riskScore:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        triggeredRules:
+          nullable: true
+        profileId:
+          type: string
+          format: uuid
+          nullable: true
+        profileName:
+          type: string
+          nullable: true
+        evaluatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, side, quantity, decision, evaluatedAt, createdAt]
+
+    RiskDecisionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskDecision"
+        total:
+          type: integer
+      required: [data, total]
+
+    RiskEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        eventType:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+        payload:
+          nullable: true
+        resolved:
+          type: boolean
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, eventType, severity, message, resolved, createdAt]
+
+    RiskEventListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskEvent"
+        total:
+          type: integer
+      required: [data, total]
+
+    RiskViolation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+          nullable: true
+        ruleType:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [warning, critical]
+        payload:
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, ruleType, description, severity, createdAt]
+
+    RiskViolationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskViolation"
+        total:
+          type: integer
+      required: [data, total]
+
+    PortfolioRiskSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        totalExposure:
+          type: string
+        portfolioExposurePct:
+          type: string
+        largestPositionPct:
+          type: string
+        concentrationScore:
+          type: string
+        diversificationScore:
+          type: string
+        portfolioHealthScore:
+          type: string
+        dailyDrawdownPct:
+          type: string
+        weeklyDrawdownPct:
+          type: string
+        totalDrawdownPct:
+          type: string
+        openPositions:
+          type: integer
+        snapshotAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, accountId, totalExposure, portfolioExposurePct, snapshotAt, createdAt]
+
+    RiskSnapshotListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioRiskSnapshot"
+        total:
+          type: integer
+      required: [data, total]
+
+    DrawdownEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum: [daily_drawdown, weekly_drawdown, account_drawdown, portfolio_drawdown]
+        drawdownPct:
+          type: string
+        thresholdPct:
+          type: string
+        action:
+          type: string
+          enum: [warning, restriction, halt]
+        resolved:
+          type: boolean
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, accountId, eventType, drawdownPct, thresholdPct, action, resolved, createdAt]
+
+    DrawdownEventListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DrawdownEvent"
+        total:
+          type: integer
+      required: [data, total]
+
+    CorrelationMatrix:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbols:
+          type: array
+          items:
+            type: string
+        matrix:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+        windowDays:
+          type: integer
+        correlationRiskScore:
+          type: string
+        calculatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbols, matrix, windowDays, correlationRiskScore, calculatedAt, createdAt]
+
+    CorrelationMatrixResponse:
+      type: object
+      properties:
+        matrix:
+          $ref: "#/components/schemas/CorrelationMatrix"
+      required: [matrix]
+
+    CorrelationMatrixListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CorrelationMatrix"
+        total:
+          type: integer
+      required: [data, total]
+
+    ComputeCorrelationRequest:
+      type: object
+      properties:
+        windowDays:
+          type: integer
+          minimum: 5
+          maximum: 365
+          default: 30
+
+    StrategyRiskScore:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+        winRateScore:
+          type: string
+        drawdownScore:
+          type: string
+        sharpeScore:
+          type: string
+        consistencyScore:
+          type: string
+        tradeFrequencyScore:
+          type: string
+        exposureScore:
+          type: string
+        overallRiskScore:
+          type: string
+        healthScore:
+          type: string
+        confidenceScore:
+          type: string
+        sampleSize:
+          type: integer
+        calculatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, strategyName, overallRiskScore, healthScore, confidenceScore, sampleSize, calculatedAt, createdAt]
+
+    StrategyRiskScoreResponse:
+      type: object
+      properties:
+        score:
+          $ref: "#/components/schemas/StrategyRiskScore"
+      required: [score]
+
+    StrategyRiskScoreListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrategyRiskScore"
+        total:
+          type: integer
+      required: [data, total]
+
+    ScoreStrategyRequest:
+      type: object
+      properties:
+        strategyName:
+          type: string
+
+    CircuitBreakerState:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [loss_streak, drawdown, execution_failure, volatility, data_failure, market_closure]
+        state:
+          type: string
+          enum: [active, triggered, recovering, disabled]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        triggeredValue:
+          type: number
+          nullable: true
+        threshold:
+          type: number
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        triggeredAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [type, state]
+
+    CircuitBreakerEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        breakerType:
+          type: string
+        state:
+          type: string
+          enum: [active, triggered, recovering, disabled]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        triggeredValue:
+          type: string
+          nullable: true
+        threshold:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        triggeredAt:
+          type: string
+          format: date-time
+          nullable: true
+        recoveredAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, breakerType, state, createdAt]
+
+    CircuitBreakerResponse:
+      type: object
+      properties:
+        currentStates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CircuitBreakerState"
+        events:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/CircuitBreakerEvent"
+            total:
+              type: integer
+          required: [data, total]
+      required: [currentStates, events]
+
+    ResetCircuitBreakerRequest:
+      type: object
+      properties:
+        breakerType:
+          type: string
+          enum: [loss_streak, drawdown, execution_failure, volatility, data_failure, market_closure]
+        accountId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required: [breakerType, reason]
+
+    CircuitBreakerResetResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        breakerType:
+          type: string
+        accountId:
+          type: string
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        newState:
+          type: string
+      required: [message, breakerType, newState]
+
+    KillSwitchStatus:
+      type: object
+      properties:
+        tradingHalted:
+          type: boolean
+        schedulerPaused:
+          type: boolean
+        haltedAccounts:
+          type: array
+          items:
+            type: string
+        haltedStrategies:
+          type: array
+          items:
+            type: string
+      required: [tradingHalted, schedulerPaused, haltedAccounts, haltedStrategies]
+
+    KillSwitchEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope:
+          type: string
+          enum: [strategy, account, portfolio, trading, scheduler]
+        action:
+          type: string
+          enum: [activate, resume]
+        targetId:
+          type: string
+          nullable: true
+        targetLabel:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        activatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resumedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, scope, action, reason, createdAt]
+
+    KillSwitchStatusResponse:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/KillSwitchStatus"
+        recentEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/KillSwitchEvent"
+      required: [status, recentEvents]
+
+    KillSwitchRequest:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum: [strategy, account, portfolio, trading, scheduler]
+        targetId:
+          type: string
+        targetLabel:
+          type: string
+          maxLength: 200
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required: [scope, reason]
+
+    KillSwitchActionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/KillSwitchStatus"
+      required: [message, status]
+
+    RiskAuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        actor:
+          type: string
+        action:
+          type: string
+        entityType:
+          type: string
+          nullable: true
+        entityId:
+          type: string
+          nullable: true
+        payload:
+          nullable: true
+        result:
+          type: string
+          enum: [success, failure, skipped]
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, actor, action, result, createdAt]
+
+    RiskAuditLogListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskAuditEntry"
+        total:
+          type: integer
+      required: [data, total]
