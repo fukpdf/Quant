@@ -1,2 +1,6 @@
 - [Routes index mount](routes-index-mount.md) — v1Router must be explicitly mounted in routes/index.ts; omitting it silently kills all /api/v1/* routes.
 - [Esbuild non-top-level imports](esbuild-import-position.md) — esbuild can silently mishandle import statements placed after function declarations; always keep imports at top of file.
+- [Numeric metrics as strings](numeric-metrics-strings.md) — all financial metrics stored as PostgreSQL numeric, serialized as strings (not floats); consumers must parse before arithmetic.
+- [Backtest fill model](backtest-fill-model.md) — signals at candle N fill at candle N+1 open; prevents look-ahead bias by construction; deferred to Phase 4 for VWAP/slippage upgrades.
+- [Strategy framework convention](strategy-framework-convention.md) — strategies implement IStrategy, extend BaseStrategy, register in registry.ts; no infrastructure changes needed to add a strategy.
+- [Zod in api-server](zod-explicit-dep.md) — zod must be an explicit dependency in api-server package.json; transitive resolution via @workspace/db is not reliable.

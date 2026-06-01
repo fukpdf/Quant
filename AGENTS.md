@@ -116,22 +116,23 @@ After completing any code change, every AI agent MUST:
 
 ## Phase Awareness
 
-The project is currently in **Phase 0 — Repository Foundation**.
+The project is currently in **Phase 3 — Research Laboratory** (complete).
+Next: **Phase 4 — Backtesting Engine (Enhanced)**.
 
-### What AI agents MAY do in Phase 0:
-- Create documentation files
-- Create directory structure
-- Write configuration files
-- Create GitHub templates
-- Update README, TODO, CHANGELOG, DECISIONS
+### What AI agents MAY do in Phase 3 / Phase 4:
+- Add or extend strategy implementations
+- Improve backtesting engine accuracy (cost models, fill models)
+- Add indicator library functions
+- Add or modify research API endpoints
+- Extend performance metrics
+- Write tests for strategies and the engine
 
-### What AI agents MUST NOT do in Phase 0:
-- Implement trading logic
-- Implement exchange API integrations
-- Implement backtesting algorithms
-- Implement AI trading decisions
-- Write database schema beyond what Phase 0 requires
-- Write application business logic
+### What AI agents MUST NOT do until Phase 5+:
+- Implement paper trading or live trading
+- Implement position sizing for real capital
+- Implement broker connectivity
+- Implement portfolio management for live money
+- Implement risk engine enforcement on real orders
 
 ---
 

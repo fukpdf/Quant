@@ -6,17 +6,27 @@
  * OpenAPI spec version: 0.2.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  BacktestDetailResponse,
+  BacktestJobResult,
+  BacktestRequest,
+  BacktestRunListResponse,
   CandleListResponse,
+  CompareBacktestRunsParams,
+  ComparisonResponse,
   DataQualityListResponse,
   EconomicEventListResponse,
   GetCandlesParams,
@@ -34,17 +44,21 @@ import type {
   ListMarketsParams,
   ListNewsParams,
   ListProvidersParams,
+  ListResearchResultsParams,
+  ListResearchRunsParams,
   MarketListResponse,
   MarketRegistryResponse,
   NewsListResponse,
   NotFoundResponse,
   ProviderHealthListResponse,
   ProviderListResponse,
+  ResearchResultListResponse,
+  ResearchStrategyListResponse,
   ValidationErrorResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -1054,6 +1068,489 @@ export function useListNews<TData = Awaited<ReturnType<typeof listNews>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListNewsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListResearchStrategiesUrl = () => {
+
+
+
+
+  return `/api/v1/research/strategies`
+}
+
+/**
+ * Returns all registered strategies with their parameter schemas
+ * @summary List available research strategies
+ */
+export const listResearchStrategies = async ( options?: RequestInit): Promise<ResearchStrategyListResponse> => {
+
+  return customFetch<ResearchStrategyListResponse>(getListResearchStrategiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListResearchStrategiesQueryKey = () => {
+    return [
+    `/api/v1/research/strategies`
+    ] as const;
+    }
+
+
+export const getListResearchStrategiesQueryOptions = <TData = Awaited<ReturnType<typeof listResearchStrategies>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchStrategies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListResearchStrategiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listResearchStrategies>>> = ({ signal }) => listResearchStrategies({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listResearchStrategies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListResearchStrategiesQueryResult = NonNullable<Awaited<ReturnType<typeof listResearchStrategies>>>
+export type ListResearchStrategiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List available research strategies
+ */
+
+export function useListResearchStrategies<TData = Awaited<ReturnType<typeof listResearchStrategies>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchStrategies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListResearchStrategiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunBacktestUrl = () => {
+
+
+
+
+  return `/api/v1/research/backtest`
+}
+
+/**
+ * Executes a historical backtest for the given strategy, symbol, interval, and date range
+ * @summary Run a backtest
+ */
+export const runBacktest = async (backtestRequest: BacktestRequest, options?: RequestInit): Promise<BacktestJobResult> => {
+
+  return customFetch<BacktestJobResult>(getRunBacktestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backtestRequest,)
+  }
+);}
+
+
+
+
+export const getRunBacktestMutationOptions = <TError = ErrorType<ValidationErrorResponse | BacktestJobResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestRequest>}, TContext> => {
+
+const mutationKey = ['runBacktest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runBacktest>>, {data: BodyType<BacktestRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runBacktest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunBacktestMutationResult = NonNullable<Awaited<ReturnType<typeof runBacktest>>>
+    export type RunBacktestMutationBody = BodyType<BacktestRequest>
+    export type RunBacktestMutationError = ErrorType<ValidationErrorResponse | BacktestJobResult>
+
+    /**
+ * @summary Run a backtest
+ */
+export const useRunBacktest = <TError = ErrorType<ValidationErrorResponse | BacktestJobResult>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runBacktest>>,
+        TError,
+        {data: BodyType<BacktestRequest>},
+        TContext
+      > => {
+      return useMutation(getRunBacktestMutationOptions(options));
+    }
+
+export const getGetBacktestResultUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/research/backtest/${id}`
+}
+
+/**
+ * Returns the backtest run record, performance metrics, and all simulated trades
+ * @summary Get backtest run with results
+ */
+export const getBacktestResult = async (id: string, options?: RequestInit): Promise<BacktestDetailResponse> => {
+
+  return customFetch<BacktestDetailResponse>(getGetBacktestResultUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBacktestResultQueryKey = (id: string,) => {
+    return [
+    `/api/v1/research/backtest/${id}`
+    ] as const;
+    }
+
+
+export const getGetBacktestResultQueryOptions = <TData = Awaited<ReturnType<typeof getBacktestResult>>, TError = ErrorType<NotFoundResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBacktestResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBacktestResultQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBacktestResult>>> = ({ signal }) => getBacktestResult(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBacktestResult>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBacktestResultQueryResult = NonNullable<Awaited<ReturnType<typeof getBacktestResult>>>
+export type GetBacktestResultQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get backtest run with results
+ */
+
+export function useGetBacktestResult<TData = Awaited<ReturnType<typeof getBacktestResult>>, TError = ErrorType<NotFoundResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBacktestResult>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBacktestResultQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListResearchRunsUrl = (params?: ListResearchRunsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/research/runs?${stringifiedParams}` : `/api/v1/research/runs`
+}
+
+/**
+ * Returns backtest runs with optional filtering
+ * @summary List backtest runs
+ */
+export const listResearchRuns = async (params?: ListResearchRunsParams, options?: RequestInit): Promise<BacktestRunListResponse> => {
+
+  return customFetch<BacktestRunListResponse>(getListResearchRunsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListResearchRunsQueryKey = (params?: ListResearchRunsParams,) => {
+    return [
+    `/api/v1/research/runs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListResearchRunsQueryOptions = <TData = Awaited<ReturnType<typeof listResearchRuns>>, TError = ErrorType<ValidationErrorResponse>>(params?: ListResearchRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListResearchRunsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listResearchRuns>>> = ({ signal }) => listResearchRuns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listResearchRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListResearchRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listResearchRuns>>>
+export type ListResearchRunsQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary List backtest runs
+ */
+
+export function useListResearchRuns<TData = Awaited<ReturnType<typeof listResearchRuns>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: ListResearchRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListResearchRunsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListResearchResultsUrl = (params?: ListResearchResultsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/research/results?${stringifiedParams}` : `/api/v1/research/results`
+}
+
+/**
+ * Returns performance metrics for completed backtest runs
+ * @summary List research results
+ */
+export const listResearchResults = async (params?: ListResearchResultsParams, options?: RequestInit): Promise<ResearchResultListResponse> => {
+
+  return customFetch<ResearchResultListResponse>(getListResearchResultsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListResearchResultsQueryKey = (params?: ListResearchResultsParams,) => {
+    return [
+    `/api/v1/research/results`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListResearchResultsQueryOptions = <TData = Awaited<ReturnType<typeof listResearchResults>>, TError = ErrorType<ValidationErrorResponse>>(params?: ListResearchResultsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListResearchResultsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listResearchResults>>> = ({ signal }) => listResearchResults(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listResearchResults>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListResearchResultsQueryResult = NonNullable<Awaited<ReturnType<typeof listResearchResults>>>
+export type ListResearchResultsQueryError = ErrorType<ValidationErrorResponse>
+
+
+/**
+ * @summary List research results
+ */
+
+export function useListResearchResults<TData = Awaited<ReturnType<typeof listResearchResults>>, TError = ErrorType<ValidationErrorResponse>>(
+ params?: ListResearchResultsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResearchResults>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListResearchResultsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCompareBacktestRunsUrl = (params: CompareBacktestRunsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/research/compare?${stringifiedParams}` : `/api/v1/research/compare`
+}
+
+/**
+ * Side-by-side performance comparison of two or more backtest runs
+ * @summary Compare multiple backtest runs
+ */
+export const compareBacktestRuns = async (params: CompareBacktestRunsParams, options?: RequestInit): Promise<ComparisonResponse> => {
+
+  return customFetch<ComparisonResponse>(getCompareBacktestRunsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompareBacktestRunsQueryKey = (params?: CompareBacktestRunsParams,) => {
+    return [
+    `/api/v1/research/compare`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCompareBacktestRunsQueryOptions = <TData = Awaited<ReturnType<typeof compareBacktestRuns>>, TError = ErrorType<ValidationErrorResponse | NotFoundResponse>>(params: CompareBacktestRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof compareBacktestRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCompareBacktestRunsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof compareBacktestRuns>>> = ({ signal }) => compareBacktestRuns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof compareBacktestRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CompareBacktestRunsQueryResult = NonNullable<Awaited<ReturnType<typeof compareBacktestRuns>>>
+export type CompareBacktestRunsQueryError = ErrorType<ValidationErrorResponse | NotFoundResponse>
+
+
+/**
+ * @summary Compare multiple backtest runs
+ */
+
+export function useCompareBacktestRuns<TData = Awaited<ReturnType<typeof compareBacktestRuns>>, TError = ErrorType<ValidationErrorResponse | NotFoundResponse>>(
+ params: CompareBacktestRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof compareBacktestRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCompareBacktestRunsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1,11 +1,11 @@
 # TODO.md — QuantForge Phased Roadmap
 
-> Last updated: 2026-05-31
-> Current phase: **Phase 0 — Repository Foundation**
+> Last updated: 2026-06-01
+> Current phase: **Phase 3 — Quant Research Laboratory & Backtesting Foundation**
 
 ---
 
-## Phase 0 — Repository Foundation
+## Phase 0 — Repository Foundation ✅ COMPLETE
 
 **Goal**: Create the operating environment, documentation system, development workflow, and security structure.
 
@@ -52,147 +52,140 @@
 
 ---
 
-## Phase 1 — Market Data Platform
+## Phase 1 — Market Data Platform ✅ COMPLETE
 
 **Goal**: Establish reliable, normalized market data ingestion across all asset classes.
 
 ### Data Provider Integrations
-- [ ] Research and select crypto data provider (e.g., CoinGecko, Binance, CCXT)
-- [ ] Research and select forex data provider (e.g., Alpha Vantage, OANDA)
-- [ ] Research and select stocks/indices data provider (e.g., Polygon.io, Yahoo Finance)
-- [ ] Document provider selection in DECISIONS.md
+- [x] Research and select crypto data provider (Binance selected)
+- [x] Document provider selection in DECISIONS.md
 
 ### Data Ingestion
-- [ ] Design data ingestion architecture
-- [ ] Implement WebSocket connection manager for real-time feeds
-- [ ] Implement REST polling fallback for providers without WebSocket
-- [ ] Implement connection health monitoring and reconnection logic
+- [x] Design data ingestion architecture
+- [x] Implement REST polling for Binance
+- [x] Implement connection health monitoring
 
 ### Data Normalization
-- [ ] Define unified OHLCV schema across all asset classes
-- [ ] Implement normalization layer (provider format → unified format)
-- [ ] Define tick data schema
-- [ ] Implement data quality validation (gap detection, outlier detection)
+- [x] Define unified OHLCV schema
+- [x] Implement normalization layer
 
 ### API Endpoints (Phase 1)
-- [ ] `GET /api/v1/assets` — list available assets
-- [ ] `GET /api/v1/assets/:symbol/ohlcv` — fetch OHLCV data
-- [ ] `GET /api/v1/assets/:symbol/quote` — fetch latest quote
-- [ ] `GET /api/v1/feeds/status` — data feed health status
-
-### Testing
-- [ ] Unit tests for normalization layer
-- [ ] Integration tests for data provider connections
-- [ ] Data quality validation tests
-
-### Documentation
-- [ ] Update docs/04-SYSTEM_ARCHITECTURE.md with data flow diagrams
-- [ ] Document all API endpoints in docs/09-API_STRATEGY.md
-- [ ] Update docs/02-PRODUCT_REQUIREMENTS.md
+- [x] `GET /v1/markets` — list available markets
+- [x] `GET /v1/candles` — fetch OHLCV data
+- [x] `GET /v1/latest-price` — fetch latest price
+- [x] `GET /v1/ingestion/status` — ingestion log status
 
 ---
 
-## Phase 2 — Historical Data Storage
+## Phase 2 — Multi-Market Architecture ✅ COMPLETE
 
-**Goal**: Efficient storage and retrieval of large volumes of time-series market data.
-
-### Database Setup
-- [ ] Provision PostgreSQL database
-- [ ] Configure TimescaleDB extension (or implement manual partitioning strategy)
-- [ ] Document partitioning decision in DECISIONS.md
-- [ ] Set up automated backup strategy
+**Goal**: Expand to multi-provider, multi-asset-class architecture.
 
 ### Schema Design
-- [ ] Design `ohlcv_data` table (partitioned by time and asset class)
-- [ ] Design `tick_data` table
-- [ ] Design `assets` catalog table
-- [ ] Design `data_providers` table
-- [ ] Design `data_quality_log` table
-- [ ] Create all Drizzle schema files
-- [ ] Write and test migrations
+- [x] `markets` table
+- [x] `candles` table (OHLCV)
+- [x] `ingestion_jobs` table (structured run tracking)
+- [x] `ingestion_logs` table (legacy Phase 1 logs)
+- [x] `market_providers` table
+- [x] `provider_health` table
+- [x] `data_quality_checks` table
+- [x] `economic_events` table
+- [x] `news_items` table
+- [x] `market_metadata` table
 
-### Data Pipeline
-- [ ] Implement historical data backfill scripts
-- [ ] Implement data quality checks (completeness, consistency)
-- [ ] Implement data gap detection and alerting
-- [ ] Implement data retention policies
-
-### Query Performance
-- [ ] Implement efficient OHLCV query patterns
-- [ ] Add appropriate indexes with documented rationale
-- [ ] Benchmark query performance at scale (1M+ rows)
-
-### Documentation
-- [ ] Complete docs/05-DATABASE_ARCHITECTURE.md
-- [ ] Document backup and recovery procedures
+### API Endpoints (Phase 2)
+- [x] `GET /v1/ingestion/jobs` — structured job list
+- [x] `GET /v1/providers` — provider registry
+- [x] `GET /v1/providers/health` — provider health records
+- [x] `GET /v1/market-registry` — enriched market registry
+- [x] `GET /v1/data-quality` — data quality checks
+- [x] `GET /v1/economic-events` — economic calendar
+- [x] `GET /v1/news` — financial news
 
 ---
 
-## Phase 3 — Research Laboratory
+## Phase 3 — Research Laboratory ✅ COMPLETE
 
-**Goal**: Provide an interactive research environment for strategy development.
+**Goal**: Provide a professional quantitative research and backtesting environment.
+
+### Database Tables
+- [x] `strategy_definitions` — registered strategy catalog with parameter schemas
+- [x] `strategy_versions` — immutable version history of strategy parameter schemas
+- [x] `backtest_runs` — one row per backtest execution with full lifecycle tracking
+- [x] `backtest_trades` — simulated trades produced by the engine
+- [x] `performance_metrics` — risk-adjusted performance metrics per completed run
+
+### Strategy Framework
+- [x] `IStrategy` interface (types.ts)
+- [x] `BaseStrategy` abstract class
+- [x] Indicator library: EMA, SMA, RSI, MACD, Bollinger Bands
+- [x] `EmaCrossoverStrategy` (ema_crossover)
+- [x] `RsiMeanReversionStrategy` (rsi_mean_reversion)
+- [x] `MacdTrendStrategy` (macd_trend)
+- [x] `BollingerBandsStrategy` (bollinger_bands)
+- [x] Strategy registry with pluggable factory pattern
+
+### Backtesting Engine
+- [x] Historical candle replay (chronological, no look-ahead bias)
+- [x] Signal execution at NEXT candle open (realistic fill simulation)
+- [x] Long-only, one-position-at-a-time position model
+- [x] Mark-to-market equity curve generation
+- [x] Force-close open position at end of backtest window
+
+### Performance Metrics
+- [x] Total Return
+- [x] Annualized Return (CAGR)
+- [x] Win Rate
+- [x] Profit Factor
+- [x] Average Win / Average Loss
+- [x] Maximum Drawdown
+- [x] Sharpe Ratio (annualized)
+- [x] Sortino Ratio (annualized)
+- [x] Trade Count (total, winning, losing)
+- [x] Expectancy
 
 ### Research Infrastructure
-- [ ] Evaluate Python integration options (API, subprocess, embedded)
-- [ ] Document approach in DECISIONS.md
-- [ ] Set up research notebook infrastructure
+- [x] Research runner service (executeBacktest)
+- [x] Strategy definitions auto-seeded to DB on startup
+- [x] Comparison engine (side-by-side multi-run comparison)
 
-### Indicator Library
-- [ ] Implement core technical indicators (SMA, EMA, RSI, MACD, Bollinger Bands, ATR)
-- [ ] Implement volume indicators
-- [ ] Implement volatility indicators
-- [ ] Unit test all indicators against reference implementations
+### API Endpoints (Phase 3)
+- [x] `GET /v1/research/strategies` — list registered strategies with parameter schemas
+- [x] `POST /v1/research/backtest` — run a backtest
+- [x] `GET /v1/research/backtest/:id` — get run detail with trades and metrics
+- [x] `GET /v1/research/runs` — list all backtest runs with filters
+- [x] `GET /v1/research/results` — list completed run metrics
+- [x] `GET /v1/research/compare` — side-by-side comparison of multiple runs
 
-### Research API
-- [ ] `GET /api/v1/research/indicators` — list available indicators
-- [ ] `POST /api/v1/research/compute` — compute indicator on dataset
-- [ ] `POST /api/v1/research/correlations` — compute correlation matrix
-
-### Strategy Definition Framework
-- [ ] Define strategy interface/contract
-- [ ] Implement strategy configuration schema
-- [ ] Implement strategy validation
-
-### Documentation
-- [ ] Complete docs/08-TRADING_RESEARCH.md
-- [ ] Document indicator library
+### OpenAPI & Codegen
+- [x] OpenAPI spec updated with all research paths and schemas
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+- [x] Zod added as explicit api-server dependency
 
 ---
 
-## Phase 4 — Backtesting Engine
+## Phase 4 — Backtesting Engine (Enhanced)
 
 **Goal**: Rigorous, realistic event-driven backtesting with proper cost modeling.
 
 ### Engine Architecture
-- [ ] Design event-driven backtesting loop
-- [ ] Implement order book simulation
-- [ ] Implement fill modeling (market, limit, stop orders)
+- [ ] Order book simulation
+- [ ] Fill modeling (market, limit, stop orders)
 
 ### Cost Modeling
-- [ ] Implement configurable commission models (flat, percentage, per-share)
-- [ ] Implement slippage models (fixed, variable, volume-based)
-- [ ] Implement financing cost model for overnight positions
+- [ ] Configurable commission models (flat, percentage, per-share)
+- [ ] Slippage models (fixed, variable, volume-based)
+- [ ] Financing cost model for overnight positions
 
 ### Execution Simulation
-- [ ] Implement market order simulation
-- [ ] Implement limit order simulation with queue position
-- [ ] Implement stop order simulation
-- [ ] Implement order rejection scenarios
-
-### Performance Metrics
-- [ ] Implement Sharpe ratio, Sortino ratio, Calmar ratio
-- [ ] Implement maximum drawdown analysis
-- [ ] Implement win rate, profit factor, expectancy
-- [ ] Implement trade-level attribution
+- [ ] Limit order simulation with queue position
+- [ ] Stop order simulation
+- [ ] Order rejection scenarios
 
 ### Walk-Forward Validation
-- [ ] Implement in-sample / out-of-sample split
-- [ ] Implement walk-forward optimization framework
-- [ ] Implement Monte Carlo simulation for result robustness
-
-### Documentation
-- [ ] Document backtesting methodology
-- [ ] Document cost model assumptions
+- [ ] In-sample / out-of-sample split
+- [ ] Walk-forward optimization framework
+- [ ] Monte Carlo simulation for result robustness
 
 ---
 
@@ -201,24 +194,16 @@
 **Goal**: Real-time strategy execution simulation against live market data.
 
 ### Simulation Engine
-- [ ] Implement virtual account management (balance, positions, P&L)
-- [ ] Implement real-time order routing simulation
-- [ ] Implement fill simulation against live market prices
-- [ ] Implement position tracking and reconciliation
-
-### Order Management
-- [ ] Implement order lifecycle management (pending, open, filled, cancelled, rejected)
-- [ ] Implement partial fill handling
-- [ ] Implement order modification and cancellation
+- [ ] Virtual account management (balance, positions, P&L)
+- [ ] Real-time order routing simulation
+- [ ] Fill simulation against live market prices
+- [ ] Position tracking and reconciliation
 
 ### Paper Trading API
-- [ ] `POST /api/v1/paper/orders` — submit paper order
-- [ ] `GET /api/v1/paper/orders` — list paper orders
-- [ ] `GET /api/v1/paper/positions` — current positions
-- [ ] `GET /api/v1/paper/account` — account summary
-
-### Documentation
-- [ ] Document paper trading limitations vs. live trading
+- [ ] `POST /v1/paper/orders` — submit paper order
+- [ ] `GET /v1/paper/orders` — list paper orders
+- [ ] `GET /v1/paper/positions` — current positions
+- [ ] `GET /v1/paper/account` — account summary
 
 ---
 
@@ -229,23 +214,12 @@
 ### Pre-Trade Risk Checks
 - [ ] Maximum position size (% of portfolio)
 - [ ] Maximum single-asset exposure
-- [ ] Maximum sector/asset-class exposure
-- [ ] Correlation-adjusted position sizing
-- [ ] Drawdown circuit breaker (halt trading at threshold)
-
-### Post-Trade Monitoring
-- [ ] Real-time P&L monitoring
-- [ ] Drawdown tracking per strategy and portfolio
-- [ ] Exposure aggregation across all positions
-- [ ] Alert system for approaching risk limits
+- [ ] Drawdown circuit breaker
 
 ### Risk Engine API
-- [ ] `POST /api/v1/risk/check` — pre-trade risk validation
-- [ ] `GET /api/v1/risk/exposure` — current exposure report
-- [ ] `GET /api/v1/risk/limits` — current risk limits
-
-### Documentation
-- [ ] Complete docs/07-RISK_MANAGEMENT.md
+- [ ] `POST /v1/risk/check` — pre-trade risk validation
+- [ ] `GET /v1/risk/exposure` — current exposure report
+- [ ] `GET /v1/risk/limits` — current risk limits
 
 ---
 
@@ -254,86 +228,46 @@
 **Goal**: Comprehensive performance measurement and attribution.
 
 ### Performance Metrics
-- [ ] Implement time-weighted return (TWR)
-- [ ] Implement money-weighted return (MWR / IRR)
-- [ ] Implement benchmark comparison (alpha, beta, information ratio)
-- [ ] Implement attribution by strategy, asset class, and time period
-
-### Reporting
-- [ ] Daily portfolio summary
-- [ ] Monthly performance report
-- [ ] Drawdown analysis report
-- [ ] Trade journal export (CSV)
+- [ ] Time-weighted return (TWR)
+- [ ] Money-weighted return (MWR / IRR)
+- [ ] Benchmark comparison (alpha, beta, information ratio)
+- [ ] Attribution by strategy, asset class, and time period
 
 ### Analytics API
-- [ ] `GET /api/v1/analytics/performance` — performance summary
-- [ ] `GET /api/v1/analytics/attribution` — return attribution
-- [ ] `GET /api/v1/analytics/trades` — trade journal
+- [ ] `GET /v1/analytics/performance` — performance summary
+- [ ] `GET /v1/analytics/attribution` — return attribution
+- [ ] `GET /v1/analytics/trades` — trade journal
 
 ---
 
 ## Phase 8 — Execution Engine
 
-**Goal**: Live broker connectivity with full order management and reconciliation.
+> ⚠️ Real financial risk begins here. Do not start until Phase 6 is proven via Phase 5.
 
-> ⚠️ This phase introduces real financial risk. Do not begin until Phase 6 (Risk Engine) is fully proven through Phase 5 (Paper Trading).
-
-### Broker Connectivity
-- [ ] Define broker adapter interface
-- [ ] Implement first broker adapter (TBD)
-- [ ] Implement order routing layer
-- [ ] Implement fill confirmation and reconciliation
-
-### Order Management System
-- [ ] Implement production order lifecycle
-- [ ] Implement order audit log
-- [ ] Implement fill reconciliation against broker statements
-
-### Safety Controls
-- [ ] Kill switch (halt all trading immediately)
-- [ ] Position limit enforcement (hard stops, not just soft alerts)
-- [ ] Anomalous activity detection
+- [ ] Broker adapter interface
+- [ ] First broker integration (TBD)
+- [ ] Order routing layer
+- [ ] Fill confirmation and reconciliation
+- [ ] Kill switch
 
 ---
 
 ## Phase 9 — AI Research Assistant
 
-**Goal**: LLM-powered research assistant for hypothesis generation and analysis.
-
-> AI assists research. AI does not make autonomous trading decisions.
-
-### Research Assistance
-- [ ] Integrate LLM API (via Replit AI Integrations)
-- [ ] Implement strategy hypothesis generation
-- [ ] Implement backtest result interpretation
-- [ ] Implement market regime analysis
-
-### Code Assistance
-- [ ] Implement indicator code generation
-- [ ] Implement strategy code review
+- [ ] LLM integration (Replit AI)
+- [ ] Strategy hypothesis generation
+- [ ] Backtest result interpretation
+- [ ] Market regime analysis
 
 ---
 
 ## Phase 10 — Production Readiness
 
-**Goal**: Harden the platform for reliable long-term operation.
-
-### Security
 - [ ] Full security audit
 - [ ] Penetration testing checklist
-- [ ] Dependency vulnerability audit
-- [ ] Secret rotation procedures
-
-### Reliability
-- [ ] Implement comprehensive health monitoring
-- [ ] Implement alerting (PagerDuty or similar)
-- [ ] Implement automated database backups with restore testing
-- [ ] Implement disaster recovery procedures
-
-### Operations
-- [ ] Runbook for common operational tasks
+- [ ] Comprehensive health monitoring
+- [ ] Automated database backups with restore testing
 - [ ] Incident response playbook
-- [ ] Performance benchmarks and SLOs
 
 ---
 

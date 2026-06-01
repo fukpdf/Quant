@@ -347,3 +347,257 @@ export const ListNewsResponse = zod.object({
 })
 
 
+/**
+ * Returns all registered strategies with their parameter schemas
+ * @summary List available research strategies
+ */
+export const ListResearchStrategiesResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "displayName": zod.string(),
+  "description": zod.string().nullish(),
+  "parameterSchema": zod.string().describe('JSON-encoded parameter schema object'),
+  "currentVersion": zod.number(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * Executes a historical backtest for the given strategy, symbol, interval, and date range
+ * @summary Run a backtest
+ */
+export const runBacktestBodyInitialCapitalDefault = 10000;
+
+
+
+export const RunBacktestBody = zod.object({
+  "strategyName": zod.string().describe('Strategy identifier (e.g. ema_crossover)'),
+  "symbol": zod.string().describe('Market symbol (e.g. BTCUSDT)'),
+  "interval": zod.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "initialCapital": zod.number().min(1).default(runBacktestBodyInitialCapitalDefault),
+  "params": zod.record(zod.string(), zod.union([zod.number(),zod.boolean()])).optional().describe('Strategy-specific parameter overrides')
+})
+
+export const RunBacktestResponse = zod.object({
+  "runId": zod.string().uuid(),
+  "status": zod.enum(['completed', 'failed']),
+  "errorMessage": zod.string().nullish()
+})
+
+
+/**
+ * Returns the backtest run record, performance metrics, and all simulated trades
+ * @summary Get backtest run with results
+ */
+export const GetBacktestResultParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetBacktestResultResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string().uuid(),
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "parameters": zod.string().describe('JSON-encoded strategy parameters'),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "candlesProcessed": zod.number(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "metrics": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid(),
+  "totalReturnPct": zod.string(),
+  "annualizedReturnPct": zod.string().nullish(),
+  "winRate": zod.string(),
+  "profitFactor": zod.string().nullish(),
+  "avgWinPct": zod.string().nullish(),
+  "avgLossPct": zod.string().nullish(),
+  "maxDrawdownPct": zod.string(),
+  "sharpeRatio": zod.string().nullish(),
+  "sortinoRatio": zod.string().nullish(),
+  "totalTrades": zod.number(),
+  "winningTrades": zod.number(),
+  "losingTrades": zod.number(),
+  "expectancy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).nullish(),
+  "trades": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid(),
+  "side": zod.enum(['BUY', 'SELL']),
+  "entryTime": zod.coerce.date(),
+  "exitTime": zod.coerce.date().nullish(),
+  "entryPrice": zod.string(),
+  "exitPrice": zod.string().nullish(),
+  "quantity": zod.string(),
+  "pnl": zod.string().nullish(),
+  "pnlPct": zod.string().nullish(),
+  "entrySignal": zod.string(),
+  "exitSignal": zod.string().nullish(),
+  "candleIndexEntry": zod.number(),
+  "candleIndexExit": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Returns backtest runs with optional filtering
+ * @summary List backtest runs
+ */
+export const listResearchRunsQueryLimitDefault = 50;
+export const listResearchRunsQueryLimitMax = 100;
+
+
+
+export const ListResearchRunsQueryParams = zod.object({
+  "strategyName": zod.coerce.string().optional(),
+  "symbol": zod.coerce.string().optional(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']).optional(),
+  "limit": zod.coerce.number().min(1).max(listResearchRunsQueryLimitMax).default(listResearchRunsQueryLimitDefault)
+})
+
+export const ListResearchRunsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "parameters": zod.string().describe('JSON-encoded strategy parameters'),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "candlesProcessed": zod.number(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * Returns performance metrics for completed backtest runs
+ * @summary List research results
+ */
+export const listResearchResultsQueryLimitDefault = 50;
+export const listResearchResultsQueryLimitMax = 100;
+
+
+
+export const ListResearchResultsQueryParams = zod.object({
+  "strategyName": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().min(1).max(listResearchResultsQueryLimitMax).default(listResearchResultsQueryLimitDefault)
+})
+
+export const ListResearchResultsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "run": zod.object({
+  "id": zod.string().uuid(),
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "parameters": zod.string().describe('JSON-encoded strategy parameters'),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "candlesProcessed": zod.number(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "metrics": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid(),
+  "totalReturnPct": zod.string(),
+  "annualizedReturnPct": zod.string().nullish(),
+  "winRate": zod.string(),
+  "profitFactor": zod.string().nullish(),
+  "avgWinPct": zod.string().nullish(),
+  "avgLossPct": zod.string().nullish(),
+  "maxDrawdownPct": zod.string(),
+  "sharpeRatio": zod.string().nullish(),
+  "sortinoRatio": zod.string().nullish(),
+  "totalTrades": zod.number(),
+  "winningTrades": zod.number(),
+  "losingTrades": zod.number(),
+  "expectancy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * Side-by-side performance comparison of two or more backtest runs
+ * @summary Compare multiple backtest runs
+ */
+export const CompareBacktestRunsQueryParams = zod.object({
+  "ids": zod.coerce.string().describe('Comma-separated list of backtest run IDs (minimum 2)')
+})
+
+export const CompareBacktestRunsResponse = zod.object({
+  "runIds": zod.array(zod.string()),
+  "summaries": zod.array(zod.object({
+  "run": zod.object({
+  "id": zod.string().uuid(),
+  "strategyName": zod.string(),
+  "symbol": zod.string(),
+  "interval": zod.string(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "parameters": zod.string().describe('JSON-encoded strategy parameters'),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "candlesProcessed": zod.number(),
+  "startedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "metrics": zod.object({
+  "id": zod.string().uuid(),
+  "backtestRunId": zod.string().uuid(),
+  "totalReturnPct": zod.string(),
+  "annualizedReturnPct": zod.string().nullish(),
+  "winRate": zod.string(),
+  "profitFactor": zod.string().nullish(),
+  "avgWinPct": zod.string().nullish(),
+  "avgLossPct": zod.string().nullish(),
+  "maxDrawdownPct": zod.string(),
+  "sharpeRatio": zod.string().nullish(),
+  "sortinoRatio": zod.string().nullish(),
+  "totalTrades": zod.number(),
+  "winningTrades": zod.number(),
+  "losingTrades": zod.number(),
+  "expectancy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).nullish()
+})),
+  "comparisons": zod.array(zod.object({
+  "metric": zod.string(),
+  "label": zod.string(),
+  "format": zod.enum(['percent', 'ratio', 'integer', 'decimal']),
+  "higherIsBetter": zod.boolean(),
+  "values": zod.record(zod.string(), zod.number().nullable()),
+  "winnerId": zod.string().nullish()
+})),
+  "overallWinnerId": zod.string().nullish()
+})
+
+

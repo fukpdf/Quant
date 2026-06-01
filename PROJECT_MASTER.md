@@ -74,18 +74,23 @@ Every stage is audited, versioned, and documented.
 
 ## 5. Current Phase
 
-**Phase 0 — Repository Foundation**
+**Phase 3 — Research Laboratory** ✅ Complete
 
-Goal: Create the operating environment, documentation system, development workflow, and security structure that all future phases will build on.
+Goal: Professional quantitative research environment with strategy framework, historical backtesting engine, and performance analytics.
 
 Deliverables:
-- [ ] Complete documentation structure
-- [ ] Project operating rules
-- [ ] AI agent operating protocols
-- [ ] Directory skeleton
-- [ ] GitHub templates
-- [ ] Environment variable template
-- [ ] Architecture decision records
+- [x] Strategy interface and pluggable framework (IStrategy, BaseStrategy)
+- [x] Technical indicator library (EMA, SMA, RSI, MACD, Bollinger Bands)
+- [x] 4 baseline strategies (EMA Crossover, RSI Mean Reversion, MACD Trend, Bollinger Bands)
+- [x] Historical replay engine (no look-ahead bias)
+- [x] Performance metrics (Total Return, CAGR, Win Rate, Sharpe, Sortino, Max Drawdown, Profit Factor, Expectancy)
+- [x] Research API (6 endpoints: strategies, backtest, runs, results, compare)
+- [x] Strategy definitions DB table with auto-seeding
+- [x] Comparison engine (side-by-side multi-run analysis)
+
+**Next Phase: Phase 4 — Backtesting Engine (Enhanced)**
+
+Goal: Add cost modeling (commissions, slippage), fill model improvements, and walk-forward validation.
 
 ---
 

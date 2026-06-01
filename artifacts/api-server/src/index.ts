@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { seedMarkets } from "./services/market-data";
 import { seedProviders } from "./services/providers-db";
 import { startScheduler } from "./ingestion/scheduler";
+import { seedStrategyDefinitions } from "./services/research-db";
 
 const rawPort = process.env["PORT"];
 
@@ -38,6 +39,13 @@ app.listen(port, async (err) => {
     await seedProviders();
   } catch (err) {
     logger.error({ err }, "Failed to seed providers — continuing");
+  }
+
+  // Seed strategy definitions (Phase 3 — idempotent)
+  try {
+    await seedStrategyDefinitions();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed strategy definitions — continuing");
   }
 
   // Start all background scheduler loops (ingestion, health checks, quality checks)

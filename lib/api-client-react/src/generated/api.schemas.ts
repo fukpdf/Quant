@@ -214,6 +214,214 @@ export interface NewsListResponse {
   total: number;
 }
 
+export type ParameterDefType = typeof ParameterDefType[keyof typeof ParameterDefType];
+
+
+export const ParameterDefType = {
+  integer: 'integer',
+  float: 'float',
+  boolean: 'boolean',
+} as const;
+
+export interface ParameterDef {
+  type: ParameterDefType;
+  default: number | boolean;
+  min?: number | null;
+  max?: number | null;
+  description: string;
+}
+
+export interface ResearchStrategy {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string | null;
+  /** JSON-encoded parameter schema object */
+  parameterSchema: string;
+  currentVersion: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResearchStrategyListResponse {
+  data: ResearchStrategy[];
+  total: number;
+}
+
+export type BacktestRequestInterval = typeof BacktestRequestInterval[keyof typeof BacktestRequestInterval];
+
+
+export const BacktestRequestInterval = {
+  '1m': '1m',
+  '5m': '5m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '1w': '1w',
+} as const;
+
+/**
+ * Strategy-specific parameter overrides
+ */
+export type BacktestRequestParams = {[key: string]: number | boolean};
+
+export interface BacktestRequest {
+  /** Strategy identifier (e.g. ema_crossover) */
+  strategyName: string;
+  /** Market symbol (e.g. BTCUSDT) */
+  symbol: string;
+  interval: BacktestRequestInterval;
+  startDate: string;
+  endDate: string;
+  /** @minimum 1 */
+  initialCapital?: number;
+  /** Strategy-specific parameter overrides */
+  params?: BacktestRequestParams;
+}
+
+export type BacktestJobResultStatus = typeof BacktestJobResultStatus[keyof typeof BacktestJobResultStatus];
+
+
+export const BacktestJobResultStatus = {
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface BacktestJobResult {
+  runId: string;
+  status: BacktestJobResultStatus;
+  errorMessage?: string | null;
+}
+
+export type BacktestRunStatus = typeof BacktestRunStatus[keyof typeof BacktestRunStatus];
+
+
+export const BacktestRunStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface BacktestRun {
+  id: string;
+  strategyName: string;
+  symbol: string;
+  interval: string;
+  startDate: string;
+  endDate: string;
+  /** JSON-encoded strategy parameters */
+  parameters: string;
+  status: BacktestRunStatus;
+  candlesProcessed: number;
+  startedAt: string;
+  completedAt?: string | null;
+  errorMessage?: string | null;
+  createdAt: string;
+}
+
+export interface BacktestRunListResponse {
+  data: BacktestRun[];
+  total: number;
+}
+
+export type BacktestTradeSide = typeof BacktestTradeSide[keyof typeof BacktestTradeSide];
+
+
+export const BacktestTradeSide = {
+  BUY: 'BUY',
+  SELL: 'SELL',
+} as const;
+
+export interface BacktestTrade {
+  id: string;
+  backtestRunId: string;
+  side: BacktestTradeSide;
+  entryTime: string;
+  exitTime?: string | null;
+  entryPrice: string;
+  exitPrice?: string | null;
+  quantity: string;
+  pnl?: string | null;
+  pnlPct?: string | null;
+  entrySignal: string;
+  exitSignal?: string | null;
+  candleIndexEntry: number;
+  candleIndexExit?: number | null;
+  createdAt: string;
+}
+
+export interface PerformanceMetrics {
+  id: string;
+  backtestRunId: string;
+  totalReturnPct: string;
+  annualizedReturnPct?: string | null;
+  winRate: string;
+  profitFactor?: string | null;
+  avgWinPct?: string | null;
+  avgLossPct?: string | null;
+  maxDrawdownPct: string;
+  sharpeRatio?: string | null;
+  sortinoRatio?: string | null;
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  expectancy?: string | null;
+  createdAt: string;
+}
+
+export interface BacktestDetailResponse {
+  run: BacktestRun;
+  metrics?: PerformanceMetrics | null;
+  trades: BacktestTrade[];
+}
+
+export interface ResearchResult {
+  run: BacktestRun;
+  metrics: PerformanceMetrics;
+}
+
+export interface ResearchResultListResponse {
+  data: ResearchResult[];
+  total: number;
+}
+
+export type MetricComparisonFormat = typeof MetricComparisonFormat[keyof typeof MetricComparisonFormat];
+
+
+export const MetricComparisonFormat = {
+  percent: 'percent',
+  ratio: 'ratio',
+  integer: 'integer',
+  decimal: 'decimal',
+} as const;
+
+export type MetricComparisonValues = {[key: string]: number | null};
+
+export interface MetricComparison {
+  metric: string;
+  label: string;
+  format: MetricComparisonFormat;
+  higherIsBetter: boolean;
+  values: MetricComparisonValues;
+  winnerId?: string | null;
+}
+
+export interface ComparisonRunSummary {
+  run: BacktestRun;
+  metrics?: PerformanceMetrics | null;
+}
+
+export interface ComparisonResponse {
+  runIds: string[];
+  summaries: ComparisonRunSummary[];
+  comparisons: MetricComparison[];
+  overallWinnerId?: string | null;
+}
+
 /**
  * Validation error
  */
@@ -433,5 +641,42 @@ to?: string;
  * @maximum 200
  */
 limit?: number;
+};
+
+export type ListResearchRunsParams = {
+strategyName?: string;
+symbol?: string;
+status?: ListResearchRunsStatus;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type ListResearchRunsStatus = typeof ListResearchRunsStatus[keyof typeof ListResearchRunsStatus];
+
+
+export const ListResearchRunsStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export type ListResearchResultsParams = {
+strategyName?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type CompareBacktestRunsParams = {
+/**
+ * Comma-separated list of backtest run IDs (minimum 2)
+ */
+ids: string;
 };
 
