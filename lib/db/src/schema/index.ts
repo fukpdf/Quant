@@ -60,3 +60,14 @@ export * from "./allocation-snapshots";
 export * from "./benchmark-snapshots";
 export * from "./performance-periods";
 export * from "./analytics-audit-log";
+// Phase 8 — AI Research Assistant & Quant Intelligence Layer
+export * from "./ai-conversations";
+export * from "./ai-queries";
+export * from "./ai-context-snapshots";
+export * from "./ai-reports";
+export * from "./ai-insights";
+export * from "./ai-summaries";
+export * from "./ai-explanations";
+export * from "./ai-recommendations";
+export * from "./ai-usage-metrics";
+export * from "./ai-audit-log";

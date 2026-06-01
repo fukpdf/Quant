@@ -538,3 +538,65 @@ Phase 7 targets portfolios with months of trade history and multiple concurrent 
 - Each analytics domain exposes a `POST .../compute` endpoint for immediate refresh
 - `analytics_audit_log` records every computation event, so freshness is always auditable
 - Phase 8+ can switch to streaming/real-time for specific hot metrics without changing the API contract
+
+---
+
+### ADR-018 — LLM Provider Abstraction Layer (Phase 8)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Implement a pluggable `ILlmProvider` interface with four concrete adapters (OpenAI, Anthropic, Gemini, Mock) selected at runtime via the `AI_PROVIDER` environment variable. Missing API key falls back to MockLlmProvider rather than crashing.
+
+**Context**
+Phase 8 introduces AI capabilities. The choice of LLM provider is a volatile configuration decision — operators may prefer different providers for cost, capability, privacy, or availability reasons. Hardcoding a single provider creates migration friction. Additionally, the platform must remain runnable during development without requiring any paid API key.
+
+**Rationale**
+- `ILlmProvider` interface enforces a uniform contract (`chat()`, `name`, `defaultModel`, `countTokens()`) regardless of upstream API shape
+- `AiProviderFactory.getProvider()` is a singleton; the provider is selected once at startup from `AI_PROVIDER` env var
+- Mock provider is the default — zero-config startup, deterministic structured responses, useful for integration testing
+- Fallback-to-mock on missing API key is explicit behavior, not silent — logged at startup so operators know which provider is active
+- Provider switching requires only an env var change — no application code changes, no deployment rebuild
+
+**Alternatives Considered**
+- Single hardcoded provider (OpenAI) — rejected: locks the platform; migration cost is high once schema and usage patterns are baked in
+- Direct provider SDK calls in routes — rejected: violates DRY, makes provider switching a multi-file refactor, no auditability
+- Plugin/dynamic loading — rejected: over-engineering for a personal platform; four providers cover all realistic needs
+
+**Consequences**
+- Adding a fifth provider requires only: a new `*-provider.ts` implementing `ILlmProvider`, and one case in `AiProviderFactory`; no other changes
+- All token usage is recorded via `ai_usage_metrics` regardless of provider; cost tracking works uniformly
+- Mock provider responses are structured and tagged `[MOCK]` — easy to distinguish from real responses in audit logs
+- Provider/model is recorded in every DB row (conversation, report, insight, audit log) for complete reproducibility
+
+---
+
+### ADR-019 — AI Advisory-Only Safety Architecture (Phase 8)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+The AI Research Assistant is unconditionally advisory-only. It has read-only access to platform data and cannot execute trades, approve/reject orders, override risk controls, bypass circuit breakers, or modify any platform state. This is enforced architecturally at the application layer, not by LLM instruction alone.
+
+**Context**
+AI systems that can influence financial decisions carry significant risk. Even with a well-designed system prompt, LLMs can be manipulated (prompt injection, jailbreaks). A personal platform with real capital requires hard architectural guarantees, not soft AI-layer promises.
+
+**Rationale**
+- AI services only call read-only DB helpers — they have no write access to orders, positions, risk profiles, or account state
+- The system prompt contains an explicit advisory boundary statement in every call to the LLM
+- All AI API routes are separate (`/v1/ai/`) from all action routes; no AI route calls execution services
+- Audit log records every AI interaction — any attempt to use AI output to take action is independently logged and traceable
+- This boundary is preserved in all Phase 9+ work: execution engine must never accept AI output as a direct trigger
+
+**Alternatives Considered**
+- AI with controlled write access — rejected: unnecessary complexity; Phase 8 goal is insight and explanation, not automation
+- AI with optional "apply recommendation" action — rejected: deferred to Phase 9+ pending full execution engine and kill switch integration; advisory boundary maintained until then
+
+**Consequences**
+- AI cannot be used as an autonomous trading agent without explicit Phase 9+ architecture changes
+- Human-in-the-loop is guaranteed by construction, not by instruction
+- Audit log provides full traceability of all AI interactions for compliance review

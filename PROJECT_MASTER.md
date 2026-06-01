@@ -94,8 +94,8 @@ Deliverables:
 
 **Current Phase:**
 
-**Phase 7 — Portfolio Intelligence & Analytics Platform** ✅ Complete
-- 12 DB tables, performance engine (TWR/MWR/Sharpe/Sortino/Calmar/Alpha/Beta/IR/MaxDD), benchmark service (BTC/ETH/SOL), attribution engine (Brinson-Hood-Beebower), health engine (composite 0–100, A–F grade), diversification engine (HHI), allocation tracker (15m snapshots, drift detection), recommendation engine (rule-based), analytics scheduler (6 loops), 10 route files, 27 endpoints
+**Phase 8 — AI Research Assistant & Quant Intelligence Layer** ✅ Complete
+- 10 DB tables, LLM provider abstraction (OpenAI/Anthropic/Gemini/Mock, env-driven), AI context engine (reads all platform domains), chat service (conversation threading), report engine (12 types), analysis service (strategy/portfolio/risk/comparison/insights), 8 route files, 19 endpoints, immutable audit log, advisory-only safety boundary enforced architecturally, OpenAPI 0.8.0 with `ai` tag, codegen regenerated
 
 **Prior Phases Complete:**
 
@@ -111,7 +111,7 @@ Deliverables:
 **Phase 3 — Research Laboratory** ✅ Complete
 - Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-**Next Phase: Phase 8 — Execution Engine**
+**Next Phase: Phase 9 — Execution Engine**
 
 Goal: Live broker connectivity, order management, fill confirmation, reconciliation, and kill switch integration.
 
@@ -128,8 +128,8 @@ Goal: Live broker connectivity, order management, fill confirmation, reconciliat
 | 5 | Paper Trading | Order simulation, fill modeling, account state tracking |
 | 6 | Risk Engine | Position sizing, drawdown limits, exposure controls, circuit breakers |
 | 7 | Portfolio Analytics | Performance attribution, risk-adjusted metrics, reporting |
-| 8 | Execution Engine | Live broker connectivity, order management, reconciliation |
-| 9 | AI Research Assistant | LLM-powered hypothesis generation, code review, anomaly detection |
+| 8 | AI Research Assistant | LLM advisory layer — advisory chat, reports, insights, comparisons ✅ |
+| 9 | Execution Engine | Live broker connectivity, order management, reconciliation |
 | 10 | Production Readiness | Hardening, monitoring, alerting, DR, security audit |
 
 ---
@@ -223,7 +223,7 @@ See [SECURITY.md](./SECURITY.md) and [docs/06-SECURITY_ARCHITECTURE.md](./docs/0
 - **Replit as development environment**: The primary dev environment is Replit.
 - **Node.js / TypeScript ecosystem**: The platform is TypeScript-native. Python may be introduced for research (Phase 3+).
 - **PostgreSQL only**: No polyglot persistence in early phases. One database, mastered well.
-- **No real money before Phase 8**: Execution against real capital does not begin until the risk engine (Phase 6) is proven through paper trading (Phase 5).
+- **No real money before Phase 9**: Execution against real capital does not begin until the risk engine (Phase 6) is proven through paper trading (Phase 5).
 
 ---
 

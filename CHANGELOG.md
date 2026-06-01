@@ -23,6 +23,44 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.8.0] — 2026-06-01
+
+### Phase 8 — AI Research Assistant & Quant Intelligence Layer
+
+#### Added
+- **10 new database tables**: `ai_conversations`, `ai_queries`, `ai_context_snapshots`, `ai_reports`, `ai_insights`, `ai_summaries`, `ai_explanations`, `ai_recommendations`, `ai_usage_metrics`, `ai_audit_log`
+- **LLM Provider Abstraction** (`ai-types.ts`, `ai-provider-factory.ts`): Env-driven provider selection via `AI_PROVIDER`; supports `openai`, `anthropic`, `gemini`, `mock`; fallback to mock on missing API key prevents crashes on misconfiguration
+- **MockLlmProvider**: Deterministic structured responses; no API key required; default provider
+- **OpenAiLlmProvider**: Chat Completions API adapter (gpt-4o)
+- **AnthropicLlmProvider**: Messages API adapter (claude-opus-4-5)
+- **GeminiLlmProvider**: generateContent API adapter (gemini-2.5-pro)
+- **AI Context Engine** (`ai-context-builder.ts`): Aggregates all platform data domains (portfolio analytics, risk engine, paper trading, research, benchmarks, health, recommendations) into structured LLM-ready context snapshots; snapshots stored in DB for auditability
+- **AI Database Layer** (`ai-db.ts`): Unified DB helper for all 10 AI tables with full CRUD
+- **Chat Service** (`ai-chat-service.ts`): Conversational Q&A with conversation threading, session history injection, context domain selection
+- **Report Engine** (`ai-report-engine.ts`): 12 report types (portfolio, strategy, risk, performance, benchmark, health, diversification, allocation, daily, weekly, monthly, research); stored and reproducible
+- **Analysis Service** (`ai-analysis-service.ts`): Strategy analysis, portfolio analysis, risk analysis, comparison engine (strategy vs. strategy, portfolio vs. benchmark, backtest vs. paper, risk profile comparison), structured insight generation
+- **19 new API endpoints** under `/v1/ai/`: chat, report generation, report listing, insight generation/acknowledgement, domain summaries, context preview, conversation listing, token usage metrics, audit log, comparison engine
+- **AI audit log**: Every AI interaction (chat, report, insight, analysis) logged with prompt summary, response summary, context domains, provider, model, token counts, latency, and result status
+- **Cost control env vars**: `AI_RATE_LIMIT_PER_MINUTE`, `AI_MONTHLY_TOKEN_BUDGET` (architecture defined; enforcement in Phase 10)
+- `.env.example` updated with all Phase 8 AI variables and documentation
+- Provider logged at startup via pino structured log
+
+#### Changed
+- `lib/api-spec/openapi.yaml` bumped to `0.8.0`
+- `artifacts/api-server/src/routes/v1/index.ts` extended with 8 Phase 8 AI router mounts
+- `artifacts/api-server/src/index.ts` extended with Phase 8 AI provider startup initialization
+- `lib/db/src/schema/index.ts` extended with all 10 Phase 8 AI table exports
+- OpenAPI description updated to mention AI research assistant
+- `ai` tag added to OpenAPI spec with advisory-only safety note
+
+#### Safety Invariants
+- AI is advisory-only: cannot execute trades, approve/reject orders, or override risk controls
+- System prompt enforces this boundary in all LLM calls
+- Immutable audit log records all AI interactions
+- Mock provider default ensures platform starts safely without any API key
+
+---
+
 ## [0.7.0] — 2026-06-01
 
 ### Phase 7 — Portfolio Intelligence & Analytics Platform

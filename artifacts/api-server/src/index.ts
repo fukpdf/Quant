@@ -9,6 +9,7 @@ import { seedDefaultRiskProfiles } from "./services/risk-profile-service";
 import { startRiskScheduler } from "./services/risk-scheduler";
 import { seedDefaultBenchmarks } from "./services/benchmark-service";
 import { startAnalyticsScheduler } from "./services/analytics-scheduler";
+import { AiProviderFactory } from "./services/ai-provider-factory";
 
 const rawPort = process.env["PORT"];
 
@@ -78,4 +79,8 @@ app.listen(port, async (err) => {
 
   // Start analytics scheduler (Phase 7 — performance, health, attribution, allocation, recommendations)
   startAnalyticsScheduler();
+
+  // Initialize AI provider (Phase 8 — logs which provider is active on startup)
+  const aiProvider = AiProviderFactory.getProvider();
+  logger.info({ provider: aiProvider.name, model: aiProvider.defaultModel }, "AI Research Assistant initialized");
 });

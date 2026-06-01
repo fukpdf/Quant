@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.7.0
-  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, and portfolio analytics
+  version: 0.8.0
+  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, and AI research assistant
 servers:
   - url: /api
     description: Base API path
@@ -34,6 +34,8 @@ tags:
     description: Risk engine — pre-trade capital protection, drawdown monitoring, circuit breakers, kill switch, and audit log
   - name: portfolio
     description: Portfolio intelligence — performance analytics, health scoring, attribution, benchmarks, diversification, recommendations
+  - name: ai
+    description: AI Research Assistant — advisory-only analytical intelligence. Explains portfolio performance, risk events, strategies, generates reports, and answers questions. AI cannot execute trades, approve orders, or override risk controls.
 paths:
   /healthz:
     get:
@@ -2292,6 +2294,583 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalyticsAuditLogResponse"
 
+  # ---------------------------------------------------------------------------
+  # Phase 8 — AI Research Assistant & Quant Intelligence Layer
+  # ---------------------------------------------------------------------------
+
+  /v1/ai/chat:
+    post:
+      operationId: aiChat
+      tags: [ai]
+      summary: Chat with the AI research assistant
+      description: Submit a question and receive an advisory-only AI response grounded in stored platform data. AI cannot execute trades or override risk controls.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiChatRequest"
+      responses:
+        "200":
+          description: AI response with conversation ID and token usage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiChatResponse"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/ai/report:
+    post:
+      operationId: generateAiReport
+      tags: [ai]
+      summary: Generate an AI analytical report
+      description: Generate a structured markdown report (portfolio, strategy, risk, performance, benchmark, health, etc.) from stored platform data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiReportRequest"
+      responses:
+        "201":
+          description: Generated report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiReportResult"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/ai/reports:
+    get:
+      operationId: listAiReports
+      tags: [ai]
+      summary: List generated AI reports
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: reportType
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Report list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiReportListResponse"
+
+  /v1/ai/reports/{id}:
+    get:
+      operationId: getAiReport
+      tags: [ai]
+      summary: Get a specific report by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiReport"
+                required: [data]
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ai/insights:
+    get:
+      operationId: listAiInsights
+      tags: [ai]
+      summary: List AI-generated insights
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+        - name: acknowledged
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Insight list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiInsightListResponse"
+
+  /v1/ai/insights/generate:
+    post:
+      operationId: generateAiInsights
+      tags: [ai]
+      summary: Trigger AI insight generation from current platform data
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                domains:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Insights created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      insightsCreated:
+                        type: integer
+                    required: [insightsCreated]
+                required: [data]
+
+  /v1/ai/insights/{id}/acknowledge:
+    patch:
+      operationId: acknowledgeAiInsight
+      tags: [ai]
+      summary: Mark an insight as acknowledged
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                    required: [acknowledged]
+                required: [data]
+
+  /v1/ai/summaries:
+    get:
+      operationId: listAiSummaries
+      tags: [ai]
+      summary: List AI-generated domain summaries
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: domain
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Summary list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSummaryListResponse"
+
+  /v1/ai/summaries/portfolio:
+    post:
+      operationId: generatePortfolioSummary
+      tags: [ai]
+      summary: Generate a portfolio analysis summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId:
+                  type: string
+                  format: uuid
+                domains:
+                  type: array
+                  items:
+                    type: string
+              required: [accountId]
+      responses:
+        "201":
+          description: Portfolio summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                    required: [content]
+                required: [data]
+
+  /v1/ai/summaries/strategy:
+    post:
+      operationId: generateStrategySummary
+      tags: [ai]
+      summary: Generate a strategy analysis summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                strategyName:
+                  type: string
+                backtestRunId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                accountId:
+                  type: string
+                  format: uuid
+                  nullable: true
+              required: [strategyName]
+      responses:
+        "201":
+          description: Strategy summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                    required: [content]
+                required: [data]
+
+  /v1/ai/summaries/risk:
+    post:
+      operationId: generateRiskSummary
+      tags: [ai]
+      summary: Generate a risk situation analysis
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                focusEventId:
+                  type: string
+                  nullable: true
+                focusEventType:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Risk summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                    required: [content]
+                required: [data]
+
+  /v1/ai/context:
+    get:
+      operationId: getAiContext
+      tags: [ai]
+      summary: Preview the AI context snapshot for current platform data
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: domains
+          in: query
+          description: Comma-separated list of domains (portfolio,risk,paper,research,benchmark,health,recommendations)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Context snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiContextSnapshot"
+                required: [data]
+
+  /v1/ai/context/{id}:
+    get:
+      operationId: getAiContextSnapshot
+      tags: [ai]
+      summary: Get a stored context snapshot by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Context snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiContextSnapshot"
+                required: [data]
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/ai/conversations:
+    get:
+      operationId: listAiConversations
+      tags: [ai]
+      summary: List AI conversation sessions
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Conversation list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiConversationListResponse"
+
+  /v1/ai/conversations/{id}/queries:
+    get:
+      operationId: listConversationQueries
+      tags: [ai]
+      summary: List all queries within a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Query list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  total:
+                    type: integer
+                required: [data, total]
+
+  /v1/ai/usage:
+    get:
+      operationId: listAiUsage
+      tags: [ai]
+      summary: List AI token usage metrics
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: operationType
+          in: query
+          schema:
+            type: string
+        - name: summary
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 200
+      responses:
+        "200":
+          description: Usage metrics
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/ai/usage/summary:
+    get:
+      operationId: getAiUsageSummary
+      tags: [ai]
+      summary: Get aggregated AI usage summary per provider
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiUsageSummary"
+                required: [data]
+
+  /v1/ai/audit-log:
+    get:
+      operationId: listAiAuditLog
+      tags: [ai]
+      summary: Get the immutable AI system audit log
+      description: Every AI interaction (chat, report, insight, analysis) is recorded here with full prompt, response, context sources, token usage, and timestamp.
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: actor
+          in: query
+          schema:
+            type: string
+        - name: result
+          in: query
+          schema:
+            type: string
+            enum: [success, failure, rejected]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 200
+      responses:
+        "200":
+          description: Audit log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAuditLogResponse"
+
+  /v1/ai/compare:
+    post:
+      operationId: aiCompare
+      tags: [ai]
+      summary: Generate a narrative comparison between two platform entities
+      description: Compares strategies, portfolios vs. benchmarks, backtests vs. paper trading, or risk profiles. Returns a markdown narrative.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiCompareRequest"
+      responses:
+        "201":
+          description: Comparison narrative
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AiCompareResponse"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   responses:
     ValidationError:
@@ -2308,6 +2887,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     InsufficientData:
       description: Not enough data to perform computation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Internal server error
       content:
         application/json:
           schema:
@@ -5719,3 +6304,473 @@ components:
         total:
           type: integer
       required: [data, total]
+
+    # -------------------------------------------------------------------------
+    # Phase 8 — AI Research Assistant
+    # -------------------------------------------------------------------------
+
+    AiChatRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: User question in plain text
+        conversationId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Continue an existing conversation (omit to start new)
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        domains:
+          type: array
+          items:
+            type: string
+            enum: [portfolio, risk, paper, research, benchmark, health, recommendations]
+          nullable: true
+      required: [question]
+
+    AiChatResponse:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+        queryId:
+          type: string
+          format: uuid
+        answer:
+          type: string
+        provider:
+          type: string
+          enum: [openai, anthropic, gemini, mock]
+        model:
+          type: string
+        usage:
+          $ref: "#/components/schemas/AiTokenUsage"
+        contextDomains:
+          type: array
+          items:
+            type: string
+      required: [conversationId, queryId, answer, provider, model, usage, contextDomains]
+
+    AiTokenUsage:
+      type: object
+      properties:
+        promptTokens:
+          type: integer
+        completionTokens:
+          type: integer
+        totalTokens:
+          type: integer
+        estimatedCostUsd:
+          type: number
+          nullable: true
+      required: [promptTokens, completionTokens, totalTokens]
+
+    AiConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          nullable: true
+        actor:
+          type: string
+        status:
+          type: string
+          enum: [open, closed]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        provider:
+          type: string
+          enum: [openai, anthropic, gemini, mock]
+        model:
+          type: string
+          nullable: true
+        totalPromptTokens:
+          type: string
+        totalCompletionTokens:
+          type: string
+        queryCount:
+          type: string
+        contextDomains:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, actor, status, provider, totalPromptTokens, totalCompletionTokens, queryCount, createdAt]
+
+    AiConversationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiConversation"
+        total:
+          type: integer
+      required: [data, total]
+
+    AiReportRequest:
+      type: object
+      properties:
+        reportType:
+          type: string
+          enum: [portfolio, strategy, risk, performance, benchmark, health, diversification, allocation, daily, weekly, monthly, research]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        period:
+          type: string
+          enum: [daily, weekly, monthly, custom]
+          nullable: true
+        periodStart:
+          type: string
+          nullable: true
+        periodEnd:
+          type: string
+          nullable: true
+        domains:
+          type: array
+          items:
+            type: string
+          nullable: true
+      required: [reportType]
+
+    AiReportResult:
+      type: object
+      properties:
+        reportId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        reportType:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        usage:
+          $ref: "#/components/schemas/AiTokenUsage"
+      required: [reportId, title, content, reportType, provider, model, usage]
+
+    AiReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reportType:
+          type: string
+        title:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        period:
+          type: string
+          nullable: true
+        content:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [generating, completed, failed]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, reportType, title, content, provider, status, createdAt]
+
+    AiReportListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiReport"
+        total:
+          type: integer
+      required: [data, total]
+
+    AiInsight:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum: [performance, risk, diversification, strategy, benchmark, allocation]
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        title:
+          type: string
+        explanation:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        acknowledged:
+          type: boolean
+        provider:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, category, severity, title, explanation, acknowledged, provider, createdAt]
+
+    AiInsightListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiInsight"
+        total:
+          type: integer
+      required: [data, total]
+
+    AiSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domain:
+          type: string
+          enum: [portfolio, strategy, risk, research, benchmark, overall]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        strategyName:
+          type: string
+          nullable: true
+        content:
+          type: string
+        tone:
+          type: string
+          enum: [neutral, positive, cautionary, critical]
+        provider:
+          type: string
+        model:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, domain, content, tone, provider, createdAt]
+
+    AiSummaryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiSummary"
+        total:
+          type: integer
+      required: [data, total]
+
+    AiUsageMetric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [openai, anthropic, gemini, mock]
+        model:
+          type: string
+          nullable: true
+        operationType:
+          type: string
+        promptTokens:
+          type: integer
+        completionTokens:
+          type: integer
+        totalTokens:
+          type: integer
+        estimatedCostUsd:
+          type: string
+          nullable: true
+        latencyMs:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, provider, operationType, promptTokens, completionTokens, totalTokens, status, createdAt]
+
+    AiUsageSummary:
+      type: object
+      properties:
+        totalRequests:
+          type: integer
+        totalTokens:
+          type: integer
+        activeProvider:
+          type: string
+          enum: [openai, anthropic, gemini, mock]
+        byProvider:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              requests:
+                type: integer
+              tokens:
+                type: integer
+            required: [requests, tokens]
+      required: [totalRequests, totalTokens, activeProvider, byProvider]
+
+    AiAuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        actor:
+          type: string
+        action:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        conversationId:
+          type: string
+          format: uuid
+          nullable: true
+        reportId:
+          type: string
+          format: uuid
+          nullable: true
+        promptSummary:
+          type: string
+          nullable: true
+        responseSummary:
+          type: string
+          nullable: true
+        contextDomains:
+          type: array
+          items:
+            type: string
+        provider:
+          type: string
+        model:
+          type: string
+          nullable: true
+        promptTokens:
+          type: integer
+        completionTokens:
+          type: integer
+        latencyMs:
+          type: integer
+          nullable: true
+        result:
+          type: string
+          enum: [success, failure, rejected]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, actor, action, provider, promptTokens, completionTokens, result, createdAt]
+
+    AiAuditLogResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiAuditEntry"
+        total:
+          type: integer
+      required: [data, total]
+
+    AiCompareRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [strategy_vs_strategy, portfolio_vs_benchmark, backtest_vs_paper, risk_profile_vs_risk_profile]
+        leftId:
+          type: string
+        rightId:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+      required: [type, leftId, rightId]
+
+    AiCompareResponse:
+      type: object
+      properties:
+        comparison:
+          type: string
+          description: Narrative markdown comparison
+        type:
+          type: string
+        leftId:
+          type: string
+        rightId:
+          type: string
+      required: [comparison, type, leftId, rightId]
+
+    AiContextSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        domains:
+          type: array
+          items:
+            type: string
+        dataPointCount:
+          type: string
+        contextSizeChars:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, domains, dataPointCount, contextSizeChars, createdAt]

@@ -52,6 +52,15 @@ import portfolioAllocationRouter from "./portfolio-allocation";
 import portfolioRecommendationsRouter from "./portfolio-recommendations";
 import portfolioRankingsRouter from "./portfolio-rankings";
 import portfolioAuditRouter from "./portfolio-audit";
+// Phase 8 — AI Research Assistant & Quant Intelligence Layer
+import aiChatRouter from "./ai-chat";
+import aiReportsRouter from "./ai-reports";
+import aiInsightsRouter from "./ai-insights";
+import aiSummariesRouter from "./ai-summaries";
+import aiContextRouter from "./ai-context";
+import aiUsageRouter from "./ai-usage";
+import aiAuditRouter from "./ai-audit";
+import aiComparisonRouter from "./ai-comparison";
 
 const v1Router: IRouter = Router();
 
@@ -116,5 +125,15 @@ v1Router.use(portfolioAllocationRouter);
 v1Router.use(portfolioRecommendationsRouter);
 v1Router.use(portfolioRankingsRouter);
 v1Router.use(portfolioAuditRouter);
+
+// Phase 8 endpoints — AI Research Assistant
+v1Router.use(aiChatRouter);
+v1Router.use(aiReportsRouter);
+v1Router.use(aiInsightsRouter);
+v1Router.use(aiSummariesRouter);
+v1Router.use(aiContextRouter);
+v1Router.use(aiUsageRouter);
+v1Router.use(aiAuditRouter);
+v1Router.use(aiComparisonRouter);
 
 export default v1Router;
