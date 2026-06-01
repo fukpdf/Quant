@@ -23,6 +23,54 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.9.0] — 2026-06-01
+
+### Phase 9 — Real-Time Market Streaming & Event Infrastructure
+
+#### Added
+- **12 new database tables**: `market_ticks`, `market_orderbooks`, `market_trades`, `stream_sessions`, `stream_health`, `stream_failures`, `stream_recovery_events`, `market_state_snapshots`, `event_bus_events`, `event_processing_metrics`, `latency_metrics`, `stream_audit_log`
+- **IStreamProvider abstraction** (ADR-021) — pluggable provider interface with env-driven selection (`STREAM_PROVIDER=mock|binance`)
+- **MockStreamProvider** — synthetic tick/orderbook/trade generation at 1 tick/sec per symbol; no API key required; default provider
+- **BinanceWebSocketProvider** — Binance combined stream (miniTicker + depth + aggTrade); lazy `ws` import so server starts without the package
+- **ForexStreamProvider** and **EquitiesStreamProvider** stubs for future phases
+- **StreamProviderFactory** — singleton provider selection matching AiProviderFactory pattern
+- **EventBus** (ADR-020) — in-memory EventEmitter bus with 14 typed event types; lifecycle events persisted to DB; tick events handled at processor level to avoid DB saturation
+- **MarketStateEngine** (ADR-022) — `Map<symbol, MarketState>` with rolling VWAP, EMA momentum, volatility (std dev of returns), order book imbalance; snapshots to DB every 30s
+- **StreamConnectionManager** — WebSocket lifecycle management with exponential backoff reconnect (1s–60s, max 10 attempts), health snapshot loop every 10s
+- **TickProcessor** — batched DB writes (batch 20, flush every 2s) to reduce DB load at high tick rates
+- **OrderBookProcessor** — sampled persistence (every 10th update) to reduce volume
+- **TradeProcessor** — individual exchange trade event persistence
+- **StreamMetricsProcessor** — per-stage latency recording (provider/processing/storage/end-to-end) with rolling p50/p95/p99; window metrics flushed to DB every 60s
+- **ReplayEngine** (ADR-023) — DB-backed tick replay at 1x/5x/10x/100x speed; fires TickReceived events through event bus; max one concurrent replay
+- **StreamRecoveryService** (ADR-024) — gap detection every 15s (threshold: 10s without tick); OHLCV backfill via existing Binance client; records recovery events
+- **StreamHealthEngine** — composite health score 0–100 from connection status (40pts) + heartbeat freshness (30pts) + latency (20pts) + reliability (10pts)
+- **StreamScheduler** — master startup entry point; non-fatal (server starts even if streaming fails)
+- **15 new REST endpoints** under streams tag:
+  - `GET /v1/streams/status` — live streaming status
+  - `GET /v1/streams/providers` — provider capabilities
+  - `GET /v1/streams/health` — health score per provider
+  - `GET /v1/streams/sessions` — session history
+  - `GET /v1/streams/failures` — failure event log
+  - `GET /v1/streams/latency` — latency measurements + summary stats
+  - `GET /v1/streams/metrics` — event processing throughput metrics
+  - `GET /v1/streams/recovery` — gap fill recovery events
+  - `GET /v1/streams/audit` — immutable stream audit log
+  - `GET /v1/ticks` — tick data with time range support
+  - `GET /v1/orderbook` — live order book augmented with market state
+  - `GET /v1/market-state` — in-memory state (fallback to DB snapshot)
+  - `POST /v1/replay/start` — start tick replay
+  - `POST /v1/replay/stop` — stop replay
+  - `GET /v1/replay/status` — replay session state
+- **3 new environment variables**: `STREAM_ENABLED`, `STREAM_PROVIDER`, `STREAM_SYMBOLS`
+- **OpenAPI spec v0.9.0** — `streams` tag, 15 path entries, 18 new component schemas
+- **ADR-020 through ADR-024** documented in DECISIONS.md
+
+#### Changed
+- `index.ts` — `startStreamScheduler()` called on startup (non-fatal try/catch)
+- OpenAPI version bumped from 0.8.0 to 0.9.0
+
+---
+
 ## [0.8.0] — 2026-06-01
 
 ### Phase 8 — AI Research Assistant & Quant Intelligence Layer
@@ -360,6 +408,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 | Version | Date | Phase | Description |
 |---------|------|-------|-------------|
+| 0.9.0 | 2026-06-01 | Phase 9 | Real-Time Market Streaming & Event Infrastructure |
+| 0.8.0 | 2026-06-01 | Phase 8 | AI Research Assistant & Quant Intelligence Layer |
+| 0.7.0 | 2026-06-01 | Phase 7 | Portfolio Intelligence & Analytics Platform |
+| 0.6.0 | 2026-06-01 | Phase 6 | Institutional Risk Engine & Capital Protection Layer |
+| 0.5.0 | 2026-06-01 | Phase 5 | Institutional Paper Trading Environment |
+| 0.4.0 | 2026-06-01 | Phase 4 | Professional Backtesting & Validation Engine |
 | 0.3.0 | 2026-06-01 | Phase 3 | Quant Research Laboratory & Backtesting Foundation |
 | 0.2.0 | 2026-05-31 | Phase 2 | Multi-market architecture, providers, data quality |
 | 0.1.0 | 2026-05-31 | Phase 0 | Repository foundation and project operating system |

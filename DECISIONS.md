@@ -600,3 +600,130 @@ AI systems that can influence financial decisions carry significant risk. Even w
 - AI cannot be used as an autonomous trading agent without explicit Phase 9+ architecture changes
 - Human-in-the-loop is guaranteed by construction, not by instruction
 - Audit log provides full traceability of all AI interactions for compliance review
+
+---
+
+### ADR-020 — In-Memory EventEmitter Event Bus with DB Audit (Phase 9)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Use Node.js `EventEmitter` as the internal event bus for the streaming infrastructure. Significant lifecycle events (StreamConnected, StreamDisconnected, GapDetected, RecoveryTriggered, etc.) are persisted to the `event_bus_events` table for audit and replay. High-volume events (TickReceived, OrderBookUpdated, TradeReceived) are NOT individually persisted via the event bus — they are handled directly by their respective processors which write to dedicated tables.
+
+**Context**
+A streaming infrastructure requires a pub/sub mechanism for decoupling: the connection manager fires events, and processors/health engines subscribe. Options: in-process EventEmitter, Redis pub/sub, or a message queue (RabbitMQ, Kafka).
+
+**Rationale**
+- EventEmitter is zero-dependency and zero-latency — appropriate for a single-process personal platform
+- Redis adds infra complexity with no benefit at single-node scale
+- High-volume events (ticks at 4 symbols × 1/sec = ~14,400/hour) would overwhelm the audit table if individually logged; processors write directly to `market_ticks`, `market_orderbooks`, `market_trades`
+- Lifecycle events (connect, disconnect, gap, recovery) are low-volume and high-value — worth persisting
+
+**Consequences**
+- Event bus is in-process only — no cross-process fan-out (not needed at personal platform scale)
+- 50-listener cap on EventEmitter to catch accidental unbounded subscription bugs
+- Audit table provides replay capability for lifecycle events; tick replay uses `market_ticks` directly
+
+---
+
+### ADR-021 — IStreamProvider Abstraction Layer (Phase 9)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Define an `IStreamProvider` interface that all streaming data sources implement. Provider is selected at runtime via `STREAM_PROVIDER` environment variable. Default is `mock`. Pattern mirrors `ILlmProvider` (ADR-018) for consistency.
+
+**Context**
+The platform will eventually support multiple asset classes: crypto (Binance), forex (OANDA/IB), equities (Polygon/Alpaca). Hardcoding Binance locks the platform to one market and creates migration friction.
+
+**Rationale**
+- `IStreamProvider` defines: `connect()`, `disconnect()`, `subscribe()`, `unsubscribe()`, `isConnected()`, `onEvent()`, `onError()`, `onDisconnect()`, `getSubscribedSymbols()`
+- `MockStreamProvider` is the default — generates realistic synthetic prices with random walk; no network or API key needed
+- `BinanceWebSocketProvider` uses lazy `ws` import — server starts even if `ws` is not installed; only fails when Binance provider is explicitly selected
+- Adding a new provider requires: one new file implementing `IStreamProvider`, one case in `StreamProviderFactory`; no other changes
+
+**Consequences**
+- Provider switching requires only an env var change and server restart
+- `StreamConnectionManager` is provider-agnostic — no Binance-specific logic in the manager
+- Forex/equities stubs throw `NotImplemented` — clear signal that they're placeholders
+
+---
+
+### ADR-022 — In-Memory Market State Engine with Periodic Snapshots (Phase 9)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Maintain a `Map<symbol, MarketState>` as the source of truth for current market state. Compute VWAP, momentum (EMA of price change %), and volatility (rolling std dev of returns) incrementally on each tick. Persist snapshots to `market_state_snapshots` every 30 seconds.
+
+**Context**
+APIs need to serve current market state with sub-millisecond latency. Two options: (A) query the DB on each request computing from raw ticks; (B) maintain in-memory state, serve from Map, and snapshot periodically.
+
+**Rationale**
+- DB query approach: O(N ticks) at read time, too slow for high-frequency reads
+- In-memory Map: O(1) reads regardless of tick history; appropriate for a single-process platform
+- VWAP uses running weighted mean (not a fixed window) — simple and consistent
+- Snapshots every 30s are sufficient for analytics; real-time consumers use the live map
+- API falls back to DB snapshot if streaming is inactive (e.g. STREAM_ENABLED=false)
+
+**Consequences**
+- Market state is lost on server restart; recovers within seconds when stream reconnects
+- 30-second snapshot lag means analytics queries are at most 30s stale for non-live consumers
+- Map holds one MarketState per tracked symbol — memory footprint is trivial
+
+---
+
+### ADR-023 — DB-Backed Tick Replay Engine (Phase 9)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Implement tick replay by reading stored rows from `market_ticks` and firing `TickReceived` events through the event bus at a configurable speed multiplier (1x, 5x, 10x, 100x). Max one concurrent replay session.
+
+**Context**
+Strategy testing, UI development, and incident analysis all benefit from replaying historical market conditions. Options: (A) re-stream from exchange with time-travel API; (B) replay stored ticks from DB.
+
+**Rationale**
+- Exchange time-travel APIs have rate limits and are unavailable for all providers; DB-stored ticks are always available
+- Firing through the event bus means all existing subscribers (market state engine, processors) receive replay events identically to live events
+- Speed multiplier uses scaled `setTimeout` between ticks — simple and precise for moderate speeds
+- Single-session limit prevents DB read amplification; personal platform doesn't need multi-replay
+- AbortController enables clean stop without setTimeout leaks
+
+**Consequences**
+- Replay fidelity is limited to stored tick resolution (1/sec for mock; exchange-rate for Binance)
+- Very large replay windows (millions of ticks) should be run at 100x to avoid excessive replay time
+- Replay events are tagged with `replayId` in the payload so subscribers can distinguish live from replay
+
+---
+
+### ADR-024 — Gap Detection via Timestamp Comparison (Phase 9)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Detect streaming gaps by comparing the time since last tick per symbol to a configurable threshold (default: 10 seconds). Run gap checks every 15 seconds. On gap detection: record a failure event, trigger OHLCV backfill via the existing Binance REST client, and record a recovery event.
+
+**Context**
+WebSocket streams can silently stall — the connection stays open but messages stop flowing. Heartbeat monitoring alone (Binance sends ping every 3min) is too coarse for data-quality purposes.
+
+**Rationale**
+- Per-symbol `lastTickTime` map in RecoveryService enables independent gap detection per symbol
+- 10-second threshold is conservative: at 1 tick/sec (mock rate), a 10s gap is clearly anomalous; at Binance rates (multiple per second), it's equally clear
+- OHLCV backfill uses the existing `BinanceClient.fetchKlines()` — no new dependency; fills the gap with 1m candle close prices (synthetic ticks)
+- Recovery events recorded with full timing, estimated vs recovered tick counts, and success flag
+
+**Consequences**
+- Gap detection adds negligible overhead (Map lookup every 15s per symbol)
+- Backfill via OHLCV provides approximate data — not exchange-exact ticks — but sufficient for analytics continuity
+- False positives possible during provider transitions (deliberate disconnect); recovery service checks session status before acting

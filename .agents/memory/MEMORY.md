@@ -5,3 +5,4 @@
 - [Strategy framework convention](strategy-framework-convention.md) — strategies implement IStrategy, extend BaseStrategy, register in registry.ts; no infrastructure changes needed to add a strategy.
 - [Zod in api-server](zod-explicit-dep.md) — zod must be an explicit dependency in api-server package.json; transitive resolution via @workspace/db is not reliable.
 - [Orval codegen barrel fix](orval-codegen-barrel.md) — orval regenerates lib/api-zod/src/index.ts on every codegen run; post-process it with printf to keep only the api export.
+- [Phase 9 stream architecture](phase9-stream-arch.md) — Phase 9 is streaming infrastructure (NOT execution engine); key design rules for event bus, providers, market state, replay, and recovery.

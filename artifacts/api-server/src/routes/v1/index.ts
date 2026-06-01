@@ -61,6 +61,12 @@ import aiContextRouter from "./ai-context";
 import aiUsageRouter from "./ai-usage";
 import aiAuditRouter from "./ai-audit";
 import aiComparisonRouter from "./ai-comparison";
+// Phase 9 — Real-Time Market Streaming & Event Infrastructure
+import streamStatusRouter from "./stream-status";
+import marketTicksRouter from "./market-ticks-route";
+import marketOrderbookRouter from "./market-orderbook-route";
+import marketStateRouter from "./market-state-route";
+import replayRouter from "./replay-route";
 
 const v1Router: IRouter = Router();
 
@@ -135,5 +141,12 @@ v1Router.use(aiContextRouter);
 v1Router.use(aiUsageRouter);
 v1Router.use(aiAuditRouter);
 v1Router.use(aiComparisonRouter);
+
+// Phase 9 endpoints — Real-Time Market Streaming & Event Infrastructure
+v1Router.use(streamStatusRouter);
+v1Router.use(marketTicksRouter);
+v1Router.use(marketOrderbookRouter);
+v1Router.use(marketStateRouter);
+v1Router.use(replayRouter);
 
 export default v1Router;

@@ -10,6 +10,7 @@ import { startRiskScheduler } from "./services/risk-scheduler";
 import { seedDefaultBenchmarks } from "./services/benchmark-service";
 import { startAnalyticsScheduler } from "./services/analytics-scheduler";
 import { AiProviderFactory } from "./services/ai-provider-factory";
+import { startStreamScheduler } from "./services/stream-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -83,4 +84,11 @@ app.listen(port, async (err) => {
   // Initialize AI provider (Phase 8 — logs which provider is active on startup)
   const aiProvider = AiProviderFactory.getProvider();
   logger.info({ provider: aiProvider.name, model: aiProvider.defaultModel }, "AI Research Assistant initialized");
+
+  // Start Phase 9 streaming infrastructure (non-fatal — server runs even if streaming fails)
+  try {
+    await startStreamScheduler();
+  } catch (err) {
+    logger.error({ err }, "Failed to start stream scheduler — continuing without streaming");
+  }
 });

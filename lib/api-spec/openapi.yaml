@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.8.0
-  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, and AI research assistant
+  version: 0.9.0
+  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
 servers:
   - url: /api
     description: Base API path
@@ -36,6 +36,8 @@ tags:
     description: Portfolio intelligence — performance analytics, health scoring, attribution, benchmarks, diversification, recommendations
   - name: ai
     description: AI Research Assistant — advisory-only analytical intelligence. Explains portfolio performance, risk events, strategies, generates reports, and answers questions. AI cannot execute trades, approve orders, or override risk controls.
+  - name: streams
+    description: Real-time market streaming — WebSocket provider management, live tick/orderbook/trade data, market state engine, event bus, gap recovery, latency metrics, and tick replay engine.
 paths:
   /healthz:
     get:
@@ -2870,6 +2872,494 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "500":
           $ref: "#/components/responses/InternalError"
+
+  # ---------------------------------------------------------------------------
+  # Phase 9 — Real-Time Market Streaming & Event Infrastructure
+  # ---------------------------------------------------------------------------
+
+  /v1/streams/status:
+    get:
+      operationId: getStreamStatus
+      tags: [streams]
+      summary: Get current streaming infrastructure status
+      description: Returns connection state, active provider, symbols, tick counts, and uptime for the live streaming pipeline.
+      responses:
+        "200":
+          description: Stream status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StreamStatus"
+                required: [data]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/providers:
+    get:
+      operationId: getStreamProviders
+      tags: [streams]
+      summary: List available streaming providers
+      description: Returns the active provider and the full list of supported providers with their capabilities and requirements.
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StreamProvidersResponse"
+                required: [data]
+
+  /v1/streams/health:
+    get:
+      operationId: getStreamHealth
+      tags: [streams]
+      summary: Get stream provider health
+      description: Returns composite health score, latency stats, heartbeat age, and connection status per provider.
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [mock, binance, forex, equities]
+      responses:
+        "200":
+          description: Provider health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: "#/components/schemas/ProviderHealthStatus"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/ProviderHealthStatus"
+                required: [data]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/sessions:
+    get:
+      operationId: getStreamSessions
+      tags: [streams]
+      summary: List stream session history
+      description: Returns historical stream sessions with tick counts, status, and timing.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StreamSession"
+                  total:
+                    type: integer
+                required: [data, total]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/failures:
+    get:
+      operationId: getStreamFailures
+      tags: [streams]
+      summary: List stream failure events
+      description: Returns connection errors, heartbeat timeouts, parse errors, and other streaming failures.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+      responses:
+        "200":
+          description: Failure events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StreamFailure"
+                  total:
+                    type: integer
+                required: [data, total]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/latency:
+    get:
+      operationId: getStreamLatency
+      tags: [streams]
+      summary: Get stream latency metrics
+      description: Returns individual latency measurements or summary stats (avg/p95/p99) across provider, processing, storage, and end-to-end stages.
+      parameters:
+        - name: provider
+          in: query
+          schema:
+            type: string
+        - name: metricType
+          in: query
+          schema:
+            type: string
+            enum: [provider_latency, processing_latency, storage_latency, queue_latency, end_to_end]
+        - name: summary
+          in: query
+          description: Return aggregate stats instead of individual measurements
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 200
+            maximum: 1000
+      responses:
+        "200":
+          description: Latency metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/LatencyMetric"
+                      - type: object
+                        additionalProperties:
+                          $ref: "#/components/schemas/LatencyStats"
+                  total:
+                    type: integer
+                required: [data]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/metrics:
+    get:
+      operationId: getStreamProcessingMetrics
+      tags: [streams]
+      summary: Get event processing metrics
+      description: Returns aggregated throughput, latency percentiles, and error counts per event type per measurement window.
+      parameters:
+        - name: processor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+      responses:
+        "200":
+          description: Processing metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EventProcessingMetric"
+                  total:
+                    type: integer
+                required: [data, total]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/recovery:
+    get:
+      operationId: getStreamRecovery
+      tags: [streams]
+      summary: List stream recovery events
+      description: Returns gap detection events and backfill recovery actions with success status.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Recovery events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StreamRecoveryEvent"
+                  total:
+                    type: integer
+                required: [data, total]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/streams/audit:
+    get:
+      operationId: getStreamAuditLog
+      tags: [streams]
+      summary: Get stream audit log
+      description: Immutable log of all streaming infrastructure actions — start, stop, reconnect, backfill, replay.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 200
+            maximum: 1000
+      responses:
+        "200":
+          description: Audit log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StreamAuditEntry"
+                  total:
+                    type: integer
+                required: [data, total]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/ticks:
+    get:
+      operationId: getTicks
+      tags: [streams]
+      summary: Get recent tick data for a symbol
+      description: Returns the most recent tick records from the live stream. Supports time range queries for historical replay analysis.
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+            example: BTCUSDT
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: from
+          in: query
+          description: Start of time range (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End of time range (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Tick data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketTick"
+                  symbol:
+                    type: string
+                  count:
+                    type: integer
+                required: [data, symbol, count]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/orderbook:
+    get:
+      operationId: getOrderBook
+      tags: [streams]
+      summary: Get current order book for a symbol
+      description: Returns the latest stored order book snapshot enriched with live imbalance, bid, and ask from the in-memory market state engine.
+      parameters:
+        - name: symbol
+          in: query
+          required: true
+          schema:
+            type: string
+            example: BTCUSDT
+      responses:
+        "200":
+          description: Order book
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderBook"
+                  symbol:
+                    type: string
+                required: [data, symbol]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/market-state:
+    get:
+      operationId: getMarketState
+      tags: [streams]
+      summary: Get current market state per symbol
+      description: Returns live in-memory market state (price, VWAP, momentum, volatility, imbalance, ticks/sec). Falls back to DB snapshot if streaming is inactive.
+      parameters:
+        - name: symbol
+          in: query
+          description: Filter to a single symbol
+          schema:
+            type: string
+            example: BTCUSDT
+        - name: source
+          in: query
+          description: "live = in-memory (default); snapshot = DB snapshot"
+          schema:
+            type: string
+            enum: [live, snapshot]
+            default: live
+      responses:
+        "200":
+          description: Market state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: "#/components/schemas/MarketState"
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/MarketState"
+                  source:
+                    type: string
+                    enum: [live, snapshot]
+                  symbols:
+                    type: array
+                    items:
+                      type: string
+                required: [data, source]
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/replay/start:
+    post:
+      operationId: startReplay
+      tags: [streams]
+      summary: Start a tick replay session
+      description: Replays stored tick data for a symbol over a time range at configurable speed. Events are fired through the internal event bus as if they were live. Max one concurrent replay.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplayStartRequest"
+      responses:
+        "202":
+          description: Replay started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ReplayState"
+                required: [data]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/replay/stop:
+    post:
+      operationId: stopReplay
+      tags: [streams]
+      summary: Stop the active replay session
+      responses:
+        "200":
+          description: Replay stopped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      stopped:
+                        type: boolean
+                      ticksReplayed:
+                        type: integer
+                    required: [stopped, ticksReplayed]
+                required: [data]
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/replay/status:
+    get:
+      operationId: getReplayStatus
+      tags: [streams]
+      summary: Get current replay session status
+      responses:
+        "200":
+          description: Replay status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ReplayState"
+                  availableSpeeds:
+                    type: array
+                    items:
+                      type: integer
+                required: [data, availableSpeeds]
 
 components:
   responses:
@@ -6774,3 +7264,595 @@ components:
           type: string
           format: date-time
       required: [id, domains, dataPointCount, contextSizeChars, createdAt]
+
+    # -------------------------------------------------------------------------
+    # Phase 9 — Real-Time Market Streaming & Event Infrastructure
+    # -------------------------------------------------------------------------
+
+    StreamStatus:
+      type: object
+      properties:
+        streaming:
+          type: boolean
+        provider:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        symbols:
+          type: array
+          items:
+            type: string
+        streamTypes:
+          type: array
+          items:
+            type: string
+        ticksReceived:
+          type: integer
+        eventsProcessed:
+          type: integer
+        reconnectAttempts:
+          type: integer
+        totalFailures:
+          type: integer
+        uptime:
+          type: integer
+          description: Seconds since stream connected
+      required: [streaming, provider, symbols, streamTypes, ticksReceived, eventsProcessed, reconnectAttempts, totalFailures, uptime]
+
+    StreamProviderInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [available, not_implemented]
+        requiresApiKey:
+          type: boolean
+        note:
+          type: string
+          nullable: true
+      required: [name, description, status, requiresApiKey]
+
+    StreamProvidersResponse:
+      type: object
+      properties:
+        active:
+          type: string
+        available:
+          type: array
+          items:
+            $ref: "#/components/schemas/StreamProviderInfo"
+      required: [active, available]
+
+    ProviderHealthStatus:
+      type: object
+      properties:
+        provider:
+          type: string
+        connectionStatus:
+          type: string
+          enum: [healthy, degraded, disconnected, failed]
+        heartbeatAgeSeconds:
+          type: number
+          nullable: true
+        lastTickAgeSeconds:
+          type: number
+          nullable: true
+        reconnectCount:
+          type: integer
+        failureCount:
+          type: integer
+        ticksPerSecond:
+          type: number
+        avgLatencyMs:
+          type: number
+          nullable: true
+        p99LatencyMs:
+          type: number
+          nullable: true
+        healthScore:
+          type: number
+          description: Composite health score 0–100
+        subscribedSymbols:
+          type: integer
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+      required: [provider, connectionStatus, reconnectCount, failureCount, ticksPerSecond, healthScore, subscribedSymbols]
+
+    StreamSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        status:
+          type: string
+          enum: [connecting, active, reconnecting, closed, failed]
+        symbols:
+          type: array
+          items:
+            type: string
+        streamTypes:
+          type: array
+          items:
+            type: string
+        reconnectCount:
+          type: string
+        ticksReceived:
+          type: string
+        eventsProcessed:
+          type: string
+        isGraceful:
+          type: boolean
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, provider, status, symbols, streamTypes, reconnectCount, ticksReceived, eventsProcessed, startedAt, createdAt]
+
+    StreamFailure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        failureType:
+          type: string
+          enum: [connection_error, heartbeat_timeout, parse_error, rate_limit, provider_outage, backpressure]
+        message:
+          type: string
+        affectedSymbols:
+          type: array
+          items:
+            type: string
+        recoveryAction:
+          type: string
+          nullable: true
+        recovered:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, provider, failureType, message, createdAt]
+
+    StreamRecoveryEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        failureId:
+          type: string
+          format: uuid
+          nullable: true
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        recoveryType:
+          type: string
+          enum: [reconnect, backfill, gap_fill, session_repair, manual]
+        status:
+          type: string
+          enum: [started, in_progress, completed, failed]
+        symbol:
+          type: string
+          nullable: true
+        estimatedGapTicks:
+          type: string
+          nullable: true
+        recoveredTicks:
+          type: string
+          nullable: true
+        success:
+          type: boolean
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, provider, recoveryType, status, startedAt, createdAt]
+
+    StreamAuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        provider:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        symbol:
+          type: string
+          nullable: true
+        actor:
+          type: string
+        detail:
+          type: object
+          nullable: true
+        success:
+          type: boolean
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, action, actor, success, createdAt]
+
+    MarketTick:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        provider:
+          type: string
+        price:
+          type: string
+          description: Numeric string (ADR-013)
+        bidPrice:
+          type: string
+          nullable: true
+        askPrice:
+          type: string
+          nullable: true
+        spread:
+          type: string
+          nullable: true
+        volume:
+          type: string
+          nullable: true
+        quoteVolume:
+          type: string
+          nullable: true
+        priceChangePercent:
+          type: string
+          nullable: true
+        exchangeTimestamp:
+          type: integer
+          nullable: true
+        latencyMs:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, provider, price, createdAt]
+
+    OrderBook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        provider:
+          type: string
+        bestBid:
+          type: string
+          nullable: true
+        bestBidQty:
+          type: string
+          nullable: true
+        bestAsk:
+          type: string
+          nullable: true
+        bestAskQty:
+          type: string
+          nullable: true
+        spread:
+          type: string
+          nullable: true
+        spreadPct:
+          type: string
+          nullable: true
+        imbalance:
+          type: string
+          nullable: true
+        bidLiquidity:
+          type: string
+          nullable: true
+        askLiquidity:
+          type: string
+          nullable: true
+        bids:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        asks:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        liveImbalance:
+          type: number
+          nullable: true
+        liveBid:
+          type: number
+          nullable: true
+        liveAsk:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, provider, bids, asks, createdAt]
+
+    MarketState:
+      type: object
+      properties:
+        symbol:
+          type: string
+        provider:
+          type: string
+        lastPrice:
+          type: number
+          nullable: true
+        bidPrice:
+          type: number
+          nullable: true
+        askPrice:
+          type: number
+          nullable: true
+        spread:
+          type: number
+          nullable: true
+        vwap:
+          type: number
+          nullable: true
+          description: Volume-Weighted Average Price (rolling window)
+        volume:
+          type: number
+        quoteVolume:
+          type: number
+        priceChangePercent:
+          type: number
+          nullable: true
+        momentum:
+          type: number
+          nullable: true
+          description: EMA of recent price change % (-1 to +1 range)
+        volatility:
+          type: number
+          nullable: true
+          description: Rolling std dev of price returns
+        imbalance:
+          type: number
+          nullable: true
+          description: Order book imbalance (-1 = fully ask-heavy, +1 = fully bid-heavy)
+        marketStatus:
+          type: string
+          enum: [open, closed, halted, pre_market, after_hours]
+        tickCount:
+          type: integer
+        ticksPerSecond:
+          type: number
+        lastTickAt:
+          type: integer
+          nullable: true
+          description: Unix ms timestamp of last tick
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        updatedAt:
+          type: integer
+          description: Unix ms timestamp
+      required: [symbol, provider, volume, quoteVolume, marketStatus, tickCount, ticksPerSecond, updatedAt]
+
+    LatencyMetric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        symbol:
+          type: string
+          nullable: true
+        metricType:
+          type: string
+          enum: [provider_latency, processing_latency, storage_latency, queue_latency, end_to_end]
+        valueMs:
+          type: string
+          description: Latency in milliseconds (numeric string)
+        exchangeTimestampMs:
+          type: string
+          nullable: true
+        receiveTimestampMs:
+          type: string
+          nullable: true
+        processTimestampMs:
+          type: string
+          nullable: true
+        storeTimestampMs:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, provider, metricType, valueMs, createdAt]
+
+    LatencyStats:
+      type: object
+      properties:
+        avg:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+        p95:
+          type: number
+        p99:
+          type: number
+        count:
+          type: integer
+      required: [avg, min, max, p95, p99, count]
+
+    EventProcessingMetric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        processor:
+          type: string
+        windowSeconds:
+          type: string
+        eventCount:
+          type: string
+        errorCount:
+          type: string
+        minMs:
+          type: string
+          nullable: true
+        maxMs:
+          type: string
+          nullable: true
+        meanMs:
+          type: string
+          nullable: true
+        p50Ms:
+          type: string
+          nullable: true
+        p95Ms:
+          type: string
+          nullable: true
+        p99Ms:
+          type: string
+          nullable: true
+        throughput:
+          type: string
+          nullable: true
+        windowStart:
+          type: string
+          format: date-time
+        windowEnd:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, eventType, processor, windowSeconds, eventCount, errorCount, windowStart, windowEnd, createdAt]
+
+    ReplayStartRequest:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: BTCUSDT
+        from:
+          type: string
+          format: date-time
+          description: Start of replay window (ISO 8601)
+        to:
+          type: string
+          format: date-time
+          description: End of replay window (ISO 8601)
+        speed:
+          type: integer
+          enum: [1, 5, 10, 100]
+          default: 1
+          description: "Replay speed multiplier: 1=realtime, 5=5x, 10=10x, 100=100x"
+        streamTypes:
+          type: array
+          items:
+            type: string
+            enum: [ticker, orderbook, trade]
+          default: [ticker]
+      required: [symbol, from, to]
+
+    ReplayState:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [idle, running, paused, completed, failed]
+        symbol:
+          type: string
+        ticksReplayed:
+          type: integer
+        totalTicks:
+          type: integer
+        currentTime:
+          type: string
+          format: date-time
+          nullable: true
+        startedAt:
+          type: integer
+          nullable: true
+          description: Unix ms timestamp
+        completedAt:
+          type: integer
+          nullable: true
+          description: Unix ms timestamp
+        errorMessage:
+          type: string
+          nullable: true
+      required: [status, ticksReplayed]

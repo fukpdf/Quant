@@ -323,15 +323,75 @@
 
 ---
 
-## Phase 9 — Execution Engine
+## Phase 9 — Real-Time Market Streaming & Event Infrastructure ✅ COMPLETE
 
-> ⚠️ Real financial risk begins here. Do not start until Phase 6 is proven via Phase 5.
+**Goal**: Live data backbone — WebSocket provider abstraction, event bus, market state engine, tick replay, gap recovery, and latency tracking. No broker execution, no real orders.
 
-- [ ] Broker adapter interface
-- [ ] First broker integration (TBD)
-- [ ] Order routing layer
-- [ ] Fill confirmation and reconciliation
-- [ ] Kill switch integration with broker
+### Database Tables (12 new)
+- [x] `market_ticks` — real-time tick data (price, bid, ask, spread, volume, latency)
+- [x] `market_orderbooks` — periodic order book snapshots (depth, imbalance, liquidity)
+- [x] `market_trades` — individual exchange trade events (price, qty, side)
+- [x] `stream_sessions` — WebSocket session lifecycle records
+- [x] `stream_health` — per-provider health snapshots (heartbeat, latency, health score)
+- [x] `stream_failures` — connection errors, timeouts, parse errors
+- [x] `stream_recovery_events` — gap fill and backfill recovery records
+- [x] `market_state_snapshots` — periodic persistence of in-memory market state
+- [x] `event_bus_events` — lifecycle event audit log (sampled — ticks not individually stored)
+- [x] `event_processing_metrics` — throughput/latency metrics per event type per window
+- [x] `latency_metrics` — individual pipeline stage latency measurements
+- [x] `stream_audit_log` — immutable record of all stream infrastructure actions
+
+### Provider Abstraction (ADR-021)
+- [x] `IStreamProvider` interface — unified contract for all streaming providers
+- [x] `MockStreamProvider` — synthetic tick/orderbook/trade data (default, no API key)
+- [x] `BinanceWebSocketProvider` — Binance combined stream (ticker + depth + aggTrade)
+- [x] `ForexStreamProvider` stub — future forex integration placeholder
+- [x] `EquitiesStreamProvider` stub — future equities integration placeholder
+- [x] `StreamProviderFactory` — env-driven selection (STREAM_PROVIDER=mock|binance)
+
+### Core Services
+- [x] `stream-types.ts` — shared TypeScript types (IStreamProvider, MarketState, ReplayConfig, etc.)
+- [x] `stream-db.ts` — unified DB layer for all 12 tables
+- [x] `event-bus.ts` — in-memory EventEmitter bus with DB audit persistence (ADR-020)
+- [x] `market-state-engine.ts` — Map<symbol, MarketState> + VWAP + momentum + volatility (ADR-022)
+- [x] `stream-connection-manager.ts` — WebSocket lifecycle, reconnect backoff, health loop
+- [x] `tick-processor.ts` — batched DB persistence (batch size 20, flush every 2s)
+- [x] `orderbook-processor.ts` — sampled order book persistence (every 10th update)
+- [x] `trade-processor.ts` — exchange trade event persistence
+- [x] `stream-metrics-processor.ts` — latency recording + rolling percentile computation
+- [x] `replay-engine.ts` — DB-backed tick replay at 1x/5x/10x/100x speed (ADR-023)
+- [x] `stream-recovery-service.ts` — gap detection every 15s + OHLCV backfill (ADR-024)
+- [x] `stream-health-engine.ts` — composite health score (connection + heartbeat + latency + reliability)
+- [x] `stream-scheduler.ts` — master startup entry point (non-fatal — server starts without streaming)
+
+### API Endpoints (Phase 9 — 14 endpoints)
+- [x] `GET /v1/streams/status` — live streaming status, provider, symbols, tick counts
+- [x] `GET /v1/streams/providers` — available providers with capabilities
+- [x] `GET /v1/streams/health` — per-provider health score and latency stats
+- [x] `GET /v1/streams/sessions` — session history
+- [x] `GET /v1/streams/failures` — failure event log
+- [x] `GET /v1/streams/latency` — latency measurements + summary stats
+- [x] `GET /v1/streams/metrics` — event processing throughput metrics
+- [x] `GET /v1/streams/recovery` — gap fill and recovery events
+- [x] `GET /v1/streams/audit` — immutable stream infrastructure audit log
+- [x] `GET /v1/ticks` — recent tick data with time range support
+- [x] `GET /v1/orderbook` — current order book with live state augmentation
+- [x] `GET /v1/market-state` — live in-memory state (fallback to DB snapshot)
+- [x] `POST /v1/replay/start` — start tick replay at configurable speed
+- [x] `POST /v1/replay/stop` — stop active replay
+- [x] `GET /v1/replay/status` — replay session state
+
+### Environment Variables
+- [x] `STREAM_ENABLED=true` — enables/disables streaming on startup (default: true)
+- [x] `STREAM_PROVIDER=mock` — provider selection: mock | binance (default: mock)
+- [x] `STREAM_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT` — symbols to subscribe
+
+### OpenAPI & Codegen
+- [x] `streams` tag added
+- [x] Version bumped to 0.9.0
+- [x] 15 path entries added under Phase 9 routes
+- [x] 18 new component schemas
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
 
 ---
 

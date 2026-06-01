@@ -71,3 +71,16 @@ export * from "./ai-explanations";
 export * from "./ai-recommendations";
 export * from "./ai-usage-metrics";
 export * from "./ai-audit-log";
+// Phase 9 — Real-Time Market Streaming & Event Infrastructure
+export * from "./market-ticks";
+export * from "./market-orderbooks";
+export * from "./market-trades";
+export * from "./stream-sessions";
+export * from "./stream-health";
+export * from "./stream-failures";
+export * from "./stream-recovery-events";
+export * from "./market-state-snapshots";
+export * from "./event-bus-events";
+export * from "./event-processing-metrics";
+export * from "./latency-metrics";
+export * from "./stream-audit-log";
