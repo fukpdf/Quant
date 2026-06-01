@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-01
-> Current phase: **Phase 4 — Professional Backtesting & Validation Engine** ✅ COMPLETE
+> Current phase: **Phase 5 — Institutional Paper Trading Environment** ✅ COMPLETE
 
 ---
 
@@ -254,21 +254,55 @@
 
 ---
 
-## Phase 5 — Paper Trading
+## Phase 5 — Institutional Paper Trading Environment ✅ COMPLETE
 
-**Goal**: Real-time strategy execution simulation against live market data.
+**Goal**: Real-time strategy execution simulation against live market data with virtual account management, automated signal routing, and institutional-grade performance analytics.
 
-### Simulation Engine
-- [ ] Virtual account management (balance, positions, P&L)
-- [ ] Real-time order routing simulation
-- [ ] Fill simulation against live market prices
-- [ ] Position tracking and reconciliation
+### Database Tables (10 new)
+- [x] `paper_accounts` — virtual trading accounts with equity and cash balance tracking
+- [x] `paper_portfolios` — portfolio-level metrics (exposure, drawdown, allocation)
+- [x] `paper_positions` — open/closed position tracking per account + strategy
+- [x] `paper_orders` — order lifecycle management (pending → submitted → filled)
+- [x] `paper_fills` — immutable fill records with slippage + commission detail
+- [x] `paper_executions` — execution engine audit log per order attempt
+- [x] `paper_trade_history` — closed trade P&L history for performance analytics
+- [x] `paper_daily_snapshots` — end-of-day equity snapshots for time-series analytics
+- [x] `paper_strategy_assignments` — strategy ↔ account bindings with pause/resume lifecycle
+- [x] `paper_alerts` — operational alert log (drawdown, execution failure, concentration)
 
-### Paper Trading API
-- [ ] `POST /v1/paper/orders` — submit paper order
-- [ ] `GET /v1/paper/orders` — list paper orders
-- [ ] `GET /v1/paper/positions` — current positions
-- [ ] `GET /v1/paper/account` — account summary
+### Core Services (9 new)
+- [x] `paper-accounts-db.ts` — full CRUD data access layer for all 10 paper trading tables
+- [x] `paper-execution-engine.ts` — realistic fill simulation (slippage, commission, latency jitter)
+- [x] `paper-position-manager.ts` — position open/close with P&L computation and account balance update
+- [x] `paper-portfolio-tracker.ts` — mark-to-market, portfolio refresh, drawdown tracking
+- [x] `paper-performance.ts` — time-windowed returns (daily/weekly/monthly/YTD), Sharpe, win rate, profit factor
+- [x] `paper-alert-manager.ts` — drawdown alerts, concentration warnings, execution failure notifications
+- [x] `paper-snapshot-service.ts` — daily equity snapshot capture and retrieval
+- [x] `paper-signal-engine.ts` — strategy → account signal routing (BUY/SELL → order → fill → position)
+- [x] `paper-scheduler.ts` — interval scheduler: signal polling, MTM, snapshots, alert sweeps
+
+### API Endpoints (9 new)
+- [x] `POST /v1/paper/accounts` — create virtual paper account
+- [x] `GET /v1/paper/accounts` — list accounts with optional status filter
+- [x] `GET /v1/paper/accounts/:id` — account detail with portfolio summary
+- [x] `POST /v1/paper/strategies/assign` — assign a strategy to an account
+- [x] `POST /v1/paper/strategies/pause` — pause active strategy assignment
+- [x] `POST /v1/paper/strategies/resume` — resume paused strategy assignment
+- [x] `GET /v1/paper/strategies/assignments` — list assignments with filters
+- [x] `GET /v1/paper/positions` — list open/closed positions per account
+- [x] `GET /v1/paper/orders` — list orders with status filter
+- [x] `GET /v1/paper/fills` — list fill records per account
+- [x] `GET /v1/paper/portfolio` — portfolio summary with open positions
+- [x] `GET /v1/paper/performance` — time-windowed performance analytics
+- [x] `GET /v1/paper/alerts` — operational alert log
+- [x] `GET /v1/paper/snapshots` — daily equity snapshot history
+- [x] `POST /v1/paper/snapshots/trigger` — manually trigger a snapshot
+
+### OpenAPI & Codegen
+- [x] `paper` tag added to spec
+- [x] 9 path groups + 30 component schemas added
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+- [x] DB schema pushed (`pnpm --filter @workspace/db run push`)
 
 ---
 

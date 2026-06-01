@@ -23,6 +23,67 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.0] — 2026-06-01
+
+### Phase 5 — Institutional Paper Trading Environment
+
+#### Added
+
+**Database Tables (10 new)**
+- `paper_accounts` — virtual accounts with equity, cash balance, realized/unrealized P&L, buying power, and status (active/paused/closed)
+- `paper_portfolios` — portfolio-level metrics: open/closed position counts, total exposure, allocation %, peak equity, current and max drawdown, daily return
+- `paper_positions` — per-account, per-strategy position tracking: side, quantity, entry/current/exit price, market value, unrealized/realized P&L, commission, slippage
+- `paper_orders` — full order lifecycle: order type, side, quantity, fill qty, limit/stop prices, avg fill price, status, reject reason, signal tag, market price at submission
+- `paper_fills` — immutable fill records: raw price, fill price (post-slippage), commission, slippage, latency ms
+- `paper_executions` — execution engine audit log: success flag, failure reason, executed price/qty, commission, slippage, latency per order attempt
+- `paper_trade_history` — closed trade P&L archive: gross PnL, net PnL, commission, slippage, duration, entry/exit signal, trade date
+- `paper_daily_snapshots` — EOD equity snapshots: equity, cash, position value, daily realized P&L, unrealized P&L, daily return %, drawdown %, open positions, trades closed
+- `paper_strategy_assignments` — strategy ↔ account bindings: interval, param overrides (JSON), status (active/paused/disabled), lifecycle timestamps
+- `paper_alerts` — operational alert log: type (large_drawdown/strategy_failure/position_concentration/equity_threshold/missed_data/execution_failure), severity (info/warning/critical), payload JSON, acknowledged flag
+
+**Core Services (9 new)**
+- `paper-accounts-db.ts` — complete CRUD data access layer for all 10 paper trading tables; typed Drizzle queries throughout
+- `paper-execution-engine.ts` — realistic fill simulation: percentage slippage, percentage commission, latency jitter (10–100ms); returns `ExecutionResult` with `rawPrice`, `executedPrice`, `filledQuantity`, `commission`, `slippage`, `latencyMs`, `success`
+- `paper-position-manager.ts` — `openPaperPosition()` and `closePaperPosition()` with P&L computation; updates account cash balance and realized P&L atomically
+- `paper-portfolio-tracker.ts` — `markToMarket()` updates unrealized P&L and market value for all open positions; `refreshPortfolio()` recomputes exposure, allocation, and drawdown
+- `paper-performance.ts` — `computePaperPerformance()`: time-windowed returns (daily/weekly/monthly/YTD), Sharpe ratio, max drawdown, win rate, profit factor, average trade P&L, largest win/loss, total commission and slippage
+- `paper-alert-manager.ts` — `checkDrawdownAlert()`, `checkConcentrationAlert()`, `alertExecutionFailure()`, `alertMissedData()`; deduplication via 24h lookback
+- `paper-snapshot-service.ts` — `takeSnapshot()` aggregates EOD account state into `paper_daily_snapshots`; `getSnapshots()` ordered by date desc
+- `paper-signal-engine.ts` — `runSignalForAssignment()`: fetches candles → runs strategy → BUY (open position) or SELL (close position) → create order → execute → fill → update account → refresh portfolio; 10% of available cash per trade
+- `paper-scheduler.ts` — `startPaperScheduler()`: four independent `setInterval` loops — signal polling (default 5 min), MTM (2 min), snapshots (6 h), alert sweeps (10 min); graceful shutdown support
+
+**API Endpoints (9 new route files, 15 endpoint entries)**
+- `POST /v1/paper/accounts` — create virtual paper account with initial capital
+- `GET /v1/paper/accounts` — list accounts (optional status filter)
+- `GET /v1/paper/accounts/:id` — account detail with portfolio summary
+- `POST /v1/paper/strategies/assign` — assign strategy + symbol + interval to an account
+- `POST /v1/paper/strategies/pause` — pause active assignment (with optional reason)
+- `POST /v1/paper/strategies/resume` — resume paused assignment
+- `GET /v1/paper/strategies/assignments` — list assignments (accountId + status filters)
+- `GET /v1/paper/positions` — list open or closed positions for an account
+- `GET /v1/paper/orders` — list orders with status filter
+- `GET /v1/paper/fills` — list fill records for an account
+- `GET /v1/paper/portfolio` — portfolio summary with all open positions (mark-to-market)
+- `GET /v1/paper/performance` — time-windowed performance analytics (Sharpe, drawdown, win rate, etc.)
+- `GET /v1/paper/alerts` — operational alert log with severity + acknowledged filters
+- `GET /v1/paper/snapshots` — daily equity snapshot history (up to 365 days)
+- `POST /v1/paper/snapshots/trigger` — manually trigger a daily snapshot for an account
+
+**OpenAPI Spec**
+- `paper` tag added with description
+- 9 path group entries covering all 15 endpoint variants
+- 30 new component schemas: `CreatePaperAccountRequest`, `PaperAccount`, `PaperPortfolio`, `PaperPosition`, `PaperOrder`, `PaperFill`, `PaperStrategyAssignment`, `PaperAlert`, `PaperDailySnapshot`, `PaperPerformanceMetrics`, `TriggerPaperSnapshotRequest`, plus all response wrappers and enum types
+- Codegen regenerated (Zod validators + React Query hooks)
+- Version bumped to `0.5.0`
+
+**Startup**
+- `startPaperScheduler()` called in `artifacts/api-server/src/index.ts` after DB initialization
+
+#### Fixed
+- OpenAPI codegen conflict (`TriggerPaperSnapshotBody` ambiguity) resolved by converting inline request body schema to a named `$ref` in `components/schemas`
+
+---
+
 ## [0.4.0] — 2026-06-01
 
 ### Phase 4 — Professional Backtesting & Validation Engine

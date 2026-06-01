@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.2.0
-  description: QuantForge API — multi-market data platform
+  version: 0.5.0
+  description: QuantForge API — multi-market data platform with paper trading
 servers:
   - url: /api
     description: Base API path
@@ -28,6 +28,8 @@ tags:
     description: Financial news items
   - name: research
     description: Quantitative research laboratory — strategy definitions, backtesting, and performance analysis
+  - name: paper
+    description: Paper trading — virtual accounts, simulated orders, position tracking, and performance analytics
 paths:
   /healthz:
     get:
@@ -830,6 +832,397 @@ paths:
                 $ref: "#/components/schemas/RankingsResponse"
         "400":
           $ref: "#/components/responses/ValidationError"
+
+  # ---------------------------------------------------------------------------
+  # Phase 5 — Paper Trading
+  # ---------------------------------------------------------------------------
+
+  /v1/paper/accounts:
+    post:
+      operationId: createPaperAccount
+      tags: [paper]
+      summary: Create a virtual paper trading account
+      description: Creates a new paper trading account with virtual capital. No real money involved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaperAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperAccountResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+    get:
+      operationId: listPaperAccounts
+      tags: [paper]
+      summary: List paper trading accounts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, paused, closed]
+      responses:
+        "200":
+          description: Account list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperAccountListResponse"
+
+  /v1/paper/accounts/{id}:
+    get:
+      operationId: getPaperAccount
+      tags: [paper]
+      summary: Get paper account with portfolio summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Account detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperAccountDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/strategies/assign:
+    post:
+      operationId: assignPaperStrategy
+      tags: [paper]
+      summary: Assign a strategy to a paper account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignStrategyRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyAssignmentResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/strategies/pause:
+    post:
+      operationId: pausePaperStrategy
+      tags: [paper]
+      summary: Pause an active strategy assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StrategyStatusActionRequest"
+      responses:
+        "200":
+          description: Assignment paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyAssignmentResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Assignment not in expected state
+
+  /v1/paper/strategies/resume:
+    post:
+      operationId: resumePaperStrategy
+      tags: [paper]
+      summary: Resume a paused strategy assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StrategyStatusActionRequest"
+      responses:
+        "200":
+          description: Assignment resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyAssignmentResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/strategies/assignments:
+    get:
+      operationId: listPaperStrategyAssignments
+      tags: [paper]
+      summary: List strategy assignments
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, paused, disabled]
+      responses:
+        "200":
+          description: Assignment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StrategyAssignmentListResponse"
+
+  /v1/paper/positions:
+    get:
+      operationId: listPaperPositions
+      tags: [paper]
+      summary: List paper positions
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, all]
+            default: open
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Position list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperPositionListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/orders:
+    get:
+      operationId: listPaperOrders
+      tags: [paper]
+      summary: List paper orders
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, submitted, partially_filled, filled, cancelled, rejected, expired]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Order list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperOrderListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/paper/fills:
+    get:
+      operationId: listPaperFills
+      tags: [paper]
+      summary: List paper fill records
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Fill list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperFillListResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/paper/portfolio:
+    get:
+      operationId: getPaperPortfolio
+      tags: [paper]
+      summary: Get portfolio summary for a paper account
+      description: Returns current account state, portfolio metrics, and open positions
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Portfolio summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperPortfolioResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/performance:
+    get:
+      operationId: getPaperPerformance
+      tags: [paper]
+      summary: Get performance analytics for a paper account
+      description: Returns time-windowed returns, risk metrics, and trade statistics
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperPerformanceResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/alerts:
+    get:
+      operationId: listPaperAlerts
+      tags: [paper]
+      summary: List paper trading alerts
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+        - name: acknowledged
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperAlertListResponse"
+
+  /v1/paper/snapshots:
+    get:
+      operationId: listPaperSnapshots
+      tags: [paper]
+      summary: List daily equity snapshots for a paper account
+      parameters:
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 90
+      responses:
+        "200":
+          description: Snapshot list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperSnapshotListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/paper/snapshots/trigger:
+    post:
+      operationId: triggerPaperSnapshot
+      tags: [paper]
+      summary: Manually trigger a daily snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerPaperSnapshotRequest"
+      responses:
+        "200":
+          description: Snapshot generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  snapshot:
+                    $ref: "#/components/schemas/PaperDailySnapshot"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   responses:
@@ -2238,3 +2631,564 @@ components:
         total:
           type: integer
       required: [data, total]
+
+    # =========================================================================
+    # Phase 5 — Paper Trading
+    # =========================================================================
+
+    CreatePaperAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Main Account
+        description:
+          type: string
+          maxLength: 500
+        initialCapital:
+          type: number
+          minimum: 100
+          maximum: 100000000
+          example: 100000
+      required: [name, initialCapital]
+
+    PaperAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        initialCapital:
+          type: string
+          description: Starting virtual capital (numeric string)
+        currentEquity:
+          type: string
+        cashBalance:
+          type: string
+        buyingPower:
+          type: string
+        realizedPnl:
+          type: string
+        unrealizedPnl:
+          type: string
+        marginUsed:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, closed]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, initialCapital, currentEquity, cashBalance, buyingPower, realizedPnl, unrealizedPnl, marginUsed, status, createdAt, updatedAt]
+
+    PaperPortfolio:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        openPositions:
+          type: integer
+        closedPositions:
+          type: integer
+        totalExposure:
+          type: string
+        allocationPct:
+          type: string
+        peakEquity:
+          type: string
+        currentDrawdownPct:
+          type: string
+        maxDrawdownPct:
+          type: string
+        dailyReturnPct:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, accountId, openPositions, closedPositions, totalExposure, allocationPct, peakEquity, currentDrawdownPct, maxDrawdownPct, dailyReturnPct, updatedAt]
+
+    PaperPosition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+          nullable: true
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [long, short]
+        status:
+          type: string
+          enum: [open, closed]
+        quantity:
+          type: string
+        entryPrice:
+          type: string
+        currentPrice:
+          type: string
+        exitPrice:
+          type: string
+          nullable: true
+        marketValue:
+          type: string
+        unrealizedPnl:
+          type: string
+        realizedPnl:
+          type: string
+          nullable: true
+        commission:
+          type: string
+        slippage:
+          type: string
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, accountId, symbol, side, status, quantity, entryPrice, currentPrice, marketValue, unrealizedPnl, commission, slippage, openedAt]
+
+    PaperOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+          nullable: true
+        symbol:
+          type: string
+        orderType:
+          type: string
+          enum: [market, limit, stop, stop_limit]
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: string
+        filledQuantity:
+          type: string
+        limitPrice:
+          type: string
+          nullable: true
+        stopPrice:
+          type: string
+          nullable: true
+        avgFillPrice:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, submitted, partially_filled, filled, cancelled, rejected, expired]
+        rejectReason:
+          type: string
+          nullable: true
+        signal:
+          type: string
+          nullable: true
+        marketPriceAtOrder:
+          type: string
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        filledAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, accountId, symbol, orderType, side, quantity, filledQuantity, status, createdAt]
+
+    PaperFill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: string
+        rawPrice:
+          type: string
+        fillPrice:
+          type: string
+        commission:
+          type: string
+        slippage:
+          type: string
+        latencyMs:
+          type: string
+        filledAt:
+          type: string
+          format: date-time
+      required: [id, orderId, accountId, symbol, side, quantity, rawPrice, fillPrice, commission, slippage, latencyMs, filledAt]
+
+    PaperStrategyAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+        symbol:
+          type: string
+        interval:
+          type: string
+          enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w]
+        params:
+          type: string
+          nullable: true
+          description: JSON-encoded parameter overrides
+        status:
+          type: string
+          enum: [active, paused, disabled]
+        statusReason:
+          type: string
+          nullable: true
+        assignedAt:
+          type: string
+          format: date-time
+        pausedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resumedAt:
+          type: string
+          format: date-time
+          nullable: true
+        disabledAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, accountId, strategyName, symbol, interval, status, assignedAt, updatedAt]
+
+    PaperAlert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        alertType:
+          type: string
+          enum: [large_drawdown, strategy_failure, position_concentration, equity_threshold, missed_data, execution_failure]
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+        payload:
+          type: string
+          nullable: true
+        acknowledged:
+          type: boolean
+        acknowledgedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, alertType, severity, message, acknowledged, createdAt]
+
+    PaperDailySnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        snapshotDate:
+          type: string
+          format: date
+        equity:
+          type: string
+        cashBalance:
+          type: string
+        positionValue:
+          type: string
+        dailyRealizedPnl:
+          type: string
+        unrealizedPnl:
+          type: string
+        dailyReturnPct:
+          type: string
+        drawdownPct:
+          type: string
+        openPositions:
+          type: integer
+        tradesClosed:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, accountId, snapshotDate, equity, cashBalance, positionValue, dailyRealizedPnl, unrealizedPnl, dailyReturnPct, drawdownPct, openPositions, tradesClosed, createdAt]
+
+    PaperPerformanceMetrics:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        totalReturnPct:
+          type: number
+        dailyReturnPct:
+          type: number
+        weeklyReturnPct:
+          type: number
+        monthlyReturnPct:
+          type: number
+        ytdReturnPct:
+          type: number
+        sharpeRatio:
+          type: number
+          nullable: true
+        maxDrawdownPct:
+          type: number
+        winRate:
+          type: number
+        profitFactor:
+          type: number
+          nullable: true
+        totalTrades:
+          type: integer
+        winningTrades:
+          type: integer
+        losingTrades:
+          type: integer
+        avgTradePnl:
+          type: number
+        avgWinPnl:
+          type: number
+          nullable: true
+        avgLossPnl:
+          type: number
+          nullable: true
+        largestWin:
+          type: number
+        largestLoss:
+          type: number
+        totalRealizedPnl:
+          type: number
+        totalCommission:
+          type: number
+        totalSlippage:
+          type: number
+      required: [accountId, totalReturnPct, dailyReturnPct, weeklyReturnPct, monthlyReturnPct, ytdReturnPct, maxDrawdownPct, winRate, totalTrades, winningTrades, losingTrades, avgTradePnl, largestWin, largestLoss, totalRealizedPnl, totalCommission, totalSlippage]
+
+    # --- Response wrappers ---
+
+    PaperAccountResponse:
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/PaperAccount"
+      required: [account]
+
+    PaperAccountListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperAccount"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperAccountDetailResponse:
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/PaperAccount"
+        portfolio:
+          $ref: "#/components/schemas/PaperPortfolio"
+          nullable: true
+      required: [account]
+
+    AssignStrategyRequest:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        strategyName:
+          type: string
+        symbol:
+          type: string
+        interval:
+          type: string
+          enum: [1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w]
+        params:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: number
+              - type: boolean
+      required: [accountId, strategyName, symbol, interval]
+
+    StrategyStatusActionRequest:
+      type: object
+      properties:
+        assignmentId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          maxLength: 500
+      required: [assignmentId]
+
+    StrategyAssignmentResponse:
+      type: object
+      properties:
+        assignment:
+          $ref: "#/components/schemas/PaperStrategyAssignment"
+      required: [assignment]
+
+    StrategyAssignmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperStrategyAssignment"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperPositionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperPosition"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperOrderListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperOrder"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperFillListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperFill"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperPortfolioResponse:
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/PaperAccount"
+        portfolio:
+          $ref: "#/components/schemas/PaperPortfolio"
+          nullable: true
+        openPositions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperPosition"
+        openPositionCount:
+          type: integer
+      required: [account, openPositions, openPositionCount]
+
+    PaperPerformanceResponse:
+      type: object
+      properties:
+        metrics:
+          $ref: "#/components/schemas/PaperPerformanceMetrics"
+      required: [metrics]
+
+    PaperAlertListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperAlert"
+        total:
+          type: integer
+      required: [data, total]
+
+    PaperSnapshotListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaperDailySnapshot"
+        total:
+          type: integer
+      required: [data, total]
+
+    TriggerPaperSnapshotRequest:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+      required: [accountId]

@@ -381,6 +381,36 @@ Researchers need price-path sensitivity analysis, at which point a GBM or block-
 
 ---
 
+### ADR-013 — Paper Trading as Isolated Simulation Layer (Phase 5)
+
+**Date**: 2026-06-01
+**Status**: Accepted
+**Author**: AI agent (Phase 5 implementation)
+
+**Decision**
+Phase 5 implements paper trading as a fully isolated simulation layer: separate DB tables, separate service modules, separate API routes, and a dedicated in-process scheduler. No code paths shared with the Phase 4 backtesting engine at runtime.
+
+**Context**
+Paper trading must bridge the gap between historical backtesting (Phase 3–4) and live execution (Phase 8). It needs to run continuously against real market prices, maintain persistent account state, and produce auditable fill records. Two architectural options existed: (a) extend the backtesting engine to support real-time mode, or (b) build a fresh simulation layer purpose-built for persistent, stateful, real-time operation.
+
+**Rationale**
+The backtesting engine is optimized for batch replay over historical data — it processes thousands of candles per second in a single-threaded loop, produces ephemeral result objects, and has no concept of persistent account state. Extending it to real-time would require a significant redesign. A fresh layer enables: (1) clean separation of concerns, (2) independent schema design optimized for real-time state persistence, (3) no risk of regressing the validated Phase 3–4 backtest behavior, (4) the same `IStrategy` interface is reused via the signal engine — strategies don't change, only the execution context does.
+
+**Alternatives Considered**
+- Extend backtesting engine for real-time mode — would require restructuring core batch loop; risks regressing validated backtest behavior
+- External message queue (Kafka/Redis Pub/Sub) for order routing — adds infrastructure complexity not warranted for a single-operator platform; in-process scheduler is simpler and sufficient
+
+**Consequences**
+- Paper trading and backtesting are independently maintainable and deployable
+- Strategy code is reused without modification (same `IStrategy.generateSignals()` contract)
+- The scheduler runs inside the API server process; for Phase 8, it would migrate to a dedicated worker process or external job runner
+- Position sizing in Phase 5 uses a simple 10% fixed-fraction rule (independent of the Phase 4 position sizer) — ADR-010 position sizer will be integrated in Phase 6 as part of the risk engine
+
+**Review Trigger**
+When moving to live execution (Phase 8), the scheduler must be extracted to a dedicated worker process with guaranteed-delivery semantics and crash recovery.
+
+---
+
 ### ADR-012 — Equity Curves Stored as Compact JSON (Not Row-Per-Point)
 
 **Date**: 2026-06-01

@@ -22,6 +22,16 @@ import researchMonteCarloRouter from "./research-monte-carlo";
 import researchEquityCurveRouter from "./research-equity-curve";
 import researchValidationRouter from "./research-validation";
 import researchRankingsRouter from "./research-rankings";
+// Phase 5 — Institutional Paper Trading Environment
+import paperAccountsRouter from "./paper-accounts";
+import paperStrategiesRouter from "./paper-strategies";
+import paperOrdersRouter from "./paper-orders";
+import paperPositionsRouter from "./paper-positions";
+import paperFillsRouter from "./paper-fills";
+import paperPortfolioRouter from "./paper-portfolio";
+import paperPerformanceRouter from "./paper-performance";
+import paperAlertsRouter from "./paper-alerts";
+import paperSnapshotsRouter from "./paper-snapshots";
 
 const v1Router: IRouter = Router();
 
@@ -53,5 +63,16 @@ v1Router.use(researchMonteCarloRouter);
 v1Router.use(researchEquityCurveRouter);
 v1Router.use(researchValidationRouter);
 v1Router.use(researchRankingsRouter);
+
+// Phase 5 endpoints
+v1Router.use(paperAccountsRouter);
+v1Router.use(paperStrategiesRouter);
+v1Router.use(paperOrdersRouter);
+v1Router.use(paperPositionsRouter);
+v1Router.use(paperFillsRouter);
+v1Router.use(paperPortfolioRouter);
+v1Router.use(paperPerformanceRouter);
+v1Router.use(paperAlertsRouter);
+v1Router.use(paperSnapshotsRouter);
 
 export default v1Router;

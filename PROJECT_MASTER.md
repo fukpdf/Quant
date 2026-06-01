@@ -74,39 +74,34 @@ Every stage is audited, versioned, and documented.
 
 ## 5. Current Phase
 
-**Phase 3 — Research Laboratory** ✅ Complete
+**Phase 5 — Institutional Paper Trading Environment** ✅ Complete
 
-Goal: Professional quantitative research environment with strategy framework, historical backtesting engine, and performance analytics.
+Goal: Real-time strategy execution simulation against live market data with automated signal routing, virtual account management, realistic fill modeling, and institutional-grade performance analytics.
 
 Deliverables:
-- [x] Strategy interface and pluggable framework (IStrategy, BaseStrategy)
-- [x] Technical indicator library (EMA, SMA, RSI, MACD, Bollinger Bands)
-- [x] 4 baseline strategies (EMA Crossover, RSI Mean Reversion, MACD Trend, Bollinger Bands)
-- [x] Historical replay engine (no look-ahead bias)
-- [x] Performance metrics (Total Return, CAGR, Win Rate, Sharpe, Sortino, Max Drawdown, Profit Factor, Expectancy)
-- [x] Research API (6 endpoints: strategies, backtest, runs, results, compare)
-- [x] Strategy definitions DB table with auto-seeding
-- [x] Comparison engine (side-by-side multi-run analysis)
+- [x] 10 new DB tables: paper_accounts, paper_portfolios, paper_positions, paper_orders, paper_fills, paper_executions, paper_trade_history, paper_daily_snapshots, paper_strategy_assignments, paper_alerts
+- [x] Execution engine: percentage slippage, commission, latency jitter (10–100ms)
+- [x] Position manager: open/close with P&L computation and atomic balance update
+- [x] Portfolio tracker: mark-to-market, drawdown tracking, allocation %
+- [x] Performance service: daily/weekly/monthly/YTD returns, Sharpe, win rate, profit factor
+- [x] Alert manager: drawdown, concentration, execution failure, missed data alerts
+- [x] Snapshot service: EOD equity capture for time-series analytics
+- [x] Signal engine: strategy → candles → signal → order → fill → position → portfolio refresh
+- [x] Scheduler: four independent polling loops (signals 5min, MTM 2min, snapshots 6h, alerts 10min)
+- [x] Paper trading API (15 endpoints across 9 route files)
+- [x] OpenAPI spec updated with `paper` tag + 30 new schemas; codegen regenerated
+
+**Prior Phases Complete:**
 
 **Phase 4 — Professional Backtesting & Validation Engine** ✅ Complete
+- Cost modeling (commission + slippage, 5 exchange presets), position sizing (5 methods including Kelly), advanced metrics (Calmar, Ulcer, MAR, UPI), portfolio engine, walk-forward, Monte Carlo, validation (A–F grading), equity curves, rankings
 
-Goal: Upgrade the research platform to institutional-grade backtesting with realistic cost modeling, professional risk metrics, portfolio simulation, and statistical validation.
+**Phase 3 — Research Laboratory** ✅ Complete
+- Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-Deliverables:
-- [x] Cost modeling engine (commission: flat/percentage/maker_taker; slippage: fixed/percentage/volatility/volume-based; 5 exchange presets)
-- [x] Position sizing framework (5 methods: Fixed Dollar, Fixed Percentage, Risk/ATR, Volatility-Based, Kelly Criterion)
-- [x] Advanced metrics (Calmar, Recovery Factor, Ulcer Index, MAR, Exposure Time, Avg Trade Duration, UPI, Probability of Ruin)
-- [x] Portfolio engine (multi-symbol simulation, equal capital allocation, timestamp-merged equity curve)
-- [x] Walk-forward validation (rolling + expanding windows, IS/OOS split, consistency scoring)
-- [x] Monte Carlo analysis (trade shuffling, seeded PRNG, percentile distribution, probability of ruin)
-- [x] Validation engine (5 checks, A–F grading, severity-tagged findings, structured recommendations)
-- [x] Equity curve service (compact JSON storage, expanded API output)
-- [x] Research API extended (10 new endpoints: portfolio backtest, walk-forward, Monte Carlo, equity curve, validation, rankings)
-- [x] 8 new DB tables + 10 new performance_metrics columns
+**Next Phase: Phase 6 — Risk Engine**
 
-**Next Phase: Phase 5 — Paper Trading**
-
-Goal: Real-time strategy execution simulation against live market data with virtual account management.
+Goal: Enforce position sizing, exposure limits, and drawdown circuit breakers before any order is executed.
 
 ---
 

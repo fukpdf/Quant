@@ -23,3 +23,14 @@ export * from "./walk-forward-runs";
 export * from "./monte-carlo-runs";
 export * from "./validation-results";
 export * from "./research-snapshots";
+// Phase 5 — Institutional Paper Trading Environment
+export * from "./paper-accounts";
+export * from "./paper-portfolios";
+export * from "./paper-positions";
+export * from "./paper-orders";
+export * from "./paper-fills";
+export * from "./paper-executions";
+export * from "./paper-trade-history";
+export * from "./paper-daily-snapshots";
+export * from "./paper-strategy-assignments";
+export * from "./paper-alerts";

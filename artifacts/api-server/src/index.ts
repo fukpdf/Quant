@@ -4,6 +4,7 @@ import { seedMarkets } from "./services/market-data";
 import { seedProviders } from "./services/providers-db";
 import { startScheduler } from "./ingestion/scheduler";
 import { seedStrategyDefinitions } from "./services/research-db";
+import { startPaperScheduler } from "./services/paper-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -50,4 +51,7 @@ app.listen(port, async (err) => {
 
   // Start all background scheduler loops (ingestion, health checks, quality checks)
   startScheduler();
+
+  // Start paper trading scheduler (Phase 5 — signal processing, MTM, snapshots, alerts)
+  startPaperScheduler();
 });
