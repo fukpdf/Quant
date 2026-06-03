@@ -143,6 +143,17 @@ Next: **Phase 5 — Paper Trading**.
 - Walk-forward and Monte Carlo routes are async-like but run synchronously in-process (no job queue yet)
 - All 10 Phase 4 endpoints are mounted under `/v1/research/` prefix via `routes/v1/index.ts`
 
+### Key Phase 11 Architecture Notes (read before extending):
+- All Phase 11 services are **advisory-only** — no live capital, no order placement (ADR-034)
+- Regime detection uses a 6-indicator heuristic ensemble; minimum 20 candles required (ADR-035)
+- Optimizer methods share one config/DB schema; `BacktestRequest` uses `interval` not `timeframe`, `params` not `parameters` (ADR-036)
+- Intelligence Scheduler has 5 independent non-fatal loops — errors logged but don't crash (ADR-037)
+- DB import: use `@workspace/db` (not `@workspace/db/client` — `/client` subpath is not exported)
+- Column names: `totalTrades` (not `tradeCount`), `consistencyScore` (not `efficiencyRatio`), `medianReturn` (not `medianFinalEquity`), `timestamp` on candles (not `openTime`)
+- All Phase 11 DB access goes through `intelligence-db.ts` — never import intelligence tables directly in services
+- 17 endpoints under `/api/v1/intelligence/*` (rankings, regimes, allocations, optimization, generations, tasks, research)
+- OpenAPI version: 0.11.0; codegen regenerated after spec update
+
 ---
 
 ## How to Determine What Phase Allows

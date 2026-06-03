@@ -73,6 +73,15 @@ import executionFillsRouter from "./execution-fills";
 import executionPositionsRouter from "./execution-positions";
 import executionRejectionsRouter from "./execution-rejections";
 import executionStatusRouter from "./execution-status";
+// Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory
+import intelligenceRegimesRouter from "./intelligence-regimes";
+import intelligenceOptimizerRouter from "./intelligence-optimizer";
+import intelligenceEvolutionRouter from "./intelligence-evolution";
+import intelligencePortfolioRouter from "./intelligence-portfolio";
+import intelligenceRankingsRouter from "./intelligence-rankings";
+import intelligenceResearchRouter from "./intelligence-research";
+import intelligenceClustersRouter from "./intelligence-clusters";
+import intelligenceLearningRouter from "./intelligence-learning";
 
 const v1Router: IRouter = Router();
 
@@ -161,5 +170,15 @@ v1Router.use(executionFillsRouter);
 v1Router.use(executionPositionsRouter);
 v1Router.use(executionRejectionsRouter);
 v1Router.use(executionStatusRouter);
+
+// Phase 11 endpoints — Multi-Agent Intelligence & Autonomous Strategy Factory
+v1Router.use(intelligenceRegimesRouter);
+v1Router.use(intelligenceOptimizerRouter);
+v1Router.use(intelligenceEvolutionRouter);
+v1Router.use(intelligencePortfolioRouter);
+v1Router.use(intelligenceRankingsRouter);
+v1Router.use(intelligenceResearchRouter);
+v1Router.use(intelligenceClustersRouter);
+v1Router.use(intelligenceLearningRouter);
 
 export default v1Router;

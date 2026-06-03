@@ -97,3 +97,16 @@ export * from "./execution-latency";
 export * from "./execution-metrics";
 export * from "./execution-recovery";
 export * from "./execution-audit-log";
+// Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory
+export * from "./market-regimes";
+export * from "./strategy-generations";
+export * from "./strategy-mutations";
+export * from "./strategy-rankings";
+export * from "./optimization-runs";
+export * from "./optimization-results";
+export * from "./portfolio-allocations";
+export * from "./allocation-history";
+export * from "./ai-research-jobs";
+export * from "./ai-research-findings";
+export * from "./strategy-clusters";
+export * from "./strategy-lineage";

@@ -23,6 +23,35 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.11.0] — 2026-06-03
+
+### Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory
+
+#### Added
+- **Intelligence DB** (`intelligence-db.ts`) — persistence layer for all Phase 11 entities: strategy rankings, market regimes, portfolio allocations, optimization runs, optimization results, strategy generations, AI agent tasks, and research sessions.
+- **Intelligence Types** (`intelligence-types.ts`) — shared TypeScript types for all Phase 11 subsystems: `RankingPeriod`, `RankingFactors`, `StrategyRankingResult`, `RegimeType`, `DetectedRegime`, `AllocationMethod`, `OptimizationConfig`, `Individual`, `Population`, and more.
+- **Ranking Engine** (`ranking-engine.ts`) — multi-factor strategy ranking across 4 time periods (daily/weekly/monthly/all_time) using Sharpe, Sortino, Calmar, drawdown, win rate, walk-forward consistency, and Monte Carlo scores; scores normalized to 0–100 with configurable RANKING_WEIGHTS.
+- **Regime Detection Engine** (`regime-detection-engine.ts`) — market regime classifier (bull/bear/sideways/high_volatility/low_volatility) using 6-indicator ensemble: linear regression slope, annualized volatility, ADX proxy, average RSI, volume ratio, net return. Persists regime transitions with confidence scores and auto-closes stale regimes.
+- **Portfolio Allocator** (`portfolio-allocator.ts`) — 4 allocation methods: `equal_weight`, `risk_parity`, `mean_variance`, `momentum_tilt`. Respects min/max weight constraints per strategy, merges performance-based momentum overlays, and persists full allocation history.
+- **Genetic Evolution Engine** (`genetic-evolution-engine.ts`) — genetic algorithm for strategy parameter optimization: tournament selection with elitism, single-point and arithmetic crossover, Gaussian/uniform/boundary/creep mutation; 5 fitness objectives (Sharpe, Calmar, total_return, Sortino, profit_factor); persists each generation to DB.
+- **Strategy Optimizer** (`strategy-optimizer.ts`) — 4 optimization methods: `grid_search`, `random_search`, `bayesian` (Gaussian process with expected improvement), `genetic` (delegates to GeneticEvolutionEngine); persists full optimization run history with best parameter set.
+- **AI Optimization Assistant** (`ai-optimization-assistant.ts`) — LLM-powered natural language interface for strategy analysis; generates optimization suggestions, interprets results, builds strategy performance summaries from DB backtest records.
+- **Continuous Learning Engine** (`continuous-learning-engine.ts`) — regime-aware performance monitoring; detects strategy degradation (Sharpe drop, drawdown spike, win rate collapse); triggers re-optimization recommendations; persists learning events and adaptation history.
+- **Intelligence Correlation Engine** (`intelligence-correlation-engine.ts`) — strategy clustering by parameter-space and performance-space proximity; computes pairwise correlation matrices; groups strategies into diversified clusters to reduce portfolio concentration.
+- **Research Coordinator** (`research-coordinator.ts`) — orchestrates multi-step research sessions: regime detection → strategy ranking → portfolio allocation → optimization recommendations; persists research session audit trail.
+- **Intelligence Scheduler** (`intelligence-scheduler.ts`) — Phase 11 background scheduler with 5 configurable loops: regime detection (60 min), strategy ranking (6 hr), correlation clustering (12 hr), research coordination (30 min), continuous learning (2 hr).
+- **Intelligence Routes** (`routes/v1/intelligence-routes.ts`) — 17 REST endpoints under `/api/v1/intelligence/*`: rankings, regimes, allocations, optimization runs, optimization results, strategy generations, AI agent tasks, research sessions; full CRUD + trigger endpoints.
+- **11 new DB schema tables**: `strategy_rankings`, `market_regimes`, `portfolio_allocations`, `allocation_history`, `strategy_clusters`, `strategy_correlations`, `optimization_runs`, `optimization_results`, `strategy_generations`, `ai_agent_tasks`, `research_sessions`.
+- **OpenAPI spec v0.11.0** — intelligence paths and schemas added; codegen regenerated.
+
+#### Architecture
+- All Phase 11 services are advisory-only — no live capital, no order placement
+- Genetic algorithm fills-at-open (N+1) using the existing Phase 4 backtest engine
+- Column naming: `totalTrades` (not `tradeCount`), `consistencyScore` (not `efficiencyRatio`), `medianReturn` (not `medianFinalEquity`); `BacktestRequest` uses `interval` + `params`
+- `@workspace/db` import (not `@workspace/db/client`) — the `/client` subpath is not exported
+
+---
+
 ## [0.10.0] — 2026-06-03
 
 ### Phase 10 — Institutional Execution Engine (SAFE MODE ONLY)

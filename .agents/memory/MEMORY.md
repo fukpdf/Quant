@@ -6,3 +6,6 @@
 - [Zod in api-server](zod-explicit-dep.md) — zod must be an explicit dependency in api-server package.json; transitive resolution via @workspace/db is not reliable.
 - [Orval codegen barrel fix](orval-codegen-barrel.md) — orval regenerates lib/api-zod/src/index.ts on every codegen run; post-process it with printf to keep only the api export.
 - [Phase 9 stream architecture](phase9-stream-arch.md) — Phase 9 is streaming infrastructure (NOT execution engine); key design rules for event bus, providers, market state, replay, and recovery.
+- [DB import convention](db-import-convention.md) — use `@workspace/db` not `@workspace/db/client`; the `/client` subpath is not exported and causes cascade TS2307 errors.
+- [BacktestRequest interface fields](backtest-request-interface.md) — uses `interval` (not `timeframe`), `params` (not `parameters`), `Date` objects, number `initialCapital`; StrategyParams from `../strategies/types`.
+- [Phase 11 column names](phase11-column-names.md) — `totalTrades` not `tradeCount`; `timestamp` not `openTime` on candles; `consistencyScore` not `efficiencyRatio`; `medianReturn` not `medianFinalEquity`.

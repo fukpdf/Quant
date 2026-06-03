@@ -893,3 +893,75 @@ Simulation and paper providers are in-process, so lost ACK/fill indicates a code
 **Consequences**
 - Recovery events provide a debug signal for provider implementation bugs
 - In future live mode, recovery would query the exchange API rather than auto-cancel
+
+---
+
+### ADR-034 — Intelligence DB Persistence Layer (Phase 11)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+All Phase 11 persistence is centralized in `intelligence-db.ts` — a single module exposing typed CRUD helpers for: strategy_rankings, market_regimes, portfolio_allocations, allocation_history, strategy_clusters, strategy_correlations, optimization_runs, optimization_results, strategy_generations, ai_agent_tasks, research_sessions.
+
+**Rationale**
+Centralizing DB access in one module prevents import cycles between Phase 11 services, makes the persistence contract explicit, and simplifies future schema migrations.
+
+**Consequences**
+- All Phase 11 services import from `./intelligence-db`, never from `@workspace/db` directly for intelligence tables
+- Adding a new intelligence table requires one schema file + additions to intelligence-db.ts only
+
+---
+
+### ADR-035 — Regime Detection Ensemble (Phase 11)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Market regime is classified using a 6-indicator heuristic ensemble (trend slope, annualized volatility, ADX proxy, average RSI, volume ratio, net return) rather than an ML model. Output is one of 5 regime types: `bull | bear | sideways | high_volatility | low_volatility`.
+
+**Rationale**
+Heuristic ensembles are deterministic, require no training data, and degrade gracefully with thin candle history. They can be replaced with an ML model in a future phase without changing the downstream interface.
+
+**Consequences**
+- Minimum 20 candles required for a valid regime detection (THRESHOLDS.MIN_CANDLES)
+- Confidence scores are heuristic (not probabilistic) — consumers should treat them as relative, not absolute
+
+---
+
+### ADR-036 — Strategy Optimizer Multi-Method Architecture (Phase 11)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+The strategy optimizer supports 4 methods in a single service: `grid_search` (exhaustive), `random_search` (Monte Carlo sampling), `bayesian` (Gaussian process with expected improvement), and `genetic` (delegates to GeneticEvolutionEngine). All methods share the same `OptimizationConfig` input and `OptimizationRun`/`OptimizationResult` DB schema.
+
+**Rationale**
+A unified interface allows callers to switch methods without code changes. Bayesian and genetic methods reuse grid/random trials as warm-starts where applicable.
+
+**Consequences**
+- `BacktestRequest` uses `interval` (not `timeframe`) and `params` (not `parameters`) — must match research-runner interface exactly
+- Each optimizer evaluation calls `executeBacktest` via the Phase 4 research runner — optimization is bounded by backtest throughput
+
+---
+
+### ADR-037 — Intelligence Scheduler Loop Architecture (Phase 11)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Phase 11 uses 5 independent background loops with configurable intervals: regime detection (60 min), strategy ranking (6 hr), correlation clustering (12 hr), research coordination (30 min), continuous learning (2 hr). All loops are non-fatal — errors are logged but do not crash the scheduler.
+
+**Rationale**
+Independent loops allow each intelligence function to run at its natural cadence. Non-fatal error handling prevents a buggy clustering run from blocking regime detection.
+
+**Consequences**
+- `INTELLIGENCE_*` env vars control each loop interval
+- Loops use the same safe-runner pattern as Phase 9 stream processors

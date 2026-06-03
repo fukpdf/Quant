@@ -12,6 +12,7 @@ import { startAnalyticsScheduler } from "./services/analytics-scheduler";
 import { AiProviderFactory } from "./services/ai-provider-factory";
 import { startStreamScheduler } from "./services/stream-scheduler";
 import { startExecutionScheduler } from "./services/execution-scheduler";
+import { startIntelligenceScheduler } from "./services/intelligence-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -98,5 +99,12 @@ app.listen(port, async (err) => {
     await startExecutionScheduler();
   } catch (err) {
     logger.error({ err }, "Failed to start execution scheduler — continuing without OMS");
+  }
+
+  // Start Phase 11 intelligence infrastructure (non-fatal — server runs even if intelligence layer fails)
+  try {
+    await startIntelligenceScheduler();
+  } catch (err) {
+    logger.error({ err }, "Failed to start intelligence scheduler — continuing without intelligence layer");
   }
 });

@@ -463,7 +463,54 @@
 
 ---
 
-## Phase 11 — Production Readiness
+## Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory ✅ COMPLETE
+
+### DB Schema (11 tables)
+- [x] `strategy_rankings` — multi-period strategy rankings with composite scores
+- [x] `market_regimes` — regime classifications with confidence scores and history
+- [x] `portfolio_allocations` — allocation snapshots with weight maps
+- [x] `allocation_history` — per-strategy weight change audit trail
+- [x] `strategy_clusters` — parameter/performance space cluster assignments
+- [x] `strategy_correlations` — pairwise strategy correlation matrix
+- [x] `optimization_runs` — optimizer run metadata (method, objective, status, best score)
+- [x] `optimization_results` — per-iteration trial results with parameter snapshots
+- [x] `strategy_generations` — genetic algorithm generation history
+- [x] `ai_agent_tasks` — AI task orchestration queue
+- [x] `research_sessions` — research session audit log
+
+### Services
+- [x] `intelligence-db.ts` — persistence layer for all Phase 11 entities
+- [x] `intelligence-types.ts` — shared TypeScript types for all Phase 11 subsystems
+- [x] `ranking-engine.ts` — multi-factor ranking (Sharpe/Sortino/Calmar/drawdown/win rate/WF/MC)
+- [x] `regime-detection-engine.ts` — 6-indicator ensemble regime classifier
+- [x] `portfolio-allocator.ts` — 4 allocation methods (equal/risk_parity/mean_variance/momentum)
+- [x] `genetic-evolution-engine.ts` — genetic algorithm with tournament selection + elitism
+- [x] `strategy-optimizer.ts` — 4 optimization methods (grid/random/bayesian/genetic)
+- [x] `ai-optimization-assistant.ts` — LLM-powered strategy analysis and suggestions
+- [x] `continuous-learning-engine.ts` — regime-aware performance monitoring and re-optimization
+- [x] `intelligence-correlation-engine.ts` — strategy clustering by parameter/performance space
+- [x] `research-coordinator.ts` — multi-step research session orchestrator
+- [x] `intelligence-scheduler.ts` — 5-loop background scheduler (regime/ranking/clustering/coordination/learning)
+
+### API Routes
+- [x] 17 endpoints under `/api/v1/intelligence/*`
+- [x] Rankings (CRUD + trigger), regimes (CRUD + trigger), allocations (CRUD + trigger)
+- [x] Optimization runs/results (CRUD + trigger), strategy generations (read)
+- [x] AI agent tasks (CRUD + trigger), research sessions (CRUD + trigger)
+
+### OpenAPI & Codegen
+- [x] Version bumped to 0.11.0
+- [x] Intelligence paths and schemas added
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+
+### Safety Guarantees
+- [x] Advisory-only — no live capital, no order placement
+- [x] All optimization uses the Phase 4 backtest engine (fill-at-open N+1)
+- [x] No real-money API credentials in codebase
+
+---
+
+## Phase 12 — Production Readiness
 
 - [ ] Full security audit
 - [ ] Penetration testing checklist
