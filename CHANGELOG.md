@@ -23,6 +23,35 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.12.0] — 2026-06-03
+
+### Phase 12 — Observability, Monitoring & Operations Platform
+
+#### Added
+- **15 new DB tables** — `system_metrics`, `service_health`, `scheduler_health`, `api_metrics`, `strategy_health`, `execution_health`, `stream_health_history`, `ai_health`, `alert_rules`, `alert_events`, `incidents`, `incident_timeline`, `uptime_history`, `performance_snapshots`, `monitoring_audit_log`; all created via `pnpm --filter @workspace/db run push`
+- **`ops-types.ts`** — shared TypeScript types for all Phase 12 entities: `ServiceStatus`, `AlertSeverity`, `AlertRuleRecord`, `AlertEventRecord`, `IncidentRecord`, `IncidentTimelineRecord`, `SystemMetricsRecord`, `PerformanceSnapshotRecord`, `OpsOverview`, and more
+- **`ops-db.ts`** — full CRUD layer for all 15 Phase 12 tables; all queries use `@workspace/db` pattern
+- **`metrics-collector.ts`** — collects live system metrics from `process.memoryUsage()`, event-loop lag via `setImmediate`, DB round-trip latency, and API latency rolling window; writes to `system_metrics` every 30s
+- **`service-health-engine.ts`** — evaluates 8 platform services (ingestion, paper-trading, risk, analytics, AI, streaming, execution, intelligence); computes health score 0–100; writes to `service_health`
+- **`scheduler-monitor.ts`** — snapshots all Phase 1–11 background scheduler loops (ingestion, paper, risk, analytics, AI, stream, execution, intelligence); writes to `scheduler_health`; detects missed/failed runs
+- **`strategy-health-engine.ts`** — reads backtest results and paper trading performance; computes per-strategy Sharpe/drawdown/win-rate health; classifies as healthy/warning/critical/inactive
+- **`ai-health-engine.ts`** — aggregates AI usage metrics from `ai_usage_metrics` by provider and 1h/4h/1d windows; computes availability rate, failure rate, avg/p95 latency
+- **`execution-health-engine.ts`** — aggregates execution order stats from `execution_latency` + order tables; computes fill rate, rejection rate, avg/p95 latency, slippage per window
+- **`alert-engine.ts`** — evaluates 12 built-in alert rules (ingestion failure rate, no ingestion, scheduler miss, service degradation, high memory, AI errors, execution rejections, drawdown breach, emergency alert); seeds rules on startup; respects per-rule cooldowns; writes `alert_events`
+- **`incident-manager.ts`** — auto-creates incidents from emergency-severity alerts; manages lifecycle (open → investigating → resolved); appends timeline entries; scans for auto-resolution
+- **`ops-scheduler.ts`** — 10 independent background loops: system metrics (30s), service health (2m), alert evaluation (60s), scheduler snapshot (60s), stream snapshot (2m), strategy health (5m), AI health (15m), execution health (15m), incident scan (5m), performance snapshot (15m)
+- **13 route files** under `artifacts/api-server/src/routes/v1/ops/` — ops-overview, ops-services, ops-schedulers, ops-alerts, ops-alert-rules, ops-incidents, ops-uptime, ops-performance, ops-system-metrics, ops-ai-health, ops-execution-health, ops-stream-health, ops-strategy-health, ops-audit-log
+- **29 new REST endpoints** under `/api/v1/ops/*` — overview, services list/history, scheduler list/live, alert events (list/acknowledge/resolve), alert rules (list/toggle), incidents (list/get/investigate/resolve/update), uptime, performance snapshots, system metrics (list/latest/live), AI health, execution health, stream health, strategy health, audit log
+- **OpenAPI spec 0.12.0** — `operations` tag added; 29 Phase 12 path entries; 15 Phase 12 schemas (OpsOverview, SystemMetrics, ServiceHealthRecord, SchedulerHealthRecord, AlertRule, AlertEvent, Incident, IncidentTimeline, UptimeHistory, PerformanceSnapshot, AiHealthRecord, ExecutionHealthRecord, StreamHealthHistoryRecord, StrategyHealthRecord, MonitoringAuditLog)
+- **Codegen** — Orval regenerated; Zod validators and React Query hooks updated for all Phase 12 endpoints
+
+#### Changed
+- `artifacts/api-server/src/index.ts` — ops scheduler started after Phase 11 intelligence scheduler
+- `artifacts/api-server/src/routes/v1/index.ts` — all 13 Phase 12 route groups imported and mounted under `/v1/ops/`
+- `lib/db/src/schema/index.ts` — all 15 Phase 12 tables exported
+
+---
+
 ## [0.11.0] — 2026-06-03
 
 ### Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory

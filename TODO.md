@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-03
-> Current phase: **Phase 10 — Institutional Execution Engine** ✅ COMPLETE
+> Current phase: **Phase 12 — Observability, Monitoring & Operations Platform** ✅ COMPLETE
 
 ---
 
@@ -510,14 +510,75 @@
 
 ---
 
-## Phase 12 — Production Readiness
+## Phase 12 — Observability, Monitoring & Operations Platform ✅ COMPLETE
+
+**Goal**: Full platform visibility across all 11 prior phases via real metrics collection, per-service health engines, alert rules/events, incident management, and operations dashboard APIs.
+
+### DB Schemas (15 new tables)
+- [x] `system_metrics` — CPU/memory/heap/event-loop/DB latency, collected every 30s
+- [x] `service_health` — per-service status/score/consecutive-failure tracker
+- [x] `scheduler_health` — per-loop run/miss/fail counters for every background scheduler
+- [x] `api_metrics` — per-endpoint request counts, latency, error rate (Phase 12 schema)
+- [x] `strategy_health` — Sharpe/drawdown/win-rate health for every registered strategy
+- [x] `execution_health` — fill rate, latency p95, slippage, rejection rate by time window
+- [x] `stream_health_history` — stream provider latency, ticks/s, reconnects, last-tick age
+- [x] `ai_health` — AI provider availability, token usage, avg/p95 latency by window
+- [x] `alert_rules` — 12 built-in rules across system/data/scheduler/strategy/execution categories
+- [x] `alert_events` — fired alert instances with status lifecycle (active → acknowledged → resolved)
+- [x] `incidents` — incident records with severity, affected services, root cause, resolution
+- [x] `incident_timeline` — append-only event log per incident (opened/update/investigating/resolved)
+- [x] `uptime_history` — per-service up/down/degraded/maintenance duration tracking
+- [x] `performance_snapshots` — 15-min platform score (0–100) with per-component breakdown
+- [x] `monitoring_audit_log` — all acknowledge/resolve/config actions with actor tracking
+
+### Core Services (8 services)
+- [x] `metrics-collector.ts` — live system metrics via `process.memoryUsage()`, event-loop lag, DB probe
+- [x] `service-health-engine.ts` — evaluates 8 platform services (ingestion, paper, risk, analytics, AI, stream, execution, intelligence), writes health score 0–100
+- [x] `scheduler-monitor.ts` — snapshots all Phase 1–11 background loops, detects missed/failed runs
+- [x] `strategy-health-engine.ts` — reads backtest + paper performance; computes Sharpe/drawdown/win-rate health per strategy
+- [x] `ai-health-engine.ts` — aggregates AI usage metrics by provider/window; computes availability + failure rates
+- [x] `execution-health-engine.ts` — aggregates execution latency, fill/rejection rates, slippage by time window
+- [x] `alert-engine.ts` — evaluates 12 built-in alert rules, fires alert events, respects cooldowns, seeds rules on startup
+- [x] `incident-manager.ts` — auto-opens incidents from emergency alerts, lifecycle transitions, timeline appends
+
+### Ops Scheduler (10 background loops)
+- [x] `ops-scheduler.ts` — 30s system metrics, 2m service health, 60s alert eval, 60s scheduler snapshot, 2m stream snapshot, 5m strategy health, 15m AI/execution health, 5m incident scan, 15m performance snapshot
+
+### API Routes (13 route files, 29 endpoints)
+- [x] `ops-overview-route.ts` — `GET /api/v1/ops/overview` — platform health summary
+- [x] `ops-services-route.ts` — `GET /api/v1/ops/services`, `GET /api/v1/ops/services/:service/history`
+- [x] `ops-schedulers-route.ts` — `GET /api/v1/ops/schedulers`, `GET /api/v1/ops/schedulers/live`
+- [x] `ops-alerts-route.ts` — list/acknowledge/resolve alert events
+- [x] `ops-alert-rules-route.ts` — list + enable/disable alert rules
+- [x] `ops-incidents-route.ts` — list/get/investigate/resolve incidents + add timeline updates
+- [x] `ops-uptime-route.ts` — `GET /api/v1/ops/uptime`
+- [x] `ops-performance-route.ts` — `GET /api/v1/ops/performance`, `GET /api/v1/ops/performance/latest`
+- [x] `ops-system-metrics-route.ts` — list + latest + live system metrics (3 endpoints)
+- [x] `ops-ai-health-route.ts` — `GET /api/v1/ops/ai-health`, `POST /api/v1/ops/ai-health/refresh`
+- [x] `ops-execution-health-route.ts` — `GET /api/v1/ops/execution-health`, `POST /api/v1/ops/execution-health/refresh`
+- [x] `ops-stream-health-route.ts` — `GET /api/v1/ops/stream-health`
+- [x] `ops-strategy-health-route.ts` — `GET /api/v1/ops/strategy-health`, `POST /api/v1/ops/strategy-health/refresh`
+- [x] `ops-audit-log-route.ts` — `GET /api/v1/ops/audit-log`
+
+### OpenAPI & Codegen
+- [x] Version bumped to 0.12.0
+- [x] `operations` tag added; 29 Phase 12 paths added; 15 Phase 12 schemas added
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+
+### Verified Endpoints
+- [x] `GET /api/v1/ops/overview` — returns live platform score, 8 services, active alert count
+- [x] `GET /api/v1/ops/alert-rules` — returns 12 seeded alert rules
+- [x] `GET /api/v1/ops/system-metrics/live` — returns in-memory CPU/memory/heap snapshot
+
+---
+
+## Phase 13 — Production Readiness
 
 - [ ] Full security audit
 - [ ] Penetration testing checklist
-- [ ] Comprehensive health monitoring
 - [ ] AI rate limiting enforcement (AI_RATE_LIMIT_PER_MINUTE)
 - [ ] AI monthly token budget enforcement (AI_MONTHLY_TOKEN_BUDGET)
-- [ ] Alerting infrastructure (webhook + email)
+- [ ] Alerting delivery (webhook + email channels)
 - [ ] Database backup automation
 - [ ] Performance profiling and optimization
 - [ ] Deployment pipeline (CI/CD)

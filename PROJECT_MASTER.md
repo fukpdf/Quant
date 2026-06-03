@@ -94,10 +94,13 @@ Deliverables:
 
 **Current Phase:**
 
-**Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory** ✅ Complete
-- 11 DB tables, 12 services (ranking-engine, regime-detection-engine, portfolio-allocator, genetic-evolution-engine, strategy-optimizer, ai-optimization-assistant, continuous-learning-engine, intelligence-correlation-engine, research-coordinator, intelligence-scheduler, intelligence-db, intelligence-types), 17 endpoints under `/api/v1/intelligence/*`, OpenAPI 0.11.0 with `intelligence` tag, codegen regenerated. **Advisory only — no live capital, no order placement.**
+**Phase 12 — Observability, Monitoring & Operations Platform** ✅ Complete
+- 15 DB tables, 8 core services (metrics-collector, service-health-engine, scheduler-monitor, strategy-health-engine, ai-health-engine, execution-health-engine, alert-engine, incident-manager), ops-scheduler with 10 background loops, 13 route files, 29 endpoints under `/api/v1/ops/*`, OpenAPI 0.12.0 with `operations` tag, codegen regenerated. **READ-ONLY platform intelligence — no trades, orders, or positions are affected.**
 
 **Prior Phases Complete:**
+
+**Phase 11 — Multi-Agent Intelligence & Autonomous Strategy Factory** ✅ Complete
+- 11 DB tables, 12 services (ranking-engine, regime-detection-engine, portfolio-allocator, genetic-evolution-engine, strategy-optimizer, ai-optimization-assistant, continuous-learning-engine, intelligence-correlation-engine, research-coordinator, intelligence-scheduler, intelligence-db, intelligence-types), 17 endpoints under `/api/v1/intelligence/*`, OpenAPI 0.11.0 with `intelligence` tag, codegen regenerated. **Advisory only — no live capital, no order placement.**
 
 **Phase 10 — Institutional Execution Engine** ✅ Complete
 - 12 DB tables, IExecutionProvider abstraction (Mock/Paper/live_disabled, env-driven), four-stage pre-trade pipeline (validation → risk → kill-switch → circuit-breaker, ADR-027), strict order state machine with illegal-transition enforcement (ADR-026), MockProvider (instant-fill, ±5bps slippage), PaperProvider (Phase 9 MarketStateEngine pricing), mode-aware router (ADR-028), fill engine with slippage/commission tracking (ADR-029), position engine with avg-cost basis and MTM (ADR-030), stale/stuck order monitor (ADR-031), 5-min analytics engine fill rate/p95 latency (ADR-032), recovery service lost-ACK/fill detection (ADR-033), 5 route files, 13 endpoints, OpenAPI 0.10.0 with `execution` tag, codegen regenerated. **SAFE MODE ONLY — `live` is not a valid EXECUTION_MODE; all orders route to mock or paper.**
@@ -120,9 +123,9 @@ Deliverables:
 **Phase 3 — Research Laboratory** ✅ Complete
 - Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-**Next Phase: Phase 12 — Production Readiness**
+**Next Phase: Phase 13 — Production Readiness**
 
-Goal: Security audit, AI rate limiting enforcement, alerting infrastructure, database backup automation, performance profiling, and deployment pipeline.
+Goal: Security audit, AI rate limiting enforcement, alerting delivery (webhook/email), database backup automation, performance profiling, and deployment pipeline.
 
 ---
 

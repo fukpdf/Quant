@@ -13,6 +13,7 @@ import { AiProviderFactory } from "./services/ai-provider-factory";
 import { startStreamScheduler } from "./services/stream-scheduler";
 import { startExecutionScheduler } from "./services/execution-scheduler";
 import { startIntelligenceScheduler } from "./services/intelligence-scheduler";
+import { startOpsScheduler } from "./services/ops-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -106,5 +107,12 @@ app.listen(port, async (err) => {
     await startIntelligenceScheduler();
   } catch (err) {
     logger.error({ err }, "Failed to start intelligence scheduler — continuing without intelligence layer");
+  }
+
+  // Start Phase 12 observability & operations platform (non-fatal — server runs even if ops layer fails)
+  try {
+    await startOpsScheduler();
+  } catch (err) {
+    logger.error({ err }, "Failed to start ops scheduler — continuing without observability layer");
   }
 });

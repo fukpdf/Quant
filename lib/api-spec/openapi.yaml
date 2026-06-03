@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.11.0
-  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, real-time market streaming, and multi-agent intelligence layer
+  version: 0.12.0
+  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, real-time market streaming, multi-agent intelligence layer, and observability & operations platform
 servers:
   - url: /api
     description: Base API path
@@ -40,6 +40,8 @@ tags:
     description: Real-time market streaming — WebSocket provider management, live tick/orderbook/trade data, market state engine, event bus, gap recovery, latency metrics, and tick replay engine.
   - name: intelligence
     description: Multi-Agent Intelligence & Autonomous Strategy Factory — regime detection, parameter optimization (grid/random/Bayesian/genetic), strategy evolution, portfolio allocation, multi-factor rankings, strategy clustering, AI research jobs, and continuous learning. ADVISORY ONLY — no trades, orders, or positions are affected by this layer.
+  - name: operations
+    description: Observability, Monitoring & Operations Platform — real-time system metrics, per-service health checks, scheduler tracking, alert rules and events, incident management, uptime history, performance snapshots, and monitoring audit log. READ-ONLY platform intelligence — no trades, orders, or positions are affected.
 paths:
   /healthz:
     get:
@@ -4624,6 +4626,573 @@ paths:
                       regimesUpdated: { type: integer }
                       rankingsUpdated: { type: boolean }
                       clustersUpdated: { type: boolean }
+
+  # ---------------------------------------------------------------------------
+  # Phase 12 — Observability, Monitoring & Operations Platform
+  # ---------------------------------------------------------------------------
+
+  /v1/ops/overview:
+    get:
+      operationId: getOpsOverview
+      tags: [operations]
+      summary: Platform operations overview
+      description: Returns current platform health summary — service statuses, active alerts, open incidents, system metrics, and overall platform score.
+      responses:
+        "200":
+          description: Operations overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OpsOverview"
+
+  /v1/ops/services:
+    get:
+      operationId: listServiceHealth
+      tags: [operations]
+      summary: List latest service health
+      description: Returns the most recent health snapshot for every monitored platform service.
+      responses:
+        "200":
+          description: Service health list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ServiceHealthRecord" } }
+                  count: { type: integer }
+
+  /v1/ops/services/{service}/history:
+    get:
+      operationId: getServiceHealthHistory
+      tags: [operations]
+      summary: Service health history
+      parameters:
+        - { name: service, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        "200":
+          description: Service health history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ServiceHealthRecord" } }
+                  count: { type: integer }
+                  service: { type: string }
+
+  /v1/ops/schedulers:
+    get:
+      operationId: listSchedulerHealth
+      tags: [operations]
+      summary: List scheduler health (DB snapshot)
+      responses:
+        "200":
+          description: Scheduler health list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/SchedulerHealthRecord" } }
+                  count: { type: integer }
+
+  /v1/ops/schedulers/live:
+    get:
+      operationId: getSchedulerHealthLive
+      tags: [operations]
+      summary: Live scheduler states (in-memory, no DB)
+      responses:
+        "200":
+          description: Live scheduler states
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+                  count: { type: integer }
+
+  /v1/ops/alerts:
+    get:
+      operationId: listAlertEvents
+      tags: [operations]
+      summary: List alert events
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [active, acknowledged, resolved] } }
+        - { name: severity, in: query, schema: { type: string, enum: [warning, critical, emergency] } }
+        - { name: service, in: query, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        "200":
+          description: Alert events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AlertEvent" } }
+                  count: { type: integer }
+
+  /v1/ops/alerts/{id}/acknowledge:
+    post:
+      operationId: acknowledgeAlert
+      tags: [operations]
+      summary: Acknowledge an alert
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AlertEvent" }
+        "404":
+          description: Alert not found
+
+  /v1/ops/alerts/{id}/resolve:
+    post:
+      operationId: resolveAlert
+      tags: [operations]
+      summary: Resolve an alert
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Alert resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AlertEvent" }
+        "404":
+          description: Alert not found
+
+  /v1/ops/alert-rules:
+    get:
+      operationId: listAlertRules
+      tags: [operations]
+      summary: List alert rules
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+        - { name: severity, in: query, schema: { type: string, enum: [warning, critical, emergency] } }
+        - { name: enabled, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: Alert rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AlertRule" } }
+                  count: { type: integer }
+
+  /v1/ops/alert-rules/{name}:
+    patch:
+      operationId: updateAlertRule
+      tags: [operations]
+      summary: Enable or disable an alert rule
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isEnabled]
+              properties:
+                isEnabled: { type: boolean }
+      responses:
+        "200":
+          description: Alert rule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AlertRule" }
+        "404":
+          description: Alert rule not found
+
+  /v1/ops/incidents:
+    get:
+      operationId: listIncidents
+      tags: [operations]
+      summary: List incidents
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [open, investigating, resolved] } }
+        - { name: severity, in: query, schema: { type: string, enum: [warning, critical, emergency] } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        "200":
+          description: Incident list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Incident" } }
+                  count: { type: integer }
+
+  /v1/ops/incidents/{id}:
+    get:
+      operationId: getIncident
+      tags: [operations]
+      summary: Get incident with timeline
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Incident with timeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Incident"
+                      - type: object
+                        properties:
+                          timeline: { type: array, items: { $ref: "#/components/schemas/IncidentTimeline" } }
+        "404":
+          description: Incident not found
+
+  /v1/ops/incidents/{id}/investigate:
+    post:
+      operationId: investigateIncident
+      tags: [operations]
+      summary: Mark incident as investigating
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Incident marked investigating
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Incident" }
+                  message: { type: string }
+
+  /v1/ops/incidents/{id}/resolve:
+    post:
+      operationId: resolveIncident
+      tags: [operations]
+      summary: Resolve an incident
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution]
+              properties:
+                resolution: { type: string, maxLength: 2000 }
+                actor: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Incident resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Incident" }
+                  message: { type: string }
+
+  /v1/ops/incidents/{id}/update:
+    post:
+      operationId: addIncidentUpdate
+      tags: [operations]
+      summary: Add a timeline update to an incident
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, maxLength: 2000 }
+                actor: { type: string, maxLength: 100 }
+      responses:
+        "201":
+          description: Timeline entry added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/IncidentTimeline" }
+                  message: { type: string }
+
+  /v1/ops/uptime:
+    get:
+      operationId: listUptimeHistory
+      tags: [operations]
+      summary: Service uptime history
+      parameters:
+        - { name: service, in: query, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 100, maximum: 500 } }
+      responses:
+        "200":
+          description: Uptime history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/UptimeHistory" } }
+                  count: { type: integer }
+
+  /v1/ops/performance:
+    get:
+      operationId: listPerformanceSnapshots
+      tags: [operations]
+      summary: List platform performance snapshots
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 96, maximum: 500 } }
+      responses:
+        "200":
+          description: Performance snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/PerformanceSnapshot" } }
+                  count: { type: integer }
+
+  /v1/ops/performance/latest:
+    get:
+      operationId: getLatestPerformanceSnapshot
+      tags: [operations]
+      summary: Most recent performance snapshot
+      responses:
+        "200":
+          description: Latest performance snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/PerformanceSnapshot" }
+        "404":
+          description: No snapshot available yet
+
+  /v1/ops/system-metrics:
+    get:
+      operationId: listSystemMetrics
+      tags: [operations]
+      summary: List system metrics history
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 60, maximum: 500 } }
+      responses:
+        "200":
+          description: System metrics list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/SystemMetrics" } }
+                  count: { type: integer }
+
+  /v1/ops/system-metrics/latest:
+    get:
+      operationId: getLatestSystemMetrics
+      tags: [operations]
+      summary: Most recent system metrics snapshot
+      responses:
+        "200":
+          description: Latest system metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/SystemMetrics" }
+        "404":
+          description: No metrics available yet
+
+  /v1/ops/system-metrics/live:
+    get:
+      operationId: getLiveSystemMetrics
+      tags: [operations]
+      summary: Live system metrics snapshot (in-memory, no DB round-trip)
+      responses:
+        "200":
+          description: Live system metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+
+  /v1/ops/ai-health:
+    get:
+      operationId: listAiHealth
+      tags: [operations]
+      summary: Latest AI provider health
+      responses:
+        "200":
+          description: AI health records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AiHealthRecord" } }
+                  count: { type: integer }
+
+  /v1/ops/ai-health/refresh:
+    post:
+      operationId: refreshAiHealth
+      tags: [operations]
+      summary: Trigger immediate AI health check
+      responses:
+        "201":
+          description: AI health refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AiHealthRecord" } }
+                  count: { type: integer }
+                  message: { type: string }
+
+  /v1/ops/execution-health:
+    get:
+      operationId: getExecutionHealth
+      tags: [operations]
+      summary: Latest execution engine health
+      parameters:
+        - { name: window, in: query, schema: { type: string, enum: [1h, 4h, 1d], default: 1h } }
+      responses:
+        "200":
+          description: Execution health record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ExecutionHealthRecord" }
+        "404":
+          description: No data for window
+
+  /v1/ops/execution-health/refresh:
+    post:
+      operationId: refreshExecutionHealth
+      tags: [operations]
+      summary: Trigger immediate execution health check
+      responses:
+        "201":
+          description: Execution health refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ExecutionHealthRecord" }
+                  message: { type: string }
+
+  /v1/ops/stream-health:
+    get:
+      operationId: listStreamHealthHistory
+      tags: [operations]
+      summary: Latest stream provider health (monitoring layer)
+      responses:
+        "200":
+          description: Stream health records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StreamHealthHistoryRecord" } }
+                  count: { type: integer }
+
+  /v1/ops/strategy-health:
+    get:
+      operationId: listStrategyHealth
+      tags: [operations]
+      summary: Latest strategy health per strategy
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        "200":
+          description: Strategy health records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StrategyHealthRecord" } }
+                  count: { type: integer }
+
+  /v1/ops/strategy-health/refresh:
+    post:
+      operationId: refreshStrategyHealth
+      tags: [operations]
+      summary: Trigger immediate strategy health check
+      responses:
+        "201":
+          description: Strategy health refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StrategyHealthRecord" } }
+                  count: { type: integer }
+                  message: { type: string }
+
+  /v1/ops/audit-log:
+    get:
+      operationId: listMonitoringAuditLog
+      tags: [operations]
+      summary: Monitoring operations audit trail
+      parameters:
+        - { name: action, in: query, schema: { type: string } }
+        - { name: actor, in: query, schema: { type: string } }
+        - { name: targetType, in: query, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 100, maximum: 500 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        "200":
+          description: Monitoring audit log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/MonitoringAuditLog" } }
+                  count: { type: integer }
 
 components:
   responses:
@@ -9885,3 +10454,242 @@ components:
         metrics:
           $ref: '#/components/schemas/LearningMetrics'
         advisoryBoundary: { type: string }
+
+    # ---------------------------------------------------------------------------
+    # Phase 12 — Observability, Monitoring & Operations Platform schemas
+    # ---------------------------------------------------------------------------
+
+    OpsOverview:
+      type: object
+      properties:
+        platformScore: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        activeAlerts: { type: integer }
+        openIncidents: { type: integer }
+        totalServices: { type: integer }
+        degradedServices: { type: integer }
+        scheduler: { type: object }
+        systemMetrics: { type: object, nullable: true }
+        services: { type: array, items: { type: object } }
+        observations: { type: array, items: { type: string } }
+        snapshotAt: { type: string, format: date-time, nullable: true }
+
+    SystemMetrics:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        cpuPercent: { type: string, nullable: true }
+        memoryRssMb: { type: string, nullable: true }
+        heapUsedMb: { type: string, nullable: true }
+        heapTotalMb: { type: string, nullable: true }
+        externalMb: { type: string, nullable: true }
+        eventLoopLagMs: { type: string, nullable: true }
+        dbLatencyMs: { type: string, nullable: true }
+        apiAvgLatencyMs: { type: string, nullable: true }
+        apiP95LatencyMs: { type: string, nullable: true }
+        uptimeSeconds: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    ServiceHealthRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        service: { type: string }
+        status: { type: string, enum: [running, degraded, failed, maintenance] }
+        healthScore: { type: string }
+        isEnabled: { type: boolean }
+        message: { type: string, nullable: true }
+        details: { type: object, nullable: true }
+        lastSuccessAt: { type: string, format: date-time, nullable: true }
+        consecutiveFailures: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    SchedulerHealthRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        schedulerName: { type: string }
+        phase: { type: string, nullable: true }
+        status: { type: string, enum: [ok, missed, failed, running] }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+        nextRunAt: { type: string, format: date-time, nullable: true }
+        intervalMs: { type: string, nullable: true }
+        lastRuntimeMs: { type: string, nullable: true }
+        missedCount: { type: string }
+        failureCount: { type: string }
+        successCount: { type: string }
+        isActive: { type: boolean }
+        lastError: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    AlertRule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        displayName: { type: string }
+        category: { type: string }
+        severity: { type: string, enum: [warning, critical, emergency] }
+        condition: { type: string }
+        threshold: { type: string, nullable: true }
+        cooldownMinutes: { type: integer }
+        isEnabled: { type: boolean }
+        description: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AlertEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        ruleName: { type: string }
+        severity: { type: string, enum: [warning, critical, emergency] }
+        status: { type: string, enum: [active, acknowledged, resolved] }
+        title: { type: string }
+        message: { type: string }
+        service: { type: string, nullable: true }
+        triggerValue: { type: string, nullable: true }
+        thresholdValue: { type: string, nullable: true }
+        details: { type: object, nullable: true }
+        firedAt: { type: string, format: date-time }
+        acknowledgedAt: { type: string, format: date-time, nullable: true }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    Incident:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        severity: { type: string, enum: [warning, critical, emergency] }
+        status: { type: string, enum: [open, investigating, resolved] }
+        affectedServices: { type: array, items: { type: string } }
+        rootCause: { type: string, nullable: true }
+        resolution: { type: string, nullable: true }
+        triggerSource: { type: string, nullable: true }
+        triggerRef: { type: string, nullable: true }
+        openedAt: { type: string, format: date-time }
+        investigatingAt: { type: string, format: date-time, nullable: true }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    IncidentTimeline:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        incidentId: { type: string, format: uuid }
+        eventType: { type: string, enum: [opened, update, investigating, resolved, alert_linked, auto_detected] }
+        message: { type: string }
+        actor: { type: string }
+        details: { type: object, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    UptimeHistory:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        service: { type: string }
+        status: { type: string, enum: [up, down, degraded, maintenance] }
+        fromTime: { type: string, format: date-time }
+        toTime: { type: string, format: date-time, nullable: true }
+        durationSeconds: { type: string, nullable: true }
+        reason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    PerformanceSnapshot:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        overallScore: { type: integer, minimum: 0, maximum: 100 }
+        componentScores: { type: object }
+        activeAlerts: { type: integer }
+        openIncidents: { type: integer }
+        degradedServices: { type: integer }
+        missedSchedulers: { type: integer }
+        observations: { type: array, items: { type: string } }
+        memoryRssMb: { type: string, nullable: true }
+        cpuPercent: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    AiHealthRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string }
+        window: { type: string, enum: [1h, 4h, 1d] }
+        status: { type: string, enum: [healthy, degraded, unavailable] }
+        healthScore: { type: string, nullable: true }
+        totalRequests: { type: integer }
+        totalTokens: { type: integer }
+        failureCount: { type: integer }
+        avgLatencyMs: { type: string, nullable: true }
+        p95LatencyMs: { type: string, nullable: true }
+        availabilityRate: { type: string, nullable: true }
+        failureRate: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    ExecutionHealthRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        window: { type: string, enum: [1h, 4h, 1d] }
+        status: { type: string, enum: [healthy, degraded, failed] }
+        healthScore: { type: string, nullable: true }
+        totalOrders: { type: integer }
+        filledOrders: { type: integer }
+        rejectedOrders: { type: integer }
+        cancelledOrders: { type: integer }
+        fillRate: { type: string, nullable: true }
+        rejectionRate: { type: string, nullable: true }
+        avgLatencyMs: { type: string, nullable: true }
+        p95LatencyMs: { type: string, nullable: true }
+        avgSlippageBps: { type: string, nullable: true }
+        errorRate: { type: string, nullable: true }
+        executionMode: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    StreamHealthHistoryRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string }
+        connectionStatus: { type: string, enum: [connected, degraded, disconnected, failed] }
+        healthScore: { type: string, nullable: true }
+        avgLatencyMs: { type: string, nullable: true }
+        p99LatencyMs: { type: string, nullable: true }
+        ticksPerSecond: { type: string, nullable: true }
+        reconnectCount: { type: string }
+        failureCount: { type: string }
+        subscribedSymbols: { type: string, nullable: true }
+        lastTickAgeSeconds: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    StrategyHealthRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        strategyName: { type: string }
+        status: { type: string, enum: [healthy, warning, critical, inactive] }
+        healthScore: { type: string, nullable: true }
+        isActive: { type: boolean }
+        lastSharpe: { type: string, nullable: true }
+        lastMaxDrawdownPct: { type: string, nullable: true }
+        lastWinRate: { type: string, nullable: true }
+        consecutiveLosses: { type: string }
+        currentDrawdownPct: { type: string, nullable: true }
+        performanceDrift: { type: string, nullable: true }
+        dataFreshnessMinutes: { type: string, nullable: true }
+        backtestCount: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    MonitoringAuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        actor: { type: string }
+        action: { type: string }
+        targetType: { type: string, nullable: true }
+        targetId: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        details: { type: object, nullable: true }
+        createdAt: { type: string, format: date-time }

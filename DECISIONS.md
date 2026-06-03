@@ -965,3 +965,58 @@ Independent loops allow each intelligence function to run at its natural cadence
 **Consequences**
 - `INTELLIGENCE_*` env vars control each loop interval
 - Loops use the same safe-runner pattern as Phase 9 stream processors
+
+---
+
+### ADR-038 — Phase 12 is READ-ONLY platform intelligence
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+All Phase 12 observability services (metrics-collector, service-health-engine, scheduler-monitor, strategy-health-engine, ai-health-engine, execution-health-engine, alert-engine, incident-manager) collect and surface data only. They never place orders, modify positions, or call any trading infrastructure.
+
+**Rationale**
+Observability must be a passive layer — a malfunctioning monitoring system must not interfere with capital-affecting components. The safety boundary is identical in intent to the Phase 8 (AI) and Phase 11 (intelligence) advisory-only boundaries.
+
+**Consequences**
+- Phase 12 services only read from Phase 1–11 DB tables; they never write to trading tables
+- Route handlers under `/api/v1/ops/*` can acknowledge/resolve alerts and incidents (operational actions) but cannot trigger any execution path
+- `replit.md` and `AGENTS.md` document this boundary for all future agents
+
+---
+
+### ADR-039 — Phase 12 ops-scheduler runs 10 independent non-fatal loops
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+`ops-scheduler.ts` runs 10 `setInterval` loops independently: system metrics (30s), service health (2m), alert evaluation (60s), scheduler snapshot (60s), stream snapshot (2m), strategy health (5m), AI health (15m), execution health (15m), incident scan (5m), performance snapshot (15m). Every loop is wrapped in a try/catch — exceptions are logged but never propagate.
+
+**Rationale**
+Monitoring loops must not cascade failures. A broken strategy-health evaluation should not prevent alert firing or system metrics collection. Cadences are chosen to balance freshness (metrics: 30s) against cost (strategy/AI/execution: 15m — these require cross-table aggregation).
+
+**Consequences**
+- Adding a new monitoring loop requires only a `setInterval` call in `startOpsScheduler()` — no structural changes
+- Each loop calls a single service method; business logic stays in the service, not the scheduler
+
+---
+
+### ADR-040 — Incident auto-creation threshold is `emergency` severity only
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+`incident-manager.ts` automatically opens a new incident only when an alert event with severity `emergency` fires and no existing open incident is already linked to the same alert rule. `critical` and `warning` alerts create alert events but do not auto-open incidents.
+
+**Rationale**
+Auto-creating incidents on every `critical` alert would produce noise — many critical alerts self-resolve within minutes (e.g., a transient memory spike). Incidents represent sustained, human-attention-required situations. `emergency` is reserved for conditions that require immediate response (platform down, complete data loss) and always warrants an incident record.
+
+**Consequences**
+- Operators can manually link any alert event to an incident via the incident timeline API if they decide a `critical` alert warrants escalation
+- Auto-resolution scan (`scanForAutoResolution`) closes incidents when all linked emergency alerts are resolved

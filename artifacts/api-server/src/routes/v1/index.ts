@@ -82,6 +82,20 @@ import intelligenceRankingsRouter from "./intelligence-rankings";
 import intelligenceResearchRouter from "./intelligence-research";
 import intelligenceClustersRouter from "./intelligence-clusters";
 import intelligenceLearningRouter from "./intelligence-learning";
+// Phase 12 — Observability, Monitoring & Operations Platform
+import opsOverviewRouter from "./ops-overview";
+import opsServicesRouter from "./ops-services";
+import opsSchedulersRouter from "./ops-schedulers";
+import opsAlertsRouter from "./ops-alerts";
+import opsIncidentsRouter from "./ops-incidents";
+import opsUptimeRouter from "./ops-uptime";
+import opsPerformanceRouter from "./ops-performance";
+import opsSystemRouter from "./ops-system";
+import opsAiRouter from "./ops-ai";
+import opsExecutionRouter from "./ops-execution";
+import opsStreamsRouter from "./ops-streams";
+import opsStrategiesRouter from "./ops-strategies";
+import opsAuditRouter from "./ops-audit";
 
 const v1Router: IRouter = Router();
 
@@ -180,5 +194,20 @@ v1Router.use(intelligenceRankingsRouter);
 v1Router.use(intelligenceResearchRouter);
 v1Router.use(intelligenceClustersRouter);
 v1Router.use(intelligenceLearningRouter);
+
+// Phase 12 endpoints — Observability, Monitoring & Operations Platform
+v1Router.use(opsOverviewRouter);
+v1Router.use(opsServicesRouter);
+v1Router.use(opsSchedulersRouter);
+v1Router.use(opsAlertsRouter);
+v1Router.use(opsIncidentsRouter);
+v1Router.use(opsUptimeRouter);
+v1Router.use(opsPerformanceRouter);
+v1Router.use(opsSystemRouter);
+v1Router.use(opsAiRouter);
+v1Router.use(opsExecutionRouter);
+v1Router.use(opsStreamsRouter);
+v1Router.use(opsStrategiesRouter);
+v1Router.use(opsAuditRouter);
 
 export default v1Router;

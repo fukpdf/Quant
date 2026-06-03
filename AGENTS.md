@@ -143,6 +143,16 @@ Next: **Phase 5 — Paper Trading**.
 - Walk-forward and Monte Carlo routes are async-like but run synchronously in-process (no job queue yet)
 - All 10 Phase 4 endpoints are mounted under `/v1/research/` prefix via `routes/v1/index.ts`
 
+### Key Phase 12 Architecture Notes (read before extending):
+- All Phase 12 services are **READ-ONLY platform intelligence** — no trades, orders, or positions are affected (ADR-038)
+- `ops-scheduler.ts` runs 10 independent non-fatal background loops; errors are logged but do not crash the scheduler (ADR-039)
+- Alert engine seeds 12 built-in rules on startup via `upsertAlertRule`; adding new rules requires adding them to the `DEFAULT_ALERT_RULES` array in `alert-engine.ts`
+- All Phase 12 DB access goes through `ops-db.ts` — never import Phase 12 tables directly in route files
+- Incident auto-creation fires only on `emergency` severity alerts; `warning` and `critical` alerts create events but not incidents (ADR-040)
+- `GET /api/v1/ops/system-metrics/live` reads in-memory from `MetricsCollector` — no DB round-trip; use for dashboards requiring sub-second freshness
+- `GET /api/v1/ops/schedulers/live` reads in-memory from `SchedulerMonitor` — returns raw loop states, not DB snapshots
+- 29 endpoints under `/api/v1/ops/*`; OpenAPI version: 0.12.0; codegen regenerated after spec update
+
 ### Key Phase 11 Architecture Notes (read before extending):
 - All Phase 11 services are **advisory-only** — no live capital, no order placement (ADR-034)
 - Regime detection uses a 6-indicator heuristic ensemble; minimum 20 candles required (ADR-035)
