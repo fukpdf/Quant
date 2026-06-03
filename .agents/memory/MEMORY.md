@@ -12,3 +12,4 @@
 - [Phase 12 ops architecture](phase12-ops-arch.md) — READ-ONLY monitoring layer; 10 scheduler loops; ops-db.ts is the sole DB access point; incident auto-creation = emergency only.
 - [Dashboard Orval queryKey pattern](dashboard-orval-querykey.md) — Orval-generated UseQueryOptions requires queryKey; pass `{ query: { enabled, refetchInterval } as any }` to bypass without losing other type safety.
 - [Dashboard hook signatures](dashboard-hook-signatures.md) — key non-obvious arg shapes for portfolio/ops/streaming hooks that differ from the obvious pattern.
+- [Drizzle inArray for UUID arrays](drizzle-inarray-uuid.md) — never use sql`ANY(${ids}::uuid[])` with a JS array; use inArray(column, ids) from drizzle-orm instead.

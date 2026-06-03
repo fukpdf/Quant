@@ -3,8 +3,15 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { securityHeadersMiddleware } from "./middleware/security-headers-middleware";
+import { generalRateLimit } from "./middleware/rate-limit-middleware";
+import { resolveAuth } from "./middleware/auth-middleware";
+import { resolveTenant } from "./middleware/tenant-middleware";
 
 const app: Express = express();
+
+// Security headers — applied before all routes
+app.use(securityHeadersMiddleware);
 
 app.use(
   pinoHttp({
@@ -25,9 +32,22 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+app.use(cors({
+  origin: process.env["CORS_ORIGIN"] ?? true,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// General rate limiting on all API routes
+app.use("/api", generalRateLimit);
+
+// Resolve auth context (non-blocking — populates req.auth when credentials present)
+app.use("/api", resolveAuth);
+
+// Resolve tenant context (non-blocking — populates req.tenant when org header present)
+app.use("/api", resolveTenant);
 
 app.use("/api", router);
 

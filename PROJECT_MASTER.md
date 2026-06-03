@@ -123,7 +123,7 @@ Deliverables:
 **Phase 3 — Research Laboratory** ✅ Complete
 - Strategy framework (IStrategy, BaseStrategy), 4 strategies, backtesting engine (no look-ahead bias), performance metrics (Sharpe, Sortino, Expectancy), research API (6 endpoints)
 
-**Next Phase: Phase 13 — Production Readiness**
+**Next Phase: Phase 15 — Production Readiness**
 
 Goal: Security audit, AI rate limiting enforcement, alerting delivery (webhook/email), database backup automation, performance profiling, and deployment pipeline.
 
@@ -234,6 +234,12 @@ See [SECURITY.md](./SECURITY.md) and [docs/06-SECURITY_ARCHITECTURE.md](./docs/0
 **Phase 13 — Frontend Operations & Intelligence Dashboard** ✅ COMPLETE (2026-06-03)
 
 A dark-theme React + Vite + Tailwind v4 operator console (`artifacts/dashboard/`) served on port 5000. Covers all 12 prior phases through 11 pages wired to the live API via `@workspace/api-client-react` React Query hooks. TypeScript strict mode passes clean.
+
+---
+
+**Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation** ✅ COMPLETE (2026-06-03)
+
+16 new DB tables, 13 services, 5 middleware, 17 route files (50+ endpoints), 10 frontend pages. argon2 password hashing, JWT access/refresh tokens, session management, multi-tenant organizations, RBAC with 7 roles + 20 permissions, security event log, audit trail, API key management. Dashboard gains AuthProvider, protected routes, admin-gated sidebar section, and auth pages (login/register/profile/security/users/org-settings).
 
 ---
 

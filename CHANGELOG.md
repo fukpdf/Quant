@@ -23,6 +23,38 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.14.0] — 2026-06-03
+
+### Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation
+
+#### Added
+- **16 new DB tables** — `users`, `sessions`, `refresh_tokens`, `organizations`, `org_teams`, `org_memberships`, `org_invitations`, `roles`, `permissions`, `role_permissions`, `user_roles`, `security_events`, `audit_events`, `user_preferences`, `user_settings`, `api_keys`; applied via `pnpm --filter @workspace/db run push`
+- **13 service files** — `auth-types.ts`, `auth-db.ts`, `password-service.ts` (argon2), `token-service.ts` (JWT), `session-service.ts`, `auth-service.ts`, `rbac-service.ts`, `tenant-service.ts`, `invitation-service.ts`, `api-key-service.ts`, `email-provider.ts` (console + SMTP), `security-event-service.ts`, `auth-audit-service.ts`
+- **5 middleware files** — `auth-middleware.ts` (`resolveAuth` / `requireAuth`), `rbac-middleware.ts` (`requirePermission`, `requireRole`, `requireSelfOrAdmin`), `tenant-middleware.ts` (`resolveTenant`), `rate-limit-middleware.ts` (3-tier), `security-headers-middleware.ts` (HSTS/CSP/CORP)
+- **17 route files** covering 50+ endpoints under `/api/v1/auth/*`, `/api/v1/users/*`, `/api/v1/organizations/*`, `/api/v1/teams/*`, `/api/v1/rbac/*`, `/api/v1/security/*`, `/api/v1/audit/*`
+- **Frontend** — `auth-client.ts` typed API client with JWT auto-refresh; `AuthProvider`/`useAuth` context; 10 new pages: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/accept-invitation`, `/profile`, `/security`, `/users`, `/org-settings`
+- **Sidebar** updated with Admin section (Security, Users, Organization) gated by `users:read` / `operations:read` permission
+- **App.tsx** — `ProtectedRoute` / `AuthRoute` wrappers; `AuthProvider` wraps entire app
+- **RBAC seed** — 7 system roles (`super_admin`, `admin`, `compliance`, `analyst`, `trader`, `viewer`, `api_client`) and 20 permissions seeded on every startup
+- **Super admin bootstrap** — if no super admin exists, promotes the first registered user on startup
+- **OpenAPI spec** bumped to `0.14.0`; auth, users, organizations, rbac, security tags added
+
+#### Changed
+- `artifacts/api-server/src/app.ts` — rewritten: security headers, rate limiting, `resolveAuth`, `resolveTenant` applied globally to all `/api` routes
+- `artifacts/api-server/src/index.ts` — `seedRolesAndPermissions` and `ensureSuperAdminExists` called on startup
+- `artifacts/api-server/src/routes/v1/index.ts` — all 17 Phase 14 routers imported and mounted
+
+#### Fixed
+- `rate-limit-middleware.ts` — removed custom `keyGenerator` that triggered `ERR_ERL_KEY_GEN_IPV6` in express-rate-limit v8; now uses built-in default which handles IPv4/IPv6 correctly
+- `rate-limit-middleware.ts` — `max` option renamed to `limit` (express-rate-limit v8 API)
+
+#### Packages
+- `argon2@0.41.1` — native password hashing (built from source via pnpm `onlyBuiltDependencies`)
+- `jsonwebtoken@9.0.2` + `@types/jsonwebtoken` — JWT access/refresh tokens
+- `express-rate-limit@^8.0.0` — request rate limiting
+
+---
+
 ## [0.13.0] — 2026-06-03
 
 ### Phase 13 — Frontend Operations & Intelligence Dashboard

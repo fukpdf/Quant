@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-03
-> Current phase: **Phase 13 — Frontend Operations & Intelligence Dashboard** ✅ COMPLETE
+> Current phase: **Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation** ✅ COMPLETE
 
 ---
 
@@ -608,10 +608,94 @@
 
 ---
 
-## Phase 14 — Production Readiness
+## Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation ✅ COMPLETE
 
-- [ ] Full security audit
-- [ ] Penetration testing checklist
+### Database (16 new tables)
+- [x] `users` — email/password accounts, super-admin flag, email verification, lockout tracking
+- [x] `sessions` — JWT-backed sessions with IP/UA binding and sliding expiry
+- [x] `refresh_tokens` — refresh token rotation; one-time-use, revocable
+- [x] `organizations` — multi-tenant orgs (slug, plan, seat limit)
+- [x] `org_teams` — sub-groups within an organization
+- [x] `org_memberships` — user ↔ org M:N with `orgRole` (owner/admin/member)
+- [x] `org_invitations` — token-based invitations with expiry and status
+- [x] `roles` — named system-level roles (super_admin, admin, analyst, etc.)
+- [x] `permissions` — fine-grained permission strings (`resource:action`)
+- [x] `role_permissions` — M:N roles ↔ permissions
+- [x] `user_roles` — M:N users ↔ roles (optional org scope)
+- [x] `security_events` — immutable security event log (login, lockout, brute-force, etc.)
+- [x] `audit_events` — admin action audit trail with before/after snapshots
+- [x] `user_preferences` — per-user UI/notification preferences
+- [x] `user_settings` — per-user security settings (2FA, session timeout, IP allowlist)
+- [x] `api_keys` — hashed API keys for programmatic access with permission scope
+
+### Services (13 files)
+- [x] `auth-types.ts` — all Phase 14 TypeScript interfaces and enums
+- [x] `auth-db.ts` — raw DB queries (create/find/update) for all 16 tables
+- [x] `password-service.ts` — argon2 hash/verify with timing-safe comparison
+- [x] `token-service.ts` — JWT access/refresh generation and verification
+- [x] `session-service.ts` — session create/revoke/list with sliding window
+- [x] `auth-service.ts` — register, login, logout, ensureSuperAdminExists
+- [x] `rbac-service.ts` — seedRolesAndPermissions, getUserEffectivePermissions
+- [x] `tenant-service.ts` — org create/update/get, team CRUD, membership ops
+- [x] `invitation-service.ts` — send/accept/decline/expire invitations
+- [x] `api-key-service.ts` — generate (prefix+hash), validate, revoke API keys
+- [x] `email-provider.ts` — IEmailProvider interface + ConsoleEmailProvider + SmtpEmailProvider
+- [x] `security-event-service.ts` — recordSecurityEvent helper
+- [x] `auth-audit-service.ts` — auditLog helper for admin actions
+
+### Middleware (5 files)
+- [x] `auth-middleware.ts` — resolveAuth (populates req.auth), requireAuth guard
+- [x] `rbac-middleware.ts` — requirePermission, requireRole, requireSelfOrAdmin
+- [x] `tenant-middleware.ts` — resolveTenant from X-Organization-Id header
+- [x] `rate-limit-middleware.ts` — three tiers: general (200/15m), auth (20/15m), strict (5/15m)
+- [x] `security-headers-middleware.ts` — HSTS, CSP, X-Frame-Options, CORP headers
+
+### Routes (17 files, 50+ endpoints)
+- [x] `auth-register` — `POST /v1/auth/register`
+- [x] `auth-login` — `POST /v1/auth/login`, `POST /v1/auth/logout`
+- [x] `auth-refresh` — `POST /v1/auth/refresh`
+- [x] `auth-me` — `GET /v1/auth/me`, `PATCH /v1/auth/me`
+- [x] `auth-password` — `POST /v1/auth/password/forgot`, `/reset`, `/change`
+- [x] `auth-verify` — `POST /v1/auth/verify-email`, `/resend`
+- [x] `auth-sessions` — `GET/DELETE /v1/auth/sessions`, `DELETE /v1/auth/sessions/:id`
+- [x] `users-admin` — `GET /v1/users`, `GET/PATCH /v1/users/:id`, `POST /v1/users/:id/deactivate`
+- [x] `organizations-route` — `POST/GET /v1/organizations`, `GET/PATCH /v1/organizations/:id`
+- [x] `teams-route` — `GET/POST /v1/organizations/:id/teams`, `GET/PATCH /v1/teams/:id`
+- [x] `memberships-route` — `GET/PATCH/DELETE /v1/organizations/:id/members/:uid`
+- [x] `invitations-route` — send/list/lookup/accept/decline invitation endpoints
+- [x] `rbac-roles` — roles CRUD, assign/remove user roles
+- [x] `rbac-permissions` — permissions list, effective permissions per user
+- [x] `security-events-route` — security event log with filtering
+- [x] `audit-events-route` — audit trail with filtering
+- [x] `api-keys-route` — create/list/revoke API keys
+
+### Frontend (10 pages + auth context)
+- [x] `AuthProvider` / `useAuth` — token storage, auto-refresh, role/permission state
+- [x] `auth-client.ts` — typed fetch wrapper with JWT auto-refresh on 401
+- [x] `/login` — email/password sign-in with remember-me
+- [x] `/register` — account creation with optional org creation
+- [x] `/forgot-password` — email-based password reset request
+- [x] `/reset-password` — token-based password reset (linked from email)
+- [x] `/verify-email` — email verification + resend
+- [x] `/accept-invitation` — token-based org invitation acceptance
+- [x] `/profile` — account info, password change, active sessions, permissions
+- [x] `/security` — security event log + audit trail (admin-only)
+- [x] `/users` — user management table + system roles overview
+- [x] `/org-settings` — org info, member list, send invitations
+- [x] Sidebar updated — Admin section (Security/Users/Organization) gated by permission
+- [x] Protected/auth route wrappers — redirect unauthenticated users to `/login`
+
+### Infra
+- [x] App.tsx — AuthProvider wrapper, protected/auth route components
+- [x] `app.ts` — security headers, general rate limit, resolveAuth, resolveTenant on all /api routes
+- [x] `index.ts` — seedRolesAndPermissions + ensureSuperAdminExists on startup
+- [x] `routes/v1/index.ts` — all 17 Phase 14 routers mounted
+
+---
+
+## Phase 15 — Production Readiness
+
+- [ ] Full security audit and penetration testing checklist
 - [ ] AI rate limiting enforcement (AI_RATE_LIMIT_PER_MINUTE)
 - [ ] AI monthly token budget enforcement (AI_MONTHLY_TOKEN_BUDGET)
 - [ ] Alerting delivery (webhook + email channels)

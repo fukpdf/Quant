@@ -2,8 +2,8 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.12.0
-  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, real-time market streaming, multi-agent intelligence layer, and observability & operations platform
+  version: 0.14.0
+  description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, real-time market streaming, multi-agent intelligence layer, observability & operations platform, and multi-tenant authentication & RBAC
 servers:
   - url: /api
     description: Base API path
@@ -42,6 +42,16 @@ tags:
     description: Multi-Agent Intelligence & Autonomous Strategy Factory — regime detection, parameter optimization (grid/random/Bayesian/genetic), strategy evolution, portfolio allocation, multi-factor rankings, strategy clustering, AI research jobs, and continuous learning. ADVISORY ONLY — no trades, orders, or positions are affected by this layer.
   - name: operations
     description: Observability, Monitoring & Operations Platform — real-time system metrics, per-service health checks, scheduler tracking, alert rules and events, incident management, uptime history, performance snapshots, and monitoring audit log. READ-ONLY platform intelligence — no trades, orders, or positions are affected.
+  - name: auth
+    description: Authentication — register, login, logout, token refresh, email verification, password management, session management, and API key management.
+  - name: users
+    description: User administration — list users, get user details, update profiles, deactivate accounts. Requires users:read or users:write permission.
+  - name: organizations
+    description: Multi-tenant organizations — create, get, update organizations and manage team membership.
+  - name: rbac
+    description: Role-based access control — system roles, permissions catalog, user-role assignments, effective-permission resolution.
+  - name: security
+    description: Security event log and audit trail — login attempts, suspicious activity, admin actions, and resource-level audit entries.
 paths:
   /healthz:
     get:

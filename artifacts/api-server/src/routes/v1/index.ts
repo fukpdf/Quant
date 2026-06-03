@@ -82,6 +82,24 @@ import intelligenceRankingsRouter from "./intelligence-rankings";
 import intelligenceResearchRouter from "./intelligence-research";
 import intelligenceClustersRouter from "./intelligence-clusters";
 import intelligenceLearningRouter from "./intelligence-learning";
+// Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation
+import authRegisterRouter from "./auth-register";
+import authLoginRouter from "./auth-login";
+import authRefreshRouter from "./auth-refresh";
+import authMeRouter from "./auth-me";
+import authPasswordRouter from "./auth-password";
+import authVerifyRouter from "./auth-verify";
+import authSessionsRouter from "./auth-sessions";
+import usersAdminRouter from "./users-admin";
+import organizationsRouter from "./organizations-route";
+import teamsRouter from "./teams-route";
+import membershipsRouter from "./memberships-route";
+import invitationsRouter from "./invitations-route";
+import rbacRolesRouter from "./rbac-roles";
+import rbacPermissionsRouter from "./rbac-permissions";
+import securityEventsRouter from "./security-events-route";
+import auditEventsRouter from "./audit-events-route";
+import apiKeysRouter from "./api-keys-route";
 // Phase 12 — Observability, Monitoring & Operations Platform
 import opsOverviewRouter from "./ops-overview";
 import opsServicesRouter from "./ops-services";
@@ -194,6 +212,25 @@ v1Router.use(intelligenceRankingsRouter);
 v1Router.use(intelligenceResearchRouter);
 v1Router.use(intelligenceClustersRouter);
 v1Router.use(intelligenceLearningRouter);
+
+// Phase 14 endpoints — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation
+v1Router.use(authRegisterRouter);
+v1Router.use(authLoginRouter);
+v1Router.use(authRefreshRouter);
+v1Router.use(authMeRouter);
+v1Router.use(authPasswordRouter);
+v1Router.use(authVerifyRouter);
+v1Router.use(authSessionsRouter);
+v1Router.use(usersAdminRouter);
+v1Router.use(organizationsRouter);
+v1Router.use(teamsRouter);
+v1Router.use(membershipsRouter);
+v1Router.use(invitationsRouter);
+v1Router.use(rbacRolesRouter);
+v1Router.use(rbacPermissionsRouter);
+v1Router.use(securityEventsRouter);
+v1Router.use(auditEventsRouter);
+v1Router.use(apiKeysRouter);
 
 // Phase 12 endpoints — Observability, Monitoring & Operations Platform
 v1Router.use(opsOverviewRouter);

@@ -14,6 +14,8 @@ import { startStreamScheduler } from "./services/stream-scheduler";
 import { startExecutionScheduler } from "./services/execution-scheduler";
 import { startIntelligenceScheduler } from "./services/intelligence-scheduler";
 import { startOpsScheduler } from "./services/ops-scheduler";
+import { seedRolesAndPermissions } from "./services/rbac-service";
+import { ensureSuperAdminExists } from "./services/auth-service";
 
 const rawPort = process.env["PORT"];
 
@@ -114,5 +116,19 @@ app.listen(port, async (err) => {
     await startOpsScheduler();
   } catch (err) {
     logger.error({ err }, "Failed to start ops scheduler — continuing without observability layer");
+  }
+
+  // Phase 14 — Seed RBAC roles and permissions (idempotent — safe to run every startup)
+  try {
+    await seedRolesAndPermissions();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed RBAC roles/permissions — continuing");
+  }
+
+  // Phase 14 — Ensure super admin exists (promotes first user if none exist)
+  try {
+    await ensureSuperAdminExists();
+  } catch (err) {
+    logger.error({ err }, "Failed to ensure super admin — continuing");
   }
 });

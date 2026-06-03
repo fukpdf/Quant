@@ -116,7 +116,7 @@ After completing any code change, every AI agent MUST:
 
 ## Phase Awareness
 
-The project is currently in **Phase 4 — Professional Backtesting & Validation Engine** (complete).
+The project is currently in **Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation** (complete).
 Next: **Phase 5 — Paper Trading**.
 
 ### What AI agents MAY do in Phase 4 / Phase 5:

@@ -1068,3 +1068,97 @@ The platform's value is real-time operational awareness. A dashboard that render
 **Consequences**
 - The dashboard requires the API server (`Start application` workflow) to be running to show non-empty content.
 - Stale-while-revalidate and periodic `refetchInterval` (10–30s) ensures the operator always sees fresh data without manual refreshes.
+
+---
+
+### ADR-045 — argon2 for password hashing (not bcrypt)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Phase 14 uses `argon2` (argon2id variant) for password hashing, not `bcrypt` or `scrypt`.
+
+**Rationale**
+argon2id is the OWASP-recommended password hashing algorithm as of 2023. It provides memory-hardness (resistance to GPU/ASIC attacks) in addition to time-hardness. bcrypt is CPU-only and does not provide memory-hardness. The `argon2` npm package builds natively (added to `pnpm-workspace.yaml` `onlyBuiltDependencies`).
+
+**Consequences**
+- `argon2` must be in `onlyBuiltDependencies` in `pnpm-workspace.yaml` to trigger native build
+- Password migration: if the system is seeded with bcrypt hashes from another source, they will need to be rehashed on next login
+
+---
+
+### ADR-046 — JWT access/refresh token pair with sliding refresh window
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Auth uses a two-token model: short-lived JWT access tokens (15m) + long-lived refresh tokens (7d/30d). Refresh tokens are stored hashed in `refresh_tokens` table and rotated on each use (one-time-use).
+
+**Rationale**
+Short-lived access tokens limit the blast radius of token theft — an intercepted token expires in 15 minutes. Refresh token rotation means a stolen refresh token is detected on next use (the legitimate user's request will fail because the token was already rotated). This is the industry-standard approach used by Auth0, Okta, and Supabase.
+
+**Consequences**
+- Clients must implement silent refresh (handled in `auth-client.ts` `apiFetch` wrapper)
+- Refresh tokens older than 30d are invalid; users are logged out gracefully
+- `ensureSuperAdminExists()` promotes the first registered user to super_admin on startup — this is safe because it only acts when no super_admin exists
+
+---
+
+### ADR-047 — RBAC permission model: resource:action strings
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Permissions are fine-grained strings in the format `resource:action` (e.g., `candles:read`, `users:write`, `operations:admin`). Roles are collections of permissions. Effective permissions are resolved at request time as the union of all permissions from all roles assigned to the user (optionally scoped to an org).
+
+**Resources defined**: `candles`, `markets`, `providers`, `research`, `paper_trading`, `risk`, `analytics`, `ai`, `streams`, `execution`, `intelligence`, `operations`, `users`.
+**Actions defined**: `read`, `write`, `delete`, `admin`.
+
+**Rationale**
+String-based permissions are more flexible than enum-based systems and easier to extend. The `resource:action` pattern mirrors AWS IAM and is immediately understandable. Super admins bypass all permission checks entirely.
+
+**Consequences**
+- Adding a new resource requires no schema migration — just add a new permission row
+- `getUserEffectivePermissions(userId, orgId?)` resolves the full permission set; this is called on every `requirePermission` middleware invocation (cached in `req.auth` after first resolve)
+
+---
+
+### ADR-048 — express-rate-limit v8: no custom keyGenerator for IP-based limiting
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Rate limiters use express-rate-limit v8's built-in default `keyGenerator` rather than a custom function that reads `req.ip`.
+
+**Rationale**
+express-rate-limit v8 raises `ERR_ERL_KEY_GEN_IPV6` when a custom `keyGenerator` reads `req.ip` without using the `ipKeyGenerator` helper. The built-in default already handles IPv4/IPv6 normalization correctly. Using `limit` (v8 API) instead of `max` (v7 API) is required.
+
+**Consequences**
+- The built-in default uses `req.ip` internally with proper IPv6 handling
+- Three rate limit tiers: `generalRateLimit` (200/15m), `authRateLimit` (20/15m), `strictRateLimit` (5/15m)
+
+---
+
+### ADR-049 — Multi-tenant via X-Organization-Id header (not subdomain)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Tenant context is resolved from the `X-Organization-Id` HTTP header (set by the client after login) rather than subdomain-based routing or path-based routing.
+
+**Rationale**
+Subdomain routing requires DNS configuration per tenant and is impractical in a self-hosted Replit environment. Path-based routing (`/org/:id/...`) pollutes all URL structures. Header-based resolution is the simplest approach for an API-first SaaS with a single-domain deployment. The `resolveTenant` middleware populates `req.tenant` if the header is present and valid; routes can optionally require tenant context.
+
+**Consequences**
+- Frontend must set `X-Organization-Id` header after login when making org-scoped requests
+- Existing pre-Phase-14 endpoints continue to work without the header (non-breaking)
