@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
- * OpenAPI spec version: 0.9.0
+ * OpenAPI spec version: 0.10.0
  */
 import {
   useMutation,
@@ -53,6 +53,7 @@ import type {
   CorrelationMatrixListResponse,
   CorrelationMatrixResponse,
   CreateBenchmarkRequest,
+  CreateOrderRequest,
   CreatePaperAccountRequest,
   CreateRiskProfileRequest,
   DataQualityListResponse,
@@ -111,6 +112,25 @@ import type {
   GetStreamStatus200,
   GetTicks200,
   GetTicksParams,
+  GetV1ExecutionAuditLog200,
+  GetV1ExecutionAuditLogParams,
+  GetV1ExecutionFills200,
+  GetV1ExecutionFillsParams,
+  GetV1ExecutionHealth200,
+  GetV1ExecutionLatency200,
+  GetV1ExecutionLatencyParams,
+  GetV1ExecutionMetrics200,
+  GetV1ExecutionMetricsParams,
+  GetV1ExecutionOrders200,
+  GetV1ExecutionOrdersId200,
+  GetV1ExecutionOrdersParams,
+  GetV1ExecutionPositions200,
+  GetV1ExecutionPositionsParams,
+  GetV1ExecutionProviders200,
+  GetV1ExecutionRejections200,
+  GetV1ExecutionRejectionsParams,
+  GetV1ExecutionSessions200,
+  GetV1ExecutionSessionsParams,
   HealthStatus,
   IngestionJobListResponse,
   IngestionStatusResponse,
@@ -162,6 +182,7 @@ import type {
   MonteCarloRequest,
   NewsListResponse,
   NotFoundResponse,
+  OrderSubmitResponse,
   PaperAccountDetailResponse,
   PaperAccountListResponse,
   PaperAccountResponse,
@@ -183,6 +204,7 @@ import type {
   PortfolioLeadersResponse,
   PortfolioPerformanceResponse,
   PortfolioRankingsResponse,
+  PostV1ExecutionOrdersIdCancel200,
   ProviderHealthListResponse,
   ProviderListResponse,
   RankingsResponse,
@@ -9894,6 +9916,1052 @@ export function useGetReplayStatus<TData = Awaited<ReturnType<typeof getReplaySt
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetReplayStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPostV1ExecutionOrdersUrl = () => {
+
+
+
+
+  return `/api/v1/execution/orders`
+}
+
+/**
+ * Runs the full pre-trade pipeline (schema validation → risk pre-check → circuit-breaker gate → route selection → fill → position update → audit). In simulation mode, fills are instant. In paper mode, realistic market state pricing is used. Live execution is permanently disabled (SAFE MODE).
+
+ * @summary Submit a new order to the OMS
+ */
+export const postV1ExecutionOrders = async (createOrderRequest: CreateOrderRequest, options?: RequestInit): Promise<OrderSubmitResponse> => {
+
+  return customFetch<OrderSubmitResponse>(getPostV1ExecutionOrdersUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createOrderRequest,)
+  }
+);}
+
+
+
+
+export const getPostV1ExecutionOrdersMutationOptions = <TError = ErrorType<void | OrderSubmitResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrders>>, TError,{data: BodyType<CreateOrderRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrders>>, TError,{data: BodyType<CreateOrderRequest>}, TContext> => {
+
+const mutationKey = ['postV1ExecutionOrders'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postV1ExecutionOrders>>, {data: BodyType<CreateOrderRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postV1ExecutionOrders(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostV1ExecutionOrdersMutationResult = NonNullable<Awaited<ReturnType<typeof postV1ExecutionOrders>>>
+    export type PostV1ExecutionOrdersMutationBody = BodyType<CreateOrderRequest>
+    export type PostV1ExecutionOrdersMutationError = ErrorType<void | OrderSubmitResponse>
+
+    /**
+ * @summary Submit a new order to the OMS
+ */
+export const usePostV1ExecutionOrders = <TError = ErrorType<void | OrderSubmitResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrders>>, TError,{data: BodyType<CreateOrderRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postV1ExecutionOrders>>,
+        TError,
+        {data: BodyType<CreateOrderRequest>},
+        TContext
+      > => {
+      return useMutation(getPostV1ExecutionOrdersMutationOptions(options));
+    }
+
+export const getGetV1ExecutionOrdersUrl = (params?: GetV1ExecutionOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/orders?${stringifiedParams}` : `/api/v1/execution/orders`
+}
+
+/**
+ * @summary List execution orders
+ */
+export const getV1ExecutionOrders = async (params?: GetV1ExecutionOrdersParams, options?: RequestInit): Promise<GetV1ExecutionOrders200> => {
+
+  return customFetch<GetV1ExecutionOrders200>(getGetV1ExecutionOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionOrdersQueryKey = (params?: GetV1ExecutionOrdersParams,) => {
+    return [
+    `/api/v1/execution/orders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionOrdersQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionOrders>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionOrdersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionOrders>>> = ({ signal }) => getV1ExecutionOrders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionOrders>>>
+export type GetV1ExecutionOrdersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List execution orders
+ */
+
+export function useGetV1ExecutionOrders<TData = Awaited<ReturnType<typeof getV1ExecutionOrders>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionOrdersIdUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/execution/orders/${id}`
+}
+
+/**
+ * @summary Get execution order detail with events
+ */
+export const getV1ExecutionOrdersId = async (id: string, options?: RequestInit): Promise<GetV1ExecutionOrdersId200> => {
+
+  return customFetch<GetV1ExecutionOrdersId200>(getGetV1ExecutionOrdersIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionOrdersIdQueryKey = (id: string,) => {
+    return [
+    `/api/v1/execution/orders/${id}`
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionOrdersIdQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionOrdersId>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrdersId>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionOrdersIdQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionOrdersId>>> = ({ signal }) => getV1ExecutionOrdersId(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrdersId>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionOrdersIdQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionOrdersId>>>
+export type GetV1ExecutionOrdersIdQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get execution order detail with events
+ */
+
+export function useGetV1ExecutionOrdersId<TData = Awaited<ReturnType<typeof getV1ExecutionOrdersId>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionOrdersId>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionOrdersIdQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPostV1ExecutionOrdersIdCancelUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/execution/orders/${id}/cancel`
+}
+
+/**
+ * @summary Cancel an active order
+ */
+export const postV1ExecutionOrdersIdCancel = async (id: string, options?: RequestInit): Promise<PostV1ExecutionOrdersIdCancel200> => {
+
+  return customFetch<PostV1ExecutionOrdersIdCancel200>(getPostV1ExecutionOrdersIdCancelUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostV1ExecutionOrdersIdCancelMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['postV1ExecutionOrdersIdCancel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  postV1ExecutionOrdersIdCancel(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostV1ExecutionOrdersIdCancelMutationResult = NonNullable<Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>>
+
+    export type PostV1ExecutionOrdersIdCancelMutationError = ErrorType<void>
+
+    /**
+ * @summary Cancel an active order
+ */
+export const usePostV1ExecutionOrdersIdCancel = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postV1ExecutionOrdersIdCancel>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPostV1ExecutionOrdersIdCancelMutationOptions(options));
+    }
+
+export const getGetV1ExecutionFillsUrl = (params?: GetV1ExecutionFillsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/fills?${stringifiedParams}` : `/api/v1/execution/fills`
+}
+
+/**
+ * @summary List execution fills
+ */
+export const getV1ExecutionFills = async (params?: GetV1ExecutionFillsParams, options?: RequestInit): Promise<GetV1ExecutionFills200> => {
+
+  return customFetch<GetV1ExecutionFills200>(getGetV1ExecutionFillsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionFillsQueryKey = (params?: GetV1ExecutionFillsParams,) => {
+    return [
+    `/api/v1/execution/fills`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionFillsQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionFills>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionFillsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionFills>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionFillsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionFills>>> = ({ signal }) => getV1ExecutionFills(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionFills>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionFillsQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionFills>>>
+export type GetV1ExecutionFillsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List execution fills
+ */
+
+export function useGetV1ExecutionFills<TData = Awaited<ReturnType<typeof getV1ExecutionFills>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionFillsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionFills>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionFillsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionPositionsUrl = (params?: GetV1ExecutionPositionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/positions?${stringifiedParams}` : `/api/v1/execution/positions`
+}
+
+/**
+ * @summary List execution positions with P&L summary
+ */
+export const getV1ExecutionPositions = async (params?: GetV1ExecutionPositionsParams, options?: RequestInit): Promise<GetV1ExecutionPositions200> => {
+
+  return customFetch<GetV1ExecutionPositions200>(getGetV1ExecutionPositionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionPositionsQueryKey = (params?: GetV1ExecutionPositionsParams,) => {
+    return [
+    `/api/v1/execution/positions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionPositionsQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionPositions>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionPositionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionPositions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionPositionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionPositions>>> = ({ signal }) => getV1ExecutionPositions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionPositions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionPositionsQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionPositions>>>
+export type GetV1ExecutionPositionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List execution positions with P&L summary
+ */
+
+export function useGetV1ExecutionPositions<TData = Awaited<ReturnType<typeof getV1ExecutionPositions>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionPositionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionPositions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionPositionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionRejectionsUrl = (params?: GetV1ExecutionRejectionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/rejections?${stringifiedParams}` : `/api/v1/execution/rejections`
+}
+
+/**
+ * @summary List order rejections with stage breakdown
+ */
+export const getV1ExecutionRejections = async (params?: GetV1ExecutionRejectionsParams, options?: RequestInit): Promise<GetV1ExecutionRejections200> => {
+
+  return customFetch<GetV1ExecutionRejections200>(getGetV1ExecutionRejectionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionRejectionsQueryKey = (params?: GetV1ExecutionRejectionsParams,) => {
+    return [
+    `/api/v1/execution/rejections`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionRejectionsQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionRejections>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionRejectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionRejections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionRejectionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionRejections>>> = ({ signal }) => getV1ExecutionRejections(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionRejections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionRejectionsQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionRejections>>>
+export type GetV1ExecutionRejectionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List order rejections with stage breakdown
+ */
+
+export function useGetV1ExecutionRejections<TData = Awaited<ReturnType<typeof getV1ExecutionRejections>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionRejectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionRejections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionRejectionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionHealthUrl = () => {
+
+
+
+
+  return `/api/v1/execution/health`
+}
+
+/**
+ * @summary Execution engine health — active orders, provider status, session
+ */
+export const getV1ExecutionHealth = async ( options?: RequestInit): Promise<GetV1ExecutionHealth200> => {
+
+  return customFetch<GetV1ExecutionHealth200>(getGetV1ExecutionHealthUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionHealthQueryKey = () => {
+    return [
+    `/api/v1/execution/health`
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionHealthQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionHealth>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionHealthQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionHealth>>> = ({ signal }) => getV1ExecutionHealth({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionHealth>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionHealth>>>
+export type GetV1ExecutionHealthQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Execution engine health — active orders, provider status, session
+ */
+
+export function useGetV1ExecutionHealth<TData = Awaited<ReturnType<typeof getV1ExecutionHealth>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionHealthQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionProvidersUrl = () => {
+
+
+
+
+  return `/api/v1/execution/providers`
+}
+
+/**
+ * @summary List execution providers and their health
+ */
+export const getV1ExecutionProviders = async ( options?: RequestInit): Promise<GetV1ExecutionProviders200> => {
+
+  return customFetch<GetV1ExecutionProviders200>(getGetV1ExecutionProvidersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionProvidersQueryKey = () => {
+    return [
+    `/api/v1/execution/providers`
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionProvidersQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionProviders>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionProvidersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionProviders>>> = ({ signal }) => getV1ExecutionProviders({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionProviders>>>
+export type GetV1ExecutionProvidersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List execution providers and their health
+ */
+
+export function useGetV1ExecutionProviders<TData = Awaited<ReturnType<typeof getV1ExecutionProviders>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionProvidersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionSessionsUrl = (params?: GetV1ExecutionSessionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/sessions?${stringifiedParams}` : `/api/v1/execution/sessions`
+}
+
+/**
+ * @summary List execution sessions
+ */
+export const getV1ExecutionSessions = async (params?: GetV1ExecutionSessionsParams, options?: RequestInit): Promise<GetV1ExecutionSessions200> => {
+
+  return customFetch<GetV1ExecutionSessions200>(getGetV1ExecutionSessionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionSessionsQueryKey = (params?: GetV1ExecutionSessionsParams,) => {
+    return [
+    `/api/v1/execution/sessions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionSessions>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionSessionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionSessions>>> = ({ signal }) => getV1ExecutionSessions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionSessions>>>
+export type GetV1ExecutionSessionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List execution sessions
+ */
+
+export function useGetV1ExecutionSessions<TData = Awaited<ReturnType<typeof getV1ExecutionSessions>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionSessionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionMetricsUrl = (params?: GetV1ExecutionMetricsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/metrics?${stringifiedParams}` : `/api/v1/execution/metrics`
+}
+
+/**
+ * @summary Execution quality metrics (fill rate, latency, slippage)
+ */
+export const getV1ExecutionMetrics = async (params?: GetV1ExecutionMetricsParams, options?: RequestInit): Promise<GetV1ExecutionMetrics200> => {
+
+  return customFetch<GetV1ExecutionMetrics200>(getGetV1ExecutionMetricsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionMetricsQueryKey = (params?: GetV1ExecutionMetricsParams,) => {
+    return [
+    `/api/v1/execution/metrics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionMetrics>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionMetricsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionMetrics>>> = ({ signal }) => getV1ExecutionMetrics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionMetrics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionMetrics>>>
+export type GetV1ExecutionMetricsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Execution quality metrics (fill rate, latency, slippage)
+ */
+
+export function useGetV1ExecutionMetrics<TData = Awaited<ReturnType<typeof getV1ExecutionMetrics>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionMetrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionMetricsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionLatencyUrl = (params?: GetV1ExecutionLatencyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/latency?${stringifiedParams}` : `/api/v1/execution/latency`
+}
+
+/**
+ * @summary Execution latency summary by stage
+ */
+export const getV1ExecutionLatency = async (params?: GetV1ExecutionLatencyParams, options?: RequestInit): Promise<GetV1ExecutionLatency200> => {
+
+  return customFetch<GetV1ExecutionLatency200>(getGetV1ExecutionLatencyUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionLatencyQueryKey = (params?: GetV1ExecutionLatencyParams,) => {
+    return [
+    `/api/v1/execution/latency`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionLatencyQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionLatency>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionLatencyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionLatency>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionLatencyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionLatency>>> = ({ signal }) => getV1ExecutionLatency(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionLatency>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionLatencyQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionLatency>>>
+export type GetV1ExecutionLatencyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Execution latency summary by stage
+ */
+
+export function useGetV1ExecutionLatency<TData = Awaited<ReturnType<typeof getV1ExecutionLatency>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionLatencyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionLatency>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionLatencyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetV1ExecutionAuditLogUrl = (params?: GetV1ExecutionAuditLogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/execution/audit-log?${stringifiedParams}` : `/api/v1/execution/audit-log`
+}
+
+/**
+ * @summary Execution audit log — immutable order action trail
+ */
+export const getV1ExecutionAuditLog = async (params?: GetV1ExecutionAuditLogParams, options?: RequestInit): Promise<GetV1ExecutionAuditLog200> => {
+
+  return customFetch<GetV1ExecutionAuditLog200>(getGetV1ExecutionAuditLogUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetV1ExecutionAuditLogQueryKey = (params?: GetV1ExecutionAuditLogParams,) => {
+    return [
+    `/api/v1/execution/audit-log`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetV1ExecutionAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof getV1ExecutionAuditLog>>, TError = ErrorType<unknown>>(params?: GetV1ExecutionAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetV1ExecutionAuditLogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getV1ExecutionAuditLog>>> = ({ signal }) => getV1ExecutionAuditLog(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionAuditLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetV1ExecutionAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof getV1ExecutionAuditLog>>>
+export type GetV1ExecutionAuditLogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Execution audit log — immutable order action trail
+ */
+
+export function useGetV1ExecutionAuditLog<TData = Awaited<ReturnType<typeof getV1ExecutionAuditLog>>, TError = ErrorType<unknown>>(
+ params?: GetV1ExecutionAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getV1ExecutionAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetV1ExecutionAuditLogQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

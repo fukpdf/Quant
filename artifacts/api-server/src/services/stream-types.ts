@@ -77,7 +77,19 @@ export type EventBusEventType =
   | "GapDetected"
   | "ReplayStarted"
   | "ReplayStopped"
-  | "HealthCheckCompleted";
+  | "HealthCheckCompleted"
+  // Phase 10 — Execution Engine events
+  | "OrderCreated"
+  | "OrderValidated"
+  | "OrderApproved"
+  | "OrderRejected"
+  | "OrderRouted"
+  | "OrderAcknowledged"
+  | "OrderFilled"
+  | "OrderCancelled"
+  | "OrderFailed"
+  | "PositionUpdated"
+  | "ExecutionRecovered";
 
 export interface EventBusPayload {
   eventType: EventBusEventType;

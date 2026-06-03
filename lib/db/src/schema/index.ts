@@ -84,3 +84,16 @@ export * from "./event-bus-events";
 export * from "./event-processing-metrics";
 export * from "./latency-metrics";
 export * from "./stream-audit-log";
+// Phase 10 — Institutional Execution Engine
+export * from "./execution-accounts";
+export * from "./execution-orders";
+export * from "./execution-order-events";
+export * from "./execution-routes";
+export * from "./execution-fills";
+export * from "./execution-positions";
+export * from "./execution-sessions";
+export * from "./execution-rejections";
+export * from "./execution-latency";
+export * from "./execution-metrics";
+export * from "./execution-recovery";
+export * from "./execution-audit-log";

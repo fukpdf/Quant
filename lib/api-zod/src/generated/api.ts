@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
- * OpenAPI spec version: 0.9.0
+ * OpenAPI spec version: 0.10.0
  */
 import * as zod from 'zod';
 
@@ -3546,6 +3546,408 @@ export const GetReplayStatusResponse = zod.object({
   "errorMessage": zod.string().nullish()
 }),
   "availableSpeeds": zod.array(zod.number())
+})
+
+
+/**
+ * Runs the full pre-trade pipeline (schema validation → risk pre-check → circuit-breaker gate → route selection → fill → position update → audit). In simulation mode, fills are instant. In paper mode, realistic market state pricing is used. Live execution is permanently disabled (SAFE MODE).
+
+ * @summary Submit a new order to the OMS
+ */
+export const postV1ExecutionOrdersBodyTifDefault = `gtc`;
+
+export const PostV1ExecutionOrdersBody = zod.object({
+  "accountId": zod.string().uuid().nullish(),
+  "symbol": zod.string(),
+  "orderType": zod.enum(['market', 'limit', 'stop', 'stop_limit', 'reduce_only', 'post_only']),
+  "side": zod.enum(['buy', 'sell']),
+  "quantity": zod.string().describe('Numeric string (ADR-013)'),
+  "limitPrice": zod.string().nullish(),
+  "stopPrice": zod.string().nullish(),
+  "tif": zod.enum(['gtc', 'ioc', 'fok']).default(postV1ExecutionOrdersBodyTifDefault),
+  "strategyName": zod.string().nullish(),
+  "clientOrderId": zod.string().nullish(),
+  "executionMode": zod.enum(['simulation', 'paper', 'live_disabled']).nullish()
+})
+
+
+/**
+ * @summary List execution orders
+ */
+export const getV1ExecutionOrdersQueryLimitDefault = 50;
+export const getV1ExecutionOrdersQueryLimitMax = 200;
+
+export const getV1ExecutionOrdersQueryOffsetDefault = 0;
+
+export const GetV1ExecutionOrdersQueryParams = zod.object({
+  "accountId": zod.coerce.string().uuid().optional(),
+  "status": zod.coerce.string().optional().describe('Comma-separated statuses'),
+  "symbol": zod.coerce.string().optional(),
+  "mode": zod.enum(['simulation', 'paper', 'live_disabled']).optional(),
+  "limit": zod.coerce.number().max(getV1ExecutionOrdersQueryLimitMax).default(getV1ExecutionOrdersQueryLimitDefault),
+  "offset": zod.coerce.number().default(getV1ExecutionOrdersQueryOffsetDefault)
+})
+
+export const GetV1ExecutionOrdersResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "accountId": zod.string().uuid().optional(),
+  "executionMode": zod.enum(['simulation', 'paper', 'live_disabled']).optional(),
+  "orderType": zod.string().optional(),
+  "side": zod.enum(['buy', 'sell']).optional(),
+  "symbol": zod.string().optional(),
+  "status": zod.enum(['pending', 'validated', 'pre_trade_passed', 'routed', 'acknowledged', 'partially_filled', 'filled', 'cancelled', 'rejected', 'failed', 'recovering']).optional(),
+  "quantity": zod.string().optional().describe('Numeric string'),
+  "filledQuantity": zod.string().optional(),
+  "remainingQuantity": zod.string().optional(),
+  "limitPrice": zod.string().nullish(),
+  "stopPrice": zod.string().nullish(),
+  "avgFillPrice": zod.string().nullish(),
+  "tif": zod.string().optional(),
+  "routedTo": zod.string().nullish(),
+  "externalOrderId": zod.string().nullish(),
+  "rejectReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})).optional(),
+  "count": zod.number().optional()
+})
+
+
+/**
+ * @summary Get execution order detail with events
+ */
+export const GetV1ExecutionOrdersIdParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetV1ExecutionOrdersIdResponse = zod.object({
+  "data": zod.object({
+  "id": zod.string().uuid().optional(),
+  "accountId": zod.string().uuid().optional(),
+  "executionMode": zod.enum(['simulation', 'paper', 'live_disabled']).optional(),
+  "orderType": zod.string().optional(),
+  "side": zod.enum(['buy', 'sell']).optional(),
+  "symbol": zod.string().optional(),
+  "status": zod.enum(['pending', 'validated', 'pre_trade_passed', 'routed', 'acknowledged', 'partially_filled', 'filled', 'cancelled', 'rejected', 'failed', 'recovering']).optional(),
+  "quantity": zod.string().optional().describe('Numeric string'),
+  "filledQuantity": zod.string().optional(),
+  "remainingQuantity": zod.string().optional(),
+  "limitPrice": zod.string().nullish(),
+  "stopPrice": zod.string().nullish(),
+  "avgFillPrice": zod.string().nullish(),
+  "tif": zod.string().optional(),
+  "routedTo": zod.string().nullish(),
+  "externalOrderId": zod.string().nullish(),
+  "rejectReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}).and(zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "orderId": zod.string().uuid().optional(),
+  "eventType": zod.string().optional(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().optional(),
+  "actor": zod.string().optional(),
+  "detail": zod.object({
+
+}).passthrough().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})).optional()
+})).optional()
+})
+
+
+/**
+ * @summary Cancel an active order
+ */
+export const PostV1ExecutionOrdersIdCancelParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const PostV1ExecutionOrdersIdCancelResponse = zod.object({
+  "data": zod.object({
+  "orderId": zod.string().uuid().optional(),
+  "status": zod.string().optional(),
+  "cancelledBy": zod.string().optional()
+}).optional()
+})
+
+
+/**
+ * @summary List execution fills
+ */
+export const getV1ExecutionFillsQueryLimitDefault = 100;
+export const getV1ExecutionFillsQueryLimitMax = 500;
+
+
+
+export const GetV1ExecutionFillsQueryParams = zod.object({
+  "symbol": zod.coerce.string().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "limit": zod.coerce.number().max(getV1ExecutionFillsQueryLimitMax).default(getV1ExecutionFillsQueryLimitDefault)
+})
+
+export const GetV1ExecutionFillsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "orderId": zod.string().uuid().optional(),
+  "symbol": zod.string().optional(),
+  "side": zod.string().optional(),
+  "fillPrice": zod.string().optional().describe('Numeric string'),
+  "fillQuantity": zod.string().optional(),
+  "commission": zod.string().optional(),
+  "slippageBps": zod.string().nullish(),
+  "provider": zod.string().optional(),
+  "filledAt": zod.coerce.date().optional()
+})).optional(),
+  "count": zod.number().optional()
+})
+
+
+/**
+ * @summary List execution positions with P&L summary
+ */
+export const getV1ExecutionPositionsQueryLimitDefault = 100;
+export const getV1ExecutionPositionsQueryLimitMax = 500;
+
+
+
+export const GetV1ExecutionPositionsQueryParams = zod.object({
+  "accountId": zod.coerce.string().uuid().optional(),
+  "status": zod.enum(['open', 'closed']).optional(),
+  "symbol": zod.coerce.string().optional(),
+  "mode": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().max(getV1ExecutionPositionsQueryLimitMax).default(getV1ExecutionPositionsQueryLimitDefault)
+})
+
+export const GetV1ExecutionPositionsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "accountId": zod.string().uuid().optional(),
+  "symbol": zod.string().optional(),
+  "side": zod.enum(['long', 'short']).optional(),
+  "status": zod.enum(['open', 'closed']).optional(),
+  "quantity": zod.string().optional(),
+  "avgEntryPrice": zod.string().optional(),
+  "currentPrice": zod.string().nullish(),
+  "unrealizedPnl": zod.string().optional(),
+  "realizedPnl": zod.string().optional(),
+  "totalCommission": zod.string().optional(),
+  "openedAt": zod.coerce.date().optional(),
+  "closedAt": zod.coerce.date().nullish()
+})).optional(),
+  "count": zod.number().optional(),
+  "summary": zod.object({
+  "openPositions": zod.number().optional(),
+  "closedPositions": zod.number().optional(),
+  "totalUnrealizedPnl": zod.string().optional(),
+  "totalRealizedPnl": zod.string().optional()
+}).optional()
+})
+
+
+/**
+ * @summary List order rejections with stage breakdown
+ */
+export const getV1ExecutionRejectionsQueryLimitDefault = 50;
+export const getV1ExecutionRejectionsQueryLimitMax = 200;
+
+
+
+export const GetV1ExecutionRejectionsQueryParams = zod.object({
+  "symbol": zod.coerce.string().optional(),
+  "stage": zod.enum(['validation', 'risk', 'circuit_breaker', 'routing', 'provider']).optional(),
+  "mode": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().max(getV1ExecutionRejectionsQueryLimitMax).default(getV1ExecutionRejectionsQueryLimitDefault)
+})
+
+export const GetV1ExecutionRejectionsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "orderId": zod.string().uuid().nullish(),
+  "stage": zod.enum(['validation', 'risk', 'circuit_breaker', 'routing', 'provider']).optional(),
+  "reason": zod.string().optional(),
+  "symbol": zod.string().nullish(),
+  "executionMode": zod.string().optional(),
+  "detail": zod.object({
+
+}).passthrough().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})).optional(),
+  "count": zod.number().optional(),
+  "byStage": zod.record(zod.string(), zod.number()).optional()
+})
+
+
+/**
+ * @summary Execution engine health — active orders, provider status, session
+ */
+export const GetV1ExecutionHealthResponse = zod.object({
+  "data": zod.object({
+  "executionEnabled": zod.boolean().optional(),
+  "executionMode": zod.string().optional(),
+  "sessionId": zod.string().nullish(),
+  "activeOrders": zod.number().optional(),
+  "ordersByStatus": zod.record(zod.string(), zod.number()).optional(),
+  "providers": zod.array(zod.object({
+  "name": zod.string().optional(),
+  "isReady": zod.boolean().optional(),
+  "ordersInFlight": zod.number().optional(),
+  "totalSubmitted": zod.number().optional(),
+  "totalFilled": zod.number().optional(),
+  "avgAckLatencyMs": zod.number().optional()
+})).optional()
+}).optional()
+})
+
+
+/**
+ * @summary List execution providers and their health
+ */
+export const GetV1ExecutionProvidersResponse = zod.object({
+  "data": zod.object({
+  "active": zod.string().optional(),
+  "providers": zod.array(zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "mode": zod.string().optional(),
+  "status": zod.string().optional(),
+  "requiresApiKey": zod.boolean().optional(),
+  "health": zod.object({
+
+}).passthrough().nullish()
+})).optional()
+}).optional()
+})
+
+
+/**
+ * @summary List execution sessions
+ */
+export const getV1ExecutionSessionsQueryLimitDefault = 20;
+export const getV1ExecutionSessionsQueryLimitMax = 100;
+
+
+
+export const GetV1ExecutionSessionsQueryParams = zod.object({
+  "limit": zod.coerce.number().max(getV1ExecutionSessionsQueryLimitMax).default(getV1ExecutionSessionsQueryLimitDefault)
+})
+
+export const GetV1ExecutionSessionsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "executionMode": zod.string().optional(),
+  "provider": zod.string().optional(),
+  "status": zod.enum(['active', 'ended', 'crashed']).optional(),
+  "ordersPlaced": zod.string().optional(),
+  "ordersFilled": zod.string().optional(),
+  "ordersRejected": zod.string().optional(),
+  "ordersCancelled": zod.string().optional(),
+  "fillsProcessed": zod.string().optional(),
+  "startedAt": zod.coerce.date().optional(),
+  "endedAt": zod.coerce.date().nullish()
+})).optional()
+})
+
+
+/**
+ * @summary Execution quality metrics (fill rate, latency, slippage)
+ */
+export const getV1ExecutionMetricsQueryPeriodDefault = `1h`;
+export const getV1ExecutionMetricsQueryLimitDefault = 10;
+
+export const GetV1ExecutionMetricsQueryParams = zod.object({
+  "mode": zod.coerce.string().optional(),
+  "period": zod.enum(['1h', '4h', '1d', '7d']).default(getV1ExecutionMetricsQueryPeriodDefault),
+  "summary": zod.coerce.boolean().optional().describe('If true, return single aggregated summary object'),
+  "limit": zod.coerce.number().default(getV1ExecutionMetricsQueryLimitDefault)
+})
+
+export const GetV1ExecutionMetricsResponse = zod.object({
+  "data": zod.union([zod.object({
+  "mode": zod.string().optional(),
+  "period": zod.string().optional(),
+  "totalOrders": zod.number().optional(),
+  "totalFills": zod.number().optional(),
+  "totalRejections": zod.number().optional(),
+  "totalCancellations": zod.number().optional(),
+  "fillRate": zod.number().optional(),
+  "rejectRate": zod.number().optional(),
+  "cancelRate": zod.number().optional(),
+  "successRate": zod.number().optional(),
+  "avgSlippageBps": zod.number().optional(),
+  "avgFillTimeMs": zod.number().optional(),
+  "avgLatencyMs": zod.number().optional(),
+  "p50LatencyMs": zod.number().optional(),
+  "p95LatencyMs": zod.number().optional(),
+  "p99LatencyMs": zod.number().optional()
+}),zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "executionMode": zod.string().optional(),
+  "period": zod.string().optional(),
+  "fillRate": zod.string().optional(),
+  "rejectRate": zod.string().optional(),
+  "avgLatencyMs": zod.string().optional(),
+  "p95LatencyMs": zod.string().optional(),
+  "computedAt": zod.coerce.date().optional()
+}))]).optional()
+})
+
+
+/**
+ * @summary Execution latency summary by stage
+ */
+export const GetV1ExecutionLatencyQueryParams = zod.object({
+  "provider": zod.coerce.string().optional()
+})
+
+export const GetV1ExecutionLatencyResponse = zod.object({
+  "data": zod.record(zod.string(), zod.object({
+  "count": zod.number().optional(),
+  "avgMs": zod.number().optional(),
+  "p50Ms": zod.number().optional(),
+  "p95Ms": zod.number().optional(),
+  "p99Ms": zod.number().optional()
+})).optional()
+})
+
+
+/**
+ * @summary Execution audit log — immutable order action trail
+ */
+export const getV1ExecutionAuditLogQueryLimitDefault = 100;
+export const getV1ExecutionAuditLogQueryLimitMax = 500;
+
+export const getV1ExecutionAuditLogQueryOffsetDefault = 0;
+
+export const GetV1ExecutionAuditLogQueryParams = zod.object({
+  "orderId": zod.coerce.string().uuid().optional(),
+  "action": zod.coerce.string().optional(),
+  "symbol": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().max(getV1ExecutionAuditLogQueryLimitMax).default(getV1ExecutionAuditLogQueryLimitDefault),
+  "offset": zod.coerce.number().default(getV1ExecutionAuditLogQueryOffsetDefault)
+})
+
+export const GetV1ExecutionAuditLogResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "orderId": zod.string().uuid().nullish(),
+  "action": zod.string().optional(),
+  "actor": zod.string().optional(),
+  "executionMode": zod.string().optional(),
+  "symbol": zod.string().nullish(),
+  "detail": zod.object({
+
+}).passthrough().nullish(),
+  "success": zod.boolean().optional(),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})).optional(),
+  "total": zod.number().optional(),
+  "count": zod.number().optional()
 })
 
 

@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
-> Last updated: 2026-06-01
-> Current phase: **Phase 8 — AI Research Assistant & Quant Intelligence Layer** ✅ COMPLETE
+> Last updated: 2026-06-03
+> Current phase: **Phase 10 — Institutional Execution Engine** ✅ COMPLETE
 
 ---
 
@@ -395,7 +395,75 @@
 
 ---
 
-## Phase 10 — Production Readiness
+## Phase 10 — Institutional Execution Engine ✅ COMPLETE
+
+**Goal**: Production-quality OMS with pre-trade risk pipeline, order state machine, fill engine, position tracking, and full audit trail. SAFE MODE ONLY — simulation and paper modes; live execution permanently disabled.
+
+### Database (12 tables)
+- [x] `execution_accounts` — account with balance and mode
+- [x] `execution_orders` — full order lifecycle with all status fields
+- [x] `execution_order_events` — immutable per-order event log
+- [x] `execution_routes` — routing decisions and latency
+- [x] `execution_fills` — fill records with slippage tracking
+- [x] `execution_positions` — position P&L with mark-to-market
+- [x] `execution_sessions` — OMS session lifecycle
+- [x] `execution_rejections` — pre-trade rejection log by stage
+- [x] `execution_latency` — per-stage latency measurements
+- [x] `execution_metrics` — aggregated quality metrics (fill rate, slippage, p95)
+- [x] `execution_recovery` — recovery event tracking
+- [x] `execution_audit_log` — immutable audit trail
+
+### Core Services (14 files)
+- [x] `execution-types.ts` — IExecutionProvider, ExecutionMode, OrderState, all shared types
+- [x] `execution-db.ts` — all DB access helpers
+- [x] `execution-state-machine.ts` — order state transition enforcement (ADR-026)
+- [x] `execution-pre-trade-pipeline.ts` — validation → risk → circuit-breaker gate (ADR-027)
+- [x] `mock-execution-provider.ts` — instant-fill simulation provider
+- [x] `paper-execution-provider.ts` — realistic fill pricing via Phase 9 MarketStateEngine
+- [x] `execution-router.ts` — mode-aware provider selection with health tracking (ADR-028)
+- [x] `execution-oms.ts` — master OMS: full pipeline orchestration + event bus publish
+- [x] `execution-fill-engine.ts` — fill processing with slippage calculation (ADR-029)
+- [x] `execution-position-engine.ts` — position open/update/close with P&L (ADR-030)
+- [x] `execution-monitor.ts` — stale/stuck order detection + MTM refresh (ADR-031)
+- [x] `execution-analytics-engine.ts` — quality metrics computation every 5 min (ADR-032)
+- [x] `execution-recovery-service.ts` — lost ACK/fill recovery every 60s (ADR-033)
+- [x] `execution-scheduler.ts` — master startup; validates EXECUTION_MODE; non-fatal
+
+### API Endpoints (13 endpoints)
+- [x] `POST /v1/execution/orders` — submit order (full pre-trade pipeline)
+- [x] `GET /v1/execution/orders` — list orders with filters
+- [x] `GET /v1/execution/orders/:id` — order detail + event history
+- [x] `POST /v1/execution/orders/:id/cancel` — cancel active order
+- [x] `GET /v1/execution/fills` — fill history with symbol/time filters
+- [x] `GET /v1/execution/positions` — positions with P&L summary
+- [x] `GET /v1/execution/rejections` — rejection log by stage
+- [x] `GET /v1/execution/health` — OMS health (active orders, providers, session)
+- [x] `GET /v1/execution/providers` — provider list with health metrics
+- [x] `GET /v1/execution/sessions` — session history
+- [x] `GET /v1/execution/metrics` — fill rate, slippage, latency percentiles
+- [x] `GET /v1/execution/latency` — per-stage latency summary
+- [x] `GET /v1/execution/audit-log` — immutable order action trail
+
+### Environment Variables
+- [x] `EXECUTION_MODE=simulation` — execution mode: simulation | paper | live_disabled (default: simulation)
+- [x] `EXECUTION_ENABLED=true` — enables/disables OMS on startup (default: true)
+
+### OpenAPI & Codegen
+- [x] `execution` tag added
+- [x] Version bumped to 0.10.0
+- [x] 13 path entries added under Phase 10 routes
+- [x] 15 new component schemas
+- [x] Codegen regenerated (Zod schemas + React Query hooks)
+
+### Safety Guarantees
+- [x] EXECUTION_MODE=live is not accepted — scheduler refuses to start
+- [x] No real-money API credentials in codebase
+- [x] All orders route to mock or paper provider only
+- [x] Kill-switch integration via Phase 6 circuit breaker check in pre-trade pipeline
+
+---
+
+## Phase 11 — Production Readiness
 
 - [ ] Full security audit
 - [ ] Penetration testing checklist

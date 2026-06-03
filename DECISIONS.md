@@ -727,3 +727,169 @@ WebSocket streams can silently stall — the connection stays open but messages 
 - Gap detection adds negligible overhead (Map lookup every 15s per symbol)
 - Backfill via OHLCV provides approximate data — not exchange-exact ticks — but sufficient for analytics continuity
 - False positives possible during provider transitions (deliberate disconnect); recovery service checks session status before acting
+
+---
+
+### ADR-025 — Execution Mode Safety Constraint (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+The OMS accepts only three execution modes: `simulation`, `paper`, and `live_disabled`. The string `"live"` is not a valid mode. The scheduler validates `EXECUTION_MODE` on startup and throws if an invalid value is supplied. `live_disabled` mode starts the OMS but blocks all orders at the provider stub level.
+
+**Context**
+Phase 10 introduces real order submission infrastructure. Without an explicit safety constraint, a misconfigured env could route orders to a real exchange.
+
+**Rationale**
+Hard rejection at scheduler startup (not at order time) means the failure is loud and early, never silent. The three-value enum forces conscious opt-in to paper mode and makes live trading structurally impossible in Phase 10.
+
+**Alternatives Considered**
+- Guard at provider level only — rejected because it's too late in the pipeline; state machine and DB records would already exist
+- Feature flag — rejected in favor of the cleaner env-var enum
+
+**Consequences**
+- All existing test environments (EXECUTION_MODE=simulation) work without change
+- No code path exists from which live order submission is reachable
+- Future live trading requires a new provider implementation, a new enum value, and a deliberate ADR
+
+**Review Trigger**
+If live trading is introduced in a future phase, this ADR is superseded.
+
+---
+
+### ADR-026 — Order State Machine with Illegal-Transition Enforcement (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+All order status transitions are governed by an explicit allowed-transitions map. Attempting an illegal transition throws synchronously. Every legal transition is persisted to `execution_order_events` atomically with the status update.
+
+**Context**
+Without a formal state machine, concurrent service calls (monitor, recovery, OMS) could corrupt order status by racing to write conflicting terminal states.
+
+**Rationale**
+Explicit transition map makes invariants readable and auditable. Synchronous throw on illegal transition surfaces bugs immediately in development and prevents silent corruption in production.
+
+**Consequences**
+- All status updates must go through `transition()` — direct DB status writes are prohibited
+- Event log is always consistent with state history
+
+---
+
+### ADR-027 — Four-Stage Pre-Trade Pipeline (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Every order passes through four sequential gates before routing: (1) schema/field validation, (2) Phase 6 risk engine snapshot check (position sizing, drawdown), (3) kill-switch check, (4) circuit-breaker check per symbol. Rejection at any stage records the reason and stage to `execution_rejections`.
+
+**Context**
+Institutional execution requires a documented, auditable pre-trade compliance layer. Each gate is independently testable and the stage label on rejections enables per-stage rejection-rate analytics.
+
+**Rationale**
+Sequential gates are simpler to reason about than parallel checks. Stopping at first failure minimizes DB writes on clearly-invalid orders. Recording stage on rejection enables analytics on where orders are dying.
+
+**Consequences**
+- Adding a new pre-trade check requires only inserting a new stage function — no structural changes
+- All rejections are persisted with full detail for compliance audit
+
+---
+
+### ADR-028 — Mode-Aware Provider Router with Health Tracking (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+`ExecutionRouter` selects the active provider based on `EXECUTION_MODE`. It health-checks all providers on startup and tracks per-provider latency. A `live_disabled` stub provider is returned for that mode — it rejects all orders at the provider level with a clear error message.
+
+**Context**
+The router pattern matches the Phase 9 `StreamProviderFactory` and Phase 8 `AiProviderFactory`. Consistent provider abstraction makes future provider additions trivial.
+
+**Consequences**
+- Adding a new execution provider requires only implementing `IExecutionProvider` and registering in the router
+
+---
+
+### ADR-029 — Fill Engine with Slippage and Commission Tracking (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Fill processing is separated from order routing. The fill engine receives a `ProviderFillResult`, computes slippage in basis points relative to the order's reference price, applies a 0.1% commission, writes an `ExecutionFill` record, and publishes a `FillReceived` event.
+
+**Rationale**
+Separating fill processing from provider logic enables consistent fill accounting regardless of provider. Slippage in bps is provider-agnostic and directly comparable across simulation and paper modes.
+
+**Consequences**
+- `avgFillPrice` on the order is recomputed as a weighted average across all partial fills
+- Commission is tracked separately from fill price for P&L accuracy
+
+---
+
+### ADR-030 — Position Engine with Average-Cost Basis (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Positions are maintained with a running average-cost basis. Each fill updates `avgEntryPrice` as a weighted average. Closing a position records `realizedPnl` as `(exitPrice - avgEntry) * quantity` (adjusted for side). Mark-to-market updates `unrealizedPnl` using Phase 9 `MarketStateEngine.lastPrice`.
+
+**Rationale**
+Average-cost basis is the standard institutional position accounting method. Separating realized from unrealized P&L enables accurate performance attribution.
+
+---
+
+### ADR-031 — Execution Monitor with Stale/Stuck Order Detection (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+A background monitor polls active orders every 30 seconds. Orders acknowledged but not filled within 5 minutes are flagged as stale (recovery record created). Orders in any active state for more than 30 minutes are auto-failed with an audit log entry.
+
+**Rationale**
+In simulation/paper mode there is no exchange timeout — the monitor provides the equivalent guarantee. Thresholds (5min stale, 30min stuck) are conservative and configurable in future phases.
+
+---
+
+### ADR-032 — Execution Analytics with Multi-Period Aggregation (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Quality metrics (fill rate, reject rate, avg/p50/p95/p99 latency, avg slippage) are computed over four time windows (1h, 4h, 1d, 7d) for each execution mode every 5 minutes and written to `execution_metrics`.
+
+**Rationale**
+Pre-aggregation avoids expensive real-time aggregation queries at the API layer. Four windows cover both operational alerting (1h) and trend analysis (7d).
+
+---
+
+### ADR-033 — Execution Recovery Service (Phase 10)
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+A recovery service polls every 60 seconds for: (1) orders in `routed` state for >30s (lost ACK), (2) orders in `acknowledged` state for >5min (lost fill), (3) orders stuck in `recovering` for >10min. In simulation mode, automated resolution cancels the order. All recovery actions are persisted to `execution_recovery`.
+
+**Rationale**
+Simulation and paper providers are in-process, so lost ACK/fill indicates a code bug rather than network failure. Automated cancel-on-timeout prevents the order book from accumulating zombie orders.
+
+**Consequences**
+- Recovery events provide a debug signal for provider implementation bugs
+- In future live mode, recovery would query the exchange API rather than auto-cancel

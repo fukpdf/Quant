@@ -11,6 +11,7 @@ import { seedDefaultBenchmarks } from "./services/benchmark-service";
 import { startAnalyticsScheduler } from "./services/analytics-scheduler";
 import { AiProviderFactory } from "./services/ai-provider-factory";
 import { startStreamScheduler } from "./services/stream-scheduler";
+import { startExecutionScheduler } from "./services/execution-scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -90,5 +91,12 @@ app.listen(port, async (err) => {
     await startStreamScheduler();
   } catch (err) {
     logger.error({ err }, "Failed to start stream scheduler — continuing without streaming");
+  }
+
+  // Start Phase 10 execution infrastructure (non-fatal — server runs even if OMS fails)
+  try {
+    await startExecutionScheduler();
+  } catch (err) {
+    logger.error({ err }, "Failed to start execution scheduler — continuing without OMS");
   }
 });

@@ -23,6 +23,50 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.10.0] — 2026-06-03
+
+### Phase 10 — Institutional Execution Engine (SAFE MODE ONLY)
+
+#### Added
+- **12 new database tables**: `execution_accounts`, `execution_orders`, `execution_order_events`, `execution_routes`, `execution_fills`, `execution_positions`, `execution_sessions`, `execution_rejections`, `execution_latency`, `execution_metrics`, `execution_recovery`, `execution_audit_log`
+- **execution-types.ts** — `IExecutionProvider` interface, `ExecutionMode` enum (`simulation | paper | live_disabled`), `OrderStatus` state set, `ACTIVE_ORDER_STATUSES`, `TERMINAL_ORDER_STATUSES`, `VALID_EXECUTION_MODES`, and all shared DTOs
+- **execution-state-machine.ts** (ADR-026) — strict state transition enforcement; illegal transitions throw immediately; every transition recorded to `execution_order_events`
+- **execution-pre-trade-pipeline.ts** (ADR-027) — four-stage pre-trade gate: schema validation → risk snapshot check (Phase 6 engine) → kill-switch check → circuit-breaker check; rejects with stage tag recorded to `execution_rejections`
+- **MockExecutionProvider** — instant-fill simulation; fills at last known market price ± 0–5 bps random slippage; no API key required; default for `EXECUTION_MODE=simulation`
+- **PaperExecutionProvider** — realistic fills using Phase 9 `MarketStateEngine`; mid-price ± half-spread with order-type appropriate slippage; uses VWAP for large orders
+- **execution-router.ts** (ADR-028) — mode-aware provider selection; health-checks providers on boot; returns `live_disabled` provider stub if mode is `live_disabled`; tracks per-provider latency
+- **execution-oms.ts** — master OMS orchestrator; `submitOrder()` runs full pipeline in one call: pre-trade → route → provider.submit → fill engine → position engine → audit log → event bus publish
+- **execution-fill-engine.ts** (ADR-029) — fill processing with commission (0.1% maker/taker), slippage in bps, and `ExecutionFill` DB write; publishes `FillReceived` event
+- **execution-position-engine.ts** (ADR-030) — position open/update/close with average-cost basis, unrealized/realized P&L, mark-to-market updates; publishes `PositionUpdated` event
+- **execution-monitor.ts** (ADR-031) — stale order detection (5min threshold), stuck order auto-fail (30min threshold), MTM refresh every 60s
+- **execution-analytics-engine.ts** (ADR-032) — computes fill rate, reject rate, cancel rate, avg/p50/p95/p99 latency, avg slippage across `1h / 4h / 1d / 7d` windows every 5 minutes
+- **execution-recovery-service.ts** (ADR-033) — lost ACK detection (30s), lost fill detection (5min), recovery timeout handler (10min); automated cancel-on-timeout in simulation mode
+- **execution-scheduler.ts** — master startup; validates `EXECUTION_MODE`; refuses to start on invalid mode; upserts default account; creates session record; starts monitor + analytics + recovery
+- **13 new REST endpoints** under `execution` tag:
+  - `POST /v1/execution/orders` — full-pipeline order submission
+  - `GET /v1/execution/orders` — list with status/symbol/mode filters
+  - `GET /v1/execution/orders/:id` — detail + full event history
+  - `POST /v1/execution/orders/:id/cancel` — cancel active order
+  - `GET /v1/execution/fills` — fill history
+  - `GET /v1/execution/positions` — positions with P&L summary
+  - `GET /v1/execution/rejections` — rejection log with stage breakdown
+  - `GET /v1/execution/health` — OMS health (active orders, providers, session)
+  - `GET /v1/execution/providers` — provider list with health metrics
+  - `GET /v1/execution/sessions` — session history
+  - `GET /v1/execution/metrics` — quality metrics (fill rate, slippage, latency p50/p95/p99)
+  - `GET /v1/execution/latency` — per-stage latency summary
+  - `GET /v1/execution/audit-log` — immutable order action trail
+- **11 new EventBus event types**: `OrderCreated`, `OrderRouted`, `OrderAcknowledged`, `OrderFilled`, `OrderPartiallyFilled`, `OrderCancelled`, `OrderFailed`, `OrderRejected`, `FillReceived`, `PositionUpdated`, `ExecutionRecovered`
+- **OpenAPI spec v0.10.0** — 13 new paths, 15 new component schemas, `execution` tag
+
+#### Safety Guarantees
+- `EXECUTION_MODE=live` is not a valid value — scheduler refuses to start (throws)
+- `live_disabled` mode starts the OMS but blocks all orders at provider level
+- No real-money API keys in codebase or environment templates
+- Kill-switch state (`getKillSwitchStatus()`) checked synchronously in pre-trade pipeline
+
+---
+
 ## [0.9.0] — 2026-06-01
 
 ### Phase 9 — Real-Time Market Streaming & Event Infrastructure

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.9.0
+  version: 0.10.0
   description: QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
 servers:
   - url: /api
@@ -3360,6 +3360,389 @@ paths:
                     items:
                       type: integer
                 required: [data, availableSpeeds]
+
+
+  # ---------------------------------------------------------------------------
+  # Phase 10 — Institutional Execution Engine
+  # ---------------------------------------------------------------------------
+
+  /v1/execution/orders:
+    post:
+      tags: [execution]
+      summary: Submit a new order to the OMS
+      description: >
+        Runs the full pre-trade pipeline (schema validation → risk pre-check →
+        circuit-breaker gate → route selection → fill → position update → audit).
+        In simulation mode, fills are instant. In paper mode, realistic market
+        state pricing is used. Live execution is permanently disabled (SAFE MODE).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order submitted and accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSubmitResponse'
+        '422':
+          description: Order rejected by pre-trade pipeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSubmitResponse'
+        '400':
+          description: Invalid request body
+        '500':
+          description: Internal error
+    get:
+      tags: [execution]
+      summary: List execution orders
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          description: Comma-separated statuses
+          schema: { type: string }
+        - name: symbol
+          in: query
+          schema: { type: string }
+        - name: mode
+          in: query
+          schema: { type: string, enum: [simulation, paper, live_disabled] }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionOrder'
+                  count:
+                    type: integer
+
+  /v1/execution/orders/{id}:
+    get:
+      tags: [execution]
+      summary: Get execution order detail with events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Order detail with full event history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/ExecutionOrder'
+                      - type: object
+                        properties:
+                          events:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ExecutionOrderEvent'
+        '404':
+          description: Order not found
+
+  /v1/execution/orders/{id}/cancel:
+    post:
+      tags: [execution]
+      summary: Cancel an active order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      orderId: { type: string, format: uuid }
+                      status: { type: string }
+                      cancelledBy: { type: string }
+        '409':
+          description: Order not in a cancellable state
+
+  /v1/execution/fills:
+    get:
+      tags: [execution]
+      summary: List execution fills
+      parameters:
+        - name: symbol
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100, maximum: 500 }
+      responses:
+        '200':
+          description: Fill history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionFill'
+                  count:
+                    type: integer
+
+  /v1/execution/positions:
+    get:
+      tags: [execution]
+      summary: List execution positions with P&L summary
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, closed] }
+        - name: symbol
+          in: query
+          schema: { type: string }
+        - name: mode
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100, maximum: 500 }
+      responses:
+        '200':
+          description: Positions with P&L summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionPosition'
+                  count:
+                    type: integer
+                  summary:
+                    $ref: '#/components/schemas/PositionSummary'
+
+  /v1/execution/rejections:
+    get:
+      tags: [execution]
+      summary: List order rejections with stage breakdown
+      parameters:
+        - name: symbol
+          in: query
+          schema: { type: string }
+        - name: stage
+          in: query
+          schema: { type: string, enum: [validation, risk, circuit_breaker, routing, provider] }
+        - name: mode
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: Rejection log with stage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionRejection'
+                  count:
+                    type: integer
+                  byStage:
+                    type: object
+                    additionalProperties:
+                      type: integer
+
+  /v1/execution/health:
+    get:
+      tags: [execution]
+      summary: Execution engine health — active orders, provider status, session
+      responses:
+        '200':
+          description: Execution engine health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExecutionHealth'
+
+  /v1/execution/providers:
+    get:
+      tags: [execution]
+      summary: List execution providers and their health
+      responses:
+        '200':
+          description: Provider list with health metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      active:
+                        type: string
+                      providers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExecutionProviderInfo'
+
+  /v1/execution/sessions:
+    get:
+      tags: [execution]
+      summary: List execution sessions
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          description: Session history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionSession'
+
+  /v1/execution/metrics:
+    get:
+      tags: [execution]
+      summary: Execution quality metrics (fill rate, latency, slippage)
+      parameters:
+        - name: mode
+          in: query
+          schema: { type: string }
+        - name: period
+          in: query
+          schema: { type: string, enum: [1h, 4h, 1d, 7d], default: 1h }
+        - name: summary
+          in: query
+          description: If true, return single aggregated summary object
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Execution quality metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/ExecutionMetricsSummary'
+                      - type: array
+                        items:
+                          $ref: '#/components/schemas/ExecutionMetricsRow'
+
+  /v1/execution/latency:
+    get:
+      tags: [execution]
+      summary: Execution latency summary by stage
+      parameters:
+        - name: provider
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Latency summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExecutionLatencySummary'
+
+  /v1/execution/audit-log:
+    get:
+      tags: [execution]
+      summary: Execution audit log — immutable order action trail
+      parameters:
+        - name: orderId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: action
+          in: query
+          schema: { type: string }
+        - name: symbol
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100, maximum: 500 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExecutionAuditEntry'
+                  total:
+                    type: integer
+                  count:
+                    type: integer
+
 
 components:
   responses:
@@ -7856,3 +8239,406 @@ components:
           type: string
           nullable: true
       required: [status, ticksReplayed]
+
+    # Phase 10 — Institutional Execution Engine schemas
+    CreateOrderRequest:
+      type: object
+      required: [symbol, orderType, side, quantity]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        symbol:
+          type: string
+          example: BTCUSDT
+        orderType:
+          type: string
+          enum: [market, limit, stop, stop_limit, reduce_only, post_only]
+        side:
+          type: string
+          enum: [buy, sell]
+        quantity:
+          type: string
+          description: Numeric string (ADR-013)
+          example: "0.01"
+        limitPrice:
+          type: string
+          nullable: true
+        stopPrice:
+          type: string
+          nullable: true
+        tif:
+          type: string
+          enum: [gtc, ioc, fok]
+          default: gtc
+        strategyName:
+          type: string
+          nullable: true
+        clientOrderId:
+          type: string
+          nullable: true
+        executionMode:
+          type: string
+          enum: [simulation, paper, live_disabled]
+          nullable: true
+
+    OrderSubmitResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            orderId:
+              type: string
+              format: uuid
+            status:
+              type: string
+            externalOrderId:
+              type: string
+              nullable: true
+            validationLatencyMs:
+              type: number
+            routingLatencyMs:
+              type: number
+            fillLatencyMs:
+              type: number
+            totalLatencyMs:
+              type: number
+
+    ExecutionOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        executionMode:
+          type: string
+          enum: [simulation, paper, live_disabled]
+        orderType:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        symbol:
+          type: string
+        status:
+          type: string
+          enum: [pending, validated, pre_trade_passed, routed, acknowledged, partially_filled, filled, cancelled, rejected, failed, recovering]
+        quantity:
+          type: string
+          description: Numeric string
+        filledQuantity:
+          type: string
+        remainingQuantity:
+          type: string
+        limitPrice:
+          type: string
+          nullable: true
+        stopPrice:
+          type: string
+          nullable: true
+        avgFillPrice:
+          type: string
+          nullable: true
+        tif:
+          type: string
+        routedTo:
+          type: string
+          nullable: true
+        externalOrderId:
+          type: string
+          nullable: true
+        rejectReason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ExecutionOrderEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        fromStatus:
+          type: string
+          nullable: true
+        toStatus:
+          type: string
+        actor:
+          type: string
+        detail:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ExecutionFill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        side:
+          type: string
+        fillPrice:
+          type: string
+          description: Numeric string
+        fillQuantity:
+          type: string
+        commission:
+          type: string
+        slippageBps:
+          type: string
+          nullable: true
+        provider:
+          type: string
+        filledAt:
+          type: string
+          format: date-time
+
+    ExecutionPosition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [long, short]
+        status:
+          type: string
+          enum: [open, closed]
+        quantity:
+          type: string
+        avgEntryPrice:
+          type: string
+        currentPrice:
+          type: string
+          nullable: true
+        unrealizedPnl:
+          type: string
+        realizedPnl:
+          type: string
+        totalCommission:
+          type: string
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PositionSummary:
+      type: object
+      properties:
+        openPositions:
+          type: integer
+        closedPositions:
+          type: integer
+        totalUnrealizedPnl:
+          type: string
+        totalRealizedPnl:
+          type: string
+
+    ExecutionRejection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+        stage:
+          type: string
+          enum: [validation, risk, circuit_breaker, routing, provider]
+        reason:
+          type: string
+        symbol:
+          type: string
+          nullable: true
+        executionMode:
+          type: string
+        detail:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ExecutionHealth:
+      type: object
+      properties:
+        executionEnabled:
+          type: boolean
+        executionMode:
+          type: string
+        sessionId:
+          type: string
+          nullable: true
+        activeOrders:
+          type: integer
+        ordersByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              isReady: { type: boolean }
+              ordersInFlight: { type: integer }
+              totalSubmitted: { type: integer }
+              totalFilled: { type: integer }
+              avgAckLatencyMs: { type: number }
+
+    ExecutionProviderInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        mode:
+          type: string
+        status:
+          type: string
+        requiresApiKey:
+          type: boolean
+        health:
+          type: object
+          nullable: true
+
+    ExecutionSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        executionMode:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+          enum: [active, ended, crashed]
+        ordersPlaced:
+          type: string
+        ordersFilled:
+          type: string
+        ordersRejected:
+          type: string
+        ordersCancelled:
+          type: string
+        fillsProcessed:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ExecutionMetricsSummary:
+      type: object
+      properties:
+        mode: { type: string }
+        period: { type: string }
+        totalOrders: { type: integer }
+        totalFills: { type: integer }
+        totalRejections: { type: integer }
+        totalCancellations: { type: integer }
+        fillRate: { type: number }
+        rejectRate: { type: number }
+        cancelRate: { type: number }
+        successRate: { type: number }
+        avgSlippageBps: { type: number }
+        avgFillTimeMs: { type: number }
+        avgLatencyMs: { type: number }
+        p50LatencyMs: { type: number }
+        p95LatencyMs: { type: number }
+        p99LatencyMs: { type: number }
+
+    ExecutionMetricsRow:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        executionMode: { type: string }
+        period: { type: string }
+        fillRate: { type: string }
+        rejectRate: { type: string }
+        avgLatencyMs: { type: string }
+        p95LatencyMs: { type: string }
+        computedAt: { type: string, format: date-time }
+
+    ExecutionLatencySummary:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          count: { type: integer }
+          avgMs: { type: number }
+          p50Ms: { type: number }
+          p95Ms: { type: number }
+          p99Ms: { type: number }
+
+    ExecutionAuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+        action:
+          type: string
+        actor:
+          type: string
+        executionMode:
+          type: string
+        symbol:
+          type: string
+          nullable: true
+        detail:
+          type: object
+          nullable: true
+        success:
+          type: boolean
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time

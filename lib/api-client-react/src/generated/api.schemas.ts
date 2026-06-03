@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
- * OpenAPI spec version: 0.9.0
+ * OpenAPI spec version: 0.10.0
  */
 export type ErrorResponseError = {
   code: string;
@@ -2847,6 +2847,327 @@ export interface ReplayState {
   errorMessage?: string | null;
 }
 
+export type CreateOrderRequestOrderType = typeof CreateOrderRequestOrderType[keyof typeof CreateOrderRequestOrderType];
+
+
+export const CreateOrderRequestOrderType = {
+  market: 'market',
+  limit: 'limit',
+  stop: 'stop',
+  stop_limit: 'stop_limit',
+  reduce_only: 'reduce_only',
+  post_only: 'post_only',
+} as const;
+
+export type CreateOrderRequestSide = typeof CreateOrderRequestSide[keyof typeof CreateOrderRequestSide];
+
+
+export const CreateOrderRequestSide = {
+  buy: 'buy',
+  sell: 'sell',
+} as const;
+
+export type CreateOrderRequestTif = typeof CreateOrderRequestTif[keyof typeof CreateOrderRequestTif];
+
+
+export const CreateOrderRequestTif = {
+  gtc: 'gtc',
+  ioc: 'ioc',
+  fok: 'fok',
+} as const;
+
+export type CreateOrderRequestExecutionMode = typeof CreateOrderRequestExecutionMode[keyof typeof CreateOrderRequestExecutionMode] | null;
+
+
+export const CreateOrderRequestExecutionMode = {
+  simulation: 'simulation',
+  paper: 'paper',
+  live_disabled: 'live_disabled',
+} as const;
+
+export interface CreateOrderRequest {
+  accountId?: string | null;
+  symbol: string;
+  orderType: CreateOrderRequestOrderType;
+  side: CreateOrderRequestSide;
+  /** Numeric string (ADR-013) */
+  quantity: string;
+  limitPrice?: string | null;
+  stopPrice?: string | null;
+  tif?: CreateOrderRequestTif;
+  strategyName?: string | null;
+  clientOrderId?: string | null;
+  executionMode?: CreateOrderRequestExecutionMode;
+}
+
+export type OrderSubmitResponseData = {
+  orderId?: string;
+  status?: string;
+  externalOrderId?: string | null;
+  validationLatencyMs?: number;
+  routingLatencyMs?: number;
+  fillLatencyMs?: number;
+  totalLatencyMs?: number;
+};
+
+export interface OrderSubmitResponse {
+  data?: OrderSubmitResponseData;
+}
+
+export type ExecutionOrderExecutionMode = typeof ExecutionOrderExecutionMode[keyof typeof ExecutionOrderExecutionMode];
+
+
+export const ExecutionOrderExecutionMode = {
+  simulation: 'simulation',
+  paper: 'paper',
+  live_disabled: 'live_disabled',
+} as const;
+
+export type ExecutionOrderSide = typeof ExecutionOrderSide[keyof typeof ExecutionOrderSide];
+
+
+export const ExecutionOrderSide = {
+  buy: 'buy',
+  sell: 'sell',
+} as const;
+
+export type ExecutionOrderStatus = typeof ExecutionOrderStatus[keyof typeof ExecutionOrderStatus];
+
+
+export const ExecutionOrderStatus = {
+  pending: 'pending',
+  validated: 'validated',
+  pre_trade_passed: 'pre_trade_passed',
+  routed: 'routed',
+  acknowledged: 'acknowledged',
+  partially_filled: 'partially_filled',
+  filled: 'filled',
+  cancelled: 'cancelled',
+  rejected: 'rejected',
+  failed: 'failed',
+  recovering: 'recovering',
+} as const;
+
+export interface ExecutionOrder {
+  id?: string;
+  accountId?: string;
+  executionMode?: ExecutionOrderExecutionMode;
+  orderType?: string;
+  side?: ExecutionOrderSide;
+  symbol?: string;
+  status?: ExecutionOrderStatus;
+  /** Numeric string */
+  quantity?: string;
+  filledQuantity?: string;
+  remainingQuantity?: string;
+  limitPrice?: string | null;
+  stopPrice?: string | null;
+  avgFillPrice?: string | null;
+  tif?: string;
+  routedTo?: string | null;
+  externalOrderId?: string | null;
+  rejectReason?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type ExecutionOrderEventDetail = { [key: string]: unknown } | null;
+
+export interface ExecutionOrderEvent {
+  id?: string;
+  orderId?: string;
+  eventType?: string;
+  fromStatus?: string | null;
+  toStatus?: string;
+  actor?: string;
+  detail?: ExecutionOrderEventDetail;
+  createdAt?: string;
+}
+
+export interface ExecutionFill {
+  id?: string;
+  orderId?: string;
+  symbol?: string;
+  side?: string;
+  /** Numeric string */
+  fillPrice?: string;
+  fillQuantity?: string;
+  commission?: string;
+  slippageBps?: string | null;
+  provider?: string;
+  filledAt?: string;
+}
+
+export type ExecutionPositionSide = typeof ExecutionPositionSide[keyof typeof ExecutionPositionSide];
+
+
+export const ExecutionPositionSide = {
+  long: 'long',
+  short: 'short',
+} as const;
+
+export type ExecutionPositionStatus = typeof ExecutionPositionStatus[keyof typeof ExecutionPositionStatus];
+
+
+export const ExecutionPositionStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export interface ExecutionPosition {
+  id?: string;
+  accountId?: string;
+  symbol?: string;
+  side?: ExecutionPositionSide;
+  status?: ExecutionPositionStatus;
+  quantity?: string;
+  avgEntryPrice?: string;
+  currentPrice?: string | null;
+  unrealizedPnl?: string;
+  realizedPnl?: string;
+  totalCommission?: string;
+  openedAt?: string;
+  closedAt?: string | null;
+}
+
+export interface PositionSummary {
+  openPositions?: number;
+  closedPositions?: number;
+  totalUnrealizedPnl?: string;
+  totalRealizedPnl?: string;
+}
+
+export type ExecutionRejectionStage = typeof ExecutionRejectionStage[keyof typeof ExecutionRejectionStage];
+
+
+export const ExecutionRejectionStage = {
+  validation: 'validation',
+  risk: 'risk',
+  circuit_breaker: 'circuit_breaker',
+  routing: 'routing',
+  provider: 'provider',
+} as const;
+
+export type ExecutionRejectionDetail = { [key: string]: unknown } | null;
+
+export interface ExecutionRejection {
+  id?: string;
+  orderId?: string | null;
+  stage?: ExecutionRejectionStage;
+  reason?: string;
+  symbol?: string | null;
+  executionMode?: string;
+  detail?: ExecutionRejectionDetail;
+  createdAt?: string;
+}
+
+export type ExecutionHealthOrdersByStatus = {[key: string]: number};
+
+export type ExecutionHealthProvidersItem = {
+  name?: string;
+  isReady?: boolean;
+  ordersInFlight?: number;
+  totalSubmitted?: number;
+  totalFilled?: number;
+  avgAckLatencyMs?: number;
+};
+
+export interface ExecutionHealth {
+  executionEnabled?: boolean;
+  executionMode?: string;
+  sessionId?: string | null;
+  activeOrders?: number;
+  ordersByStatus?: ExecutionHealthOrdersByStatus;
+  providers?: ExecutionHealthProvidersItem[];
+}
+
+export type ExecutionProviderInfoHealth = { [key: string]: unknown } | null;
+
+export interface ExecutionProviderInfo {
+  name?: string;
+  description?: string;
+  mode?: string;
+  status?: string;
+  requiresApiKey?: boolean;
+  health?: ExecutionProviderInfoHealth;
+}
+
+export type ExecutionSessionStatus = typeof ExecutionSessionStatus[keyof typeof ExecutionSessionStatus];
+
+
+export const ExecutionSessionStatus = {
+  active: 'active',
+  ended: 'ended',
+  crashed: 'crashed',
+} as const;
+
+export interface ExecutionSession {
+  id?: string;
+  executionMode?: string;
+  provider?: string;
+  status?: ExecutionSessionStatus;
+  ordersPlaced?: string;
+  ordersFilled?: string;
+  ordersRejected?: string;
+  ordersCancelled?: string;
+  fillsProcessed?: string;
+  startedAt?: string;
+  endedAt?: string | null;
+}
+
+export interface ExecutionMetricsSummary {
+  mode?: string;
+  period?: string;
+  totalOrders?: number;
+  totalFills?: number;
+  totalRejections?: number;
+  totalCancellations?: number;
+  fillRate?: number;
+  rejectRate?: number;
+  cancelRate?: number;
+  successRate?: number;
+  avgSlippageBps?: number;
+  avgFillTimeMs?: number;
+  avgLatencyMs?: number;
+  p50LatencyMs?: number;
+  p95LatencyMs?: number;
+  p99LatencyMs?: number;
+}
+
+export interface ExecutionMetricsRow {
+  id?: string;
+  executionMode?: string;
+  period?: string;
+  fillRate?: string;
+  rejectRate?: string;
+  avgLatencyMs?: string;
+  p95LatencyMs?: string;
+  computedAt?: string;
+}
+
+export interface ExecutionLatencySummary {[key: string]: {
+  count?: number;
+  avgMs?: number;
+  p50Ms?: number;
+  p95Ms?: number;
+  p99Ms?: number;
+}}
+
+export type ExecutionAuditEntryDetail = { [key: string]: unknown } | null;
+
+export interface ExecutionAuditEntry {
+  id?: string;
+  orderId?: string | null;
+  action?: string;
+  actor?: string;
+  executionMode?: string;
+  symbol?: string | null;
+  detail?: ExecutionAuditEntryDetail;
+  success?: boolean;
+  errorMessage?: string | null;
+  createdAt?: string;
+}
+
 /**
  * Validation error
  */
@@ -3854,5 +4175,194 @@ export type StopReplay200 = {
 export type GetReplayStatus200 = {
   data: ReplayState;
   availableSpeeds: number[];
+};
+
+export type GetV1ExecutionOrdersParams = {
+accountId?: string;
+/**
+ * Comma-separated statuses
+ */
+status?: string;
+symbol?: string;
+mode?: GetV1ExecutionOrdersMode;
+/**
+ * @maximum 200
+ */
+limit?: number;
+offset?: number;
+};
+
+export type GetV1ExecutionOrdersMode = typeof GetV1ExecutionOrdersMode[keyof typeof GetV1ExecutionOrdersMode];
+
+
+export const GetV1ExecutionOrdersMode = {
+  simulation: 'simulation',
+  paper: 'paper',
+  live_disabled: 'live_disabled',
+} as const;
+
+export type GetV1ExecutionOrders200 = {
+  data?: ExecutionOrder[];
+  count?: number;
+};
+
+export type GetV1ExecutionOrdersId200Data = ExecutionOrder & {
+  events?: ExecutionOrderEvent[];
+};
+
+export type GetV1ExecutionOrdersId200 = {
+  data?: GetV1ExecutionOrdersId200Data;
+};
+
+export type PostV1ExecutionOrdersIdCancel200Data = {
+  orderId?: string;
+  status?: string;
+  cancelledBy?: string;
+};
+
+export type PostV1ExecutionOrdersIdCancel200 = {
+  data?: PostV1ExecutionOrdersIdCancel200Data;
+};
+
+export type GetV1ExecutionFillsParams = {
+symbol?: string;
+from?: string;
+to?: string;
+/**
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type GetV1ExecutionFills200 = {
+  data?: ExecutionFill[];
+  count?: number;
+};
+
+export type GetV1ExecutionPositionsParams = {
+accountId?: string;
+status?: GetV1ExecutionPositionsStatus;
+symbol?: string;
+mode?: string;
+/**
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type GetV1ExecutionPositionsStatus = typeof GetV1ExecutionPositionsStatus[keyof typeof GetV1ExecutionPositionsStatus];
+
+
+export const GetV1ExecutionPositionsStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export type GetV1ExecutionPositions200 = {
+  data?: ExecutionPosition[];
+  count?: number;
+  summary?: PositionSummary;
+};
+
+export type GetV1ExecutionRejectionsParams = {
+symbol?: string;
+stage?: GetV1ExecutionRejectionsStage;
+mode?: string;
+/**
+ * @maximum 200
+ */
+limit?: number;
+};
+
+export type GetV1ExecutionRejectionsStage = typeof GetV1ExecutionRejectionsStage[keyof typeof GetV1ExecutionRejectionsStage];
+
+
+export const GetV1ExecutionRejectionsStage = {
+  validation: 'validation',
+  risk: 'risk',
+  circuit_breaker: 'circuit_breaker',
+  routing: 'routing',
+  provider: 'provider',
+} as const;
+
+export type GetV1ExecutionRejections200ByStage = {[key: string]: number};
+
+export type GetV1ExecutionRejections200 = {
+  data?: ExecutionRejection[];
+  count?: number;
+  byStage?: GetV1ExecutionRejections200ByStage;
+};
+
+export type GetV1ExecutionHealth200 = {
+  data?: ExecutionHealth;
+};
+
+export type GetV1ExecutionProviders200Data = {
+  active?: string;
+  providers?: ExecutionProviderInfo[];
+};
+
+export type GetV1ExecutionProviders200 = {
+  data?: GetV1ExecutionProviders200Data;
+};
+
+export type GetV1ExecutionSessionsParams = {
+/**
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type GetV1ExecutionSessions200 = {
+  data?: ExecutionSession[];
+};
+
+export type GetV1ExecutionMetricsParams = {
+mode?: string;
+period?: GetV1ExecutionMetricsPeriod;
+/**
+ * If true, return single aggregated summary object
+ */
+summary?: boolean;
+limit?: number;
+};
+
+export type GetV1ExecutionMetricsPeriod = typeof GetV1ExecutionMetricsPeriod[keyof typeof GetV1ExecutionMetricsPeriod];
+
+
+export const GetV1ExecutionMetricsPeriod = {
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '7d': '7d',
+} as const;
+
+export type GetV1ExecutionMetrics200 = {
+  data?: ExecutionMetricsSummary | ExecutionMetricsRow[];
+};
+
+export type GetV1ExecutionLatencyParams = {
+provider?: string;
+};
+
+export type GetV1ExecutionLatency200 = {
+  data?: ExecutionLatencySummary;
+};
+
+export type GetV1ExecutionAuditLogParams = {
+orderId?: string;
+action?: string;
+symbol?: string;
+/**
+ * @maximum 500
+ */
+limit?: number;
+offset?: number;
+};
+
+export type GetV1ExecutionAuditLog200 = {
+  data?: ExecutionAuditEntry[];
+  total?: number;
+  count?: number;
 };
 

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * QuantForge API — multi-market data platform with paper trading, institutional risk engine, portfolio analytics, AI research assistant, and real-time market streaming
- * OpenAPI spec version: 0.9.0
+ * OpenAPI spec version: 0.10.0
  */
 
 export type AiCompareRequestType = typeof AiCompareRequestType[keyof typeof AiCompareRequestType];

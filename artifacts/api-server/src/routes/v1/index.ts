@@ -67,6 +67,12 @@ import marketTicksRouter from "./market-ticks-route";
 import marketOrderbookRouter from "./market-orderbook-route";
 import marketStateRouter from "./market-state-route";
 import replayRouter from "./replay-route";
+// Phase 10 — Institutional Execution Engine
+import executionOrdersRouter from "./execution-orders";
+import executionFillsRouter from "./execution-fills";
+import executionPositionsRouter from "./execution-positions";
+import executionRejectionsRouter from "./execution-rejections";
+import executionStatusRouter from "./execution-status";
 
 const v1Router: IRouter = Router();
 
@@ -148,5 +154,12 @@ v1Router.use(marketTicksRouter);
 v1Router.use(marketOrderbookRouter);
 v1Router.use(marketStateRouter);
 v1Router.use(replayRouter);
+
+// Phase 10 endpoints — Institutional Execution Engine
+v1Router.use(executionOrdersRouter);
+v1Router.use(executionFillsRouter);
+v1Router.use(executionPositionsRouter);
+v1Router.use(executionRejectionsRouter);
+v1Router.use(executionStatusRouter);
 
 export default v1Router;
