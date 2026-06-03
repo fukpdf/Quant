@@ -106,7 +106,7 @@ async function checkStrategyHealth(strategyName: string, strategyId: string) {
     const [assignment] = await db
       .select()
       .from(paperStrategyAssignmentsTable)
-      .where(and(eq(paperStrategyAssignmentsTable.strategyName, strategyName), eq(paperStrategyAssignmentsTable.isActive, true)))
+      .where(and(eq(paperStrategyAssignmentsTable.strategyName, strategyName), eq(paperStrategyAssignmentsTable.status, "active")))
       .limit(1);
     const isActive = !!assignment;
 

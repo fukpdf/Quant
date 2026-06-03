@@ -23,6 +23,37 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.13.0] — 2026-06-03
+
+### Phase 13 — Frontend Operations & Intelligence Dashboard
+
+#### Added
+- **`artifacts/dashboard/`** — full React + Vite + Tailwind v4 + shadcn + recharts dashboard served on port 5000
+- **11 dashboard pages** covering all 12 prior phases via `@workspace/api-client-react` React Query hooks:
+  - `/` — Command Center (platform score, KPIs, system metrics, service health, recent alerts)
+  - `/operations` — Operations Dashboard (platform score gauge, scheduler health, performance history chart)
+  - `/service-health` — Service Health drill-down with per-service history
+  - `/alerts` — Alert Events (filterable, acknowledge/resolve actions) + Alert Rules (enable/disable toggle)
+  - `/incidents` — Incident list with severity, timeline view, investigate/resolve actions, update notes
+  - `/portfolio` — Portfolio Intelligence (analytics, health grade, drawdown, recommendations table)
+  - `/strategy-rankings` — Multi-period leaderboard, market regime panel, strategy clusters
+  - `/risk` — Kill switch status, circuit breakers, violations table, drawdown events
+  - `/execution` — Order flow, fill rate KPIs, latency, active positions
+  - `/streaming` — Stream provider status, market state (BTCUSDT), session table
+  - `/ai-insights` — AI insights feed, acknowledge action, summary generation buttons, AI health badges
+- **Shared UI components**: `DataTable<T>`, `KpiCard`, `PageHeader`, `Badge`, `HealthBar`, `Sidebar`, `ThemeProvider`
+- **`@workspace/api-client-react`** — Orval-generated React Query hooks (read in `lib/api-client-react/`)
+- **Dark theme** with light mode toggle; Bloomberg-terminal aesthetic
+- **Dashboard workflow** configured: `PORT=5000 pnpm --filter @workspace/dashboard run dev`
+
+#### Technical
+- TypeScript strict mode passes clean (`tsc --noEmit`) across all 11 pages and shared components
+- `DataTable<T>` `cell` prop accepts `(item: T, index: number) => ReactNode` enabling rank columns
+- Query options use `as any` cast for `queryKey` requirement in Orval-generated `UseQueryOptions` type
+- All financial numeric strings (`string | null`) parsed with `parseFloat()` before display
+
+---
+
 ## [0.12.0] — 2026-06-03
 
 ### Phase 12 — Observability, Monitoring & Operations Platform

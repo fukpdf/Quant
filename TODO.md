@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
 > Last updated: 2026-06-03
-> Current phase: **Phase 12 — Observability, Monitoring & Operations Platform** ✅ COMPLETE
+> Current phase: **Phase 13 — Frontend Operations & Intelligence Dashboard** ✅ COMPLETE
 
 ---
 
@@ -572,7 +572,43 @@
 
 ---
 
-## Phase 13 — Production Readiness
+## Phase 13 — Frontend Operations & Intelligence Dashboard ✅ COMPLETE
+
+### Scaffold
+- [x] `artifacts/dashboard/` — React + Vite + Tailwind v4 + shadcn + recharts workspace package
+- [x] `pnpm-workspace.yaml` updated to include `artifacts/dashboard`
+- [x] Dashboard workflow configured on port 5000
+
+### Pages (11 total)
+- [x] `/` — Command Center (platform KPIs, system metrics, service health grid, recent alerts)
+- [x] `/operations` — Operations Dashboard (platform score gauge, scheduler health table, performance chart)
+- [x] `/service-health` — Service Health drill-down with per-service history table
+- [x] `/alerts` — Alert Events (filterable by status, ack/resolve actions) + Alert Rules (enable/disable)
+- [x] `/incidents` — Incident list, timeline view, investigate/resolve, update notes form
+- [x] `/portfolio` — Portfolio analytics, health grade, drawdown KPIs, recommendations table
+- [x] `/strategy-rankings` — Multi-period leaderboard (`daily/weekly/monthly/all_time`), regime panel, clusters
+- [x] `/risk` — Kill switch status, circuit breakers, violations, drawdown events
+- [x] `/execution` — Fill rate, latency KPIs, active positions table, recent orders table
+- [x] `/streaming` — Stream provider status, BTCUSDT market state, session table
+- [x] `/ai-insights` — Insights feed with ack, summary generation buttons, AI health provider badges
+
+### Shared UI Components
+- [x] `DataTable<T>` — generic typed table with `cell?: (item: T, index: number) => ReactNode`
+- [x] `KpiCard` — dark-theme KPI tile with optional trend indicator
+- [x] `PageHeader` — title/subtitle/children slot for controls
+- [x] `Badge` — 14-variant semantic badge (healthy/warning/failed/critical/emergency/info/…)
+- [x] `HealthBar` — segmented health score bar (0–100)
+- [x] `Sidebar` — collapsible navigation with all 11 routes
+- [x] `ThemeProvider` — dark/light toggle
+
+### Verification
+- [x] TypeScript strict mode passes clean (`tsc --noEmit`) — zero errors
+- [x] Dashboard renders live data from API server (platform score, active alerts, incidents visible)
+- [x] All 11 pages import exclusively from `@workspace/api-client-react` (no mock data)
+
+---
+
+## Phase 14 — Production Readiness
 
 - [ ] Full security audit
 - [ ] Penetration testing checklist

@@ -1020,3 +1020,51 @@ Auto-creating incidents on every `critical` alert would produce noise — many c
 **Consequences**
 - Operators can manually link any alert event to an incident via the incident timeline API if they decide a `critical` alert warrants escalation
 - Auto-resolution scan (`scanForAutoResolution`) closes incidents when all linked emergency alerts are resolved
+
+---
+
+### ADR-043 — Dashboard Framework: React + Vite + Tailwind v4 + shadcn + Wouter
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+The Phase 13 dashboard is built as a standalone pnpm workspace package (`artifacts/dashboard/`) using React 19, Vite, Tailwind CSS v4, shadcn/ui primitives, recharts for charts, and wouter for client-side routing.
+
+**Context**
+A frontend dashboard was needed to surface all 12 prior phases of data from the REST API in a unified operator console. The dashboard needed to be fully type-safe against the existing OpenAPI spec via `@workspace/api-client-react` Orval-generated hooks.
+
+**Rationale**
+- Vite provides near-instant HMR and ESM-native bundling — appropriate for a single-developer workspace.
+- Tailwind v4 (using `@import "tw-animate-css"` not `tailwindcss-animate`) is the forward-compatible choice given the existing project dependency direction.
+- Wouter is chosen over React Router because the dashboard has no server-side routing requirements and wouter's API is simpler for a single-operator console.
+- Recharts is chosen over Victory/Nivo for bundle size and its declarative React API.
+- `@workspace/api-client-react` Orval-generated hooks provide complete type coverage over the OpenAPI spec with React Query v5 caching.
+
+**Alternatives Considered**
+- Next.js — unnecessary SSR/SSG complexity for an internal operator console; adds build complexity.
+- React Router v7 — heavier than wouter for a flat route tree with no dynamic segments.
+
+**Consequences**
+- Dashboard runs on port 5000 (separate from API on port 3000) to allow independent restarts.
+- All query options use `as any` cast for the `queryKey` required field in Orval-generated `UseQueryOptions` — this is a known Orval v7 pattern; the queryKey is always provided by the generated `getXxxQueryOptions` function at runtime.
+- `DataTable<T>` generic component is the primary data display primitive; its `cell` prop accepts `(item: T, index: number) => ReactNode` to enable rank columns.
+
+---
+
+### ADR-044 — Dashboard Uses No Mock Data
+
+**Date**: 2026-06-03
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+All 11 dashboard pages fetch exclusively from the live API server via `@workspace/api-client-react` hooks. No mock data, no static fixtures, no hardcoded fallback arrays beyond empty-state defaults.
+
+**Rationale**
+The platform's value is real-time operational awareness. A dashboard that renders fake data gives false confidence. Empty states ("No data", "Select a service") are acceptable and honest.
+
+**Consequences**
+- The dashboard requires the API server (`Start application` workflow) to be running to show non-empty content.
+- Stale-while-revalidate and periodic `refetchInterval` (10–30s) ensures the operator always sees fresh data without manual refreshes.

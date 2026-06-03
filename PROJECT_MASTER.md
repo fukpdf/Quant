@@ -56,7 +56,7 @@ Every stage is audited, versioned, and documented.
 ### Out of Scope (This Phase)
 
 - Live order execution
-- Real-time streaming UI
+- Real-time streaming UI (Phase 13 streaming page shows stream status but not a live tick feed)
 - Strategy marketplace
 - Mobile application
 
@@ -226,6 +226,14 @@ See [SECURITY.md](./SECURITY.md) and [docs/06-SECURITY_ARCHITECTURE.md](./docs/0
 4. **Secrets never in build artifacts**: Build pipelines never embed secrets in compiled output.
 5. **Health checks on every service**: No deployment completes without a passing health endpoint.
 6. **Database migrations run before app startup**: Migration-then-start, not the reverse.
+
+---
+
+## 10b. Current Phase Summary
+
+**Phase 13 — Frontend Operations & Intelligence Dashboard** ✅ COMPLETE (2026-06-03)
+
+A dark-theme React + Vite + Tailwind v4 operator console (`artifacts/dashboard/`) served on port 5000. Covers all 12 prior phases through 11 pages wired to the live API via `@workspace/api-client-react` React Query hooks. TypeScript strict mode passes clean.
 
 ---
 
