@@ -136,6 +136,13 @@ export * from "./usage-records";
 export * from "./usage-quotas";
 export * from "./billing-events";
 export * from "./revenue-snapshots";
+// Phase 16 — Production Readiness & Hardening
+export * from "./backup-jobs";
+export * from "./backup-runs";
+export * from "./restore-tests";
+export * from "./backup-audit-log";
+export * from "./notification-channels";
+export * from "./notification-deliveries";
 // Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation
 export * from "./users";
 export * from "./sessions";

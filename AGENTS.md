@@ -116,24 +116,8 @@ After completing any code change, every AI agent MUST:
 
 ## Phase Awareness
 
-The project is currently in **Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation** (complete).
-Next: **Phase 5 — Paper Trading**.
-
-### What AI agents MAY do in Phase 4 / Phase 5:
-- Add or extend strategy implementations
-- Improve backtesting engine accuracy (cost models, fill models)
-- Add indicator library functions
-- Add or modify research API endpoints
-- Extend performance metrics and validation checks
-- Write tests for strategies and the engine
-- Implement paper trading simulation (virtual account, simulated fills — no real capital)
-- Implement virtual order management and position tracking for paper trading
-
-### What AI agents MUST NOT do until Phase 6+:
-- Implement live trading against real capital
-- Implement real broker connectivity
-- Implement risk engine enforcement on real orders
-- Implement portfolio management for live money
+The project is currently in **Phase 16 — Production Readiness & Hardening** (complete).
+Phases 1–16 are all complete. The platform is production-ready.
 
 ### Key Phase 4 Architecture Notes (read before extending):
 - Cost models and position sizing profiles are **research-only** — they size simulated positions, not real capital (ADR-010)
@@ -142,6 +126,17 @@ Next: **Phase 5 — Paper Trading**.
 - Validation engine requires `ComputedMetrics` (number fields) — not DB numeric strings; callers must convert
 - Walk-forward and Monte Carlo routes are async-like but run synchronously in-process (no job queue yet)
 - All 10 Phase 4 endpoints are mounted under `/v1/research/` prefix via `routes/v1/index.ts`
+
+### Key Phase 16 Architecture Notes (read before extending):
+- **All health probes are under `/api/health/*`** (router mounts under `app.use("/api", router)`). Full paths: `/api/health/live`, `/api/health/ready`, `/api/health/dependencies`. Legacy `/api/healthz` preserved.
+- **Health probes are tiered** — `/api/health/live` (no external deps), `/api/health/ready` (DB+memory+eventloop), `/api/health/dependencies` (full inventory). Never add external calls to `/api/health/live`.
+- **Backup is metadata-only in-process** — `backup-service.ts` records row counts and checksums; full `pg_dump` is a shell-level operator step documented in `RUNBOOK.md`. Do not attempt to spawn `pg_dump` from within the Node.js process.
+- **Profiler is in-memory only** — `performance-profiler.ts` stores rolling windows in JS arrays; data does not survive server restarts. For durable history, use the Phase 12 `system_metrics` table.
+- **Security audit is cached 5 min** — `security-audit-service.ts` returns a cached result; use `POST /ops/security-audit/refresh` to force a fresh run. Do not make the cache TTL shorter than 60s (the audit makes DB queries).
+- **Notification engine is fire-and-forget** — `notification-engine.ts` delivers async and records results in `notification_deliveries`; delivery failures do not throw to callers.
+- **ADRs 034–038** cover backup strategy, notification engine, health probes, profiling, and CI/CD pipeline design.
+- 5 new route files mounted: `ops-backups-route`, `ops-recovery-route`, `ops-notifications-route`, `ops-security-audit-route`, `ops-profiling-route`
+- `/production-status` dashboard page shows server health, security audit, backup status, performance, and alert delivery
 
 ### Key Phase 12 Architecture Notes (read before extending):
 - All Phase 12 services are **READ-ONLY platform intelligence** — no trades, orders, or positions are affected (ADR-038)

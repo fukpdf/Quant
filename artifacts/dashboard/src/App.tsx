@@ -37,6 +37,9 @@ import BillingPage from "@/pages/billing";
 import BillingInvoicesPage from "@/pages/billing-invoices";
 import BillingPaymentMethodsPage from "@/pages/billing-payment-methods";
 
+// Phase 16 — Production Readiness
+import ProductionStatusPage from "@/pages/production-status";
+
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <div className="flex h-screen items-center justify-center"><span className="text-muted-foreground text-sm">Loading…</span></div>;
@@ -93,6 +96,7 @@ function AppShell() {
                 <Route path="/billing" component={() => <ProtectedRoute component={BillingPage} />} />
                 <Route path="/billing/invoices" component={() => <ProtectedRoute component={BillingInvoicesPage} />} />
                 <Route path="/billing/payment-methods" component={() => <ProtectedRoute component={BillingPaymentMethodsPage} />} />
+                <Route path="/production-status" component={() => <ProtectedRoute component={ProductionStatusPage} />} />
                 <Route component={NotFoundPage} />
               </Switch>
             </main>

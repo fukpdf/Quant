@@ -693,13 +693,65 @@
 
 ---
 
-## Phase 15 — Production Readiness
+## Phase 15 — Billing, Subscriptions & SaaS Commercialization ✅ COMPLETE
 
-- [ ] Full security audit and penetration testing checklist
-- [ ] AI rate limiting enforcement (AI_RATE_LIMIT_PER_MINUTE)
-- [ ] AI monthly token budget enforcement (AI_MONTHLY_TOKEN_BUDGET)
-- [ ] Alerting delivery (webhook + email channels)
-- [ ] Database backup automation
-- [ ] Performance profiling and optimization
-- [ ] Deployment pipeline (CI/CD)
-- [ ] Documentation site generation
+See CHANGELOG.md [0.15.0] for full details.
+
+---
+
+## Phase 16 — Production Readiness & Hardening ✅ COMPLETE
+
+> Last updated: 2026-06-04
+
+### T001 — Security Hardening Audit ✅
+- [x] `security-audit-service.ts` — 19-control runtime security posture checker (auth, RBAC, headers, rate limiting, secrets, execution safety, dependencies)
+- [x] `ops-security-audit-route.ts` — `GET /ops/security-audit` (5-min cache), `POST /ops/security-audit/refresh`
+- [x] `security-audit-report.md` — manual audit report: 88/100 score, 0 critical/high findings, 3 medium config-level warnings
+
+### T002 — Backup & Recovery System ✅
+- [x] DB tables: `backup_jobs`, `backup_runs`, `restore_tests`, `backup_audit_log`
+- [x] `backup-service.ts` — metadata backup execution (row counts, checksums via pg_stat_user_tables)
+- [x] `restore-service.ts` — checksum, row-count variance, schema presence, full restore test modes
+- [x] `backup-scheduler.ts` — 5-min polling loop (runs due jobs) + 6-hr restore test loop + default job seeding on startup
+- [x] `ops-backups-route.ts` — backup job CRUD, manual trigger, run history
+- [x] `ops-recovery-route.ts` — restore test history, on-demand restore test execution
+
+### T003 — Alert Delivery Layer ✅
+- [x] DB tables: `notification_channels`, `notification_deliveries`
+- [x] `webhook-provider.ts` — generic HTTP webhook + Slack Block Kit delivery
+- [x] `notification-engine.ts` — multi-channel fan-out with retry, cooldown, severity filter
+- [x] `ops-notifications-route.ts` — channel CRUD, delivery history, 24h stats
+
+### T004 — Health Check Framework ✅
+- [x] `/health/live` — pure liveness probe (no external deps, instant)
+- [x] `/health/ready` — readiness probe (DB ping + event loop lag + memory pressure)
+- [x] `/health/dependencies` — full per-component inventory (database, AI, streaming, execution, billing, memory, event loop)
+- [x] Legacy `/healthz` preserved unchanged
+
+### T005 — Performance Profiling ✅
+- [x] `performance-profiler.ts` — in-memory rolling 5-min window, p50/p95/p99, 24h snapshot history
+- [x] `ops-profiling-route.ts` — current snapshot, per-endpoint latency, metrics history, manual snapshot trigger
+
+### T006 — Load Testing Suite ✅
+- [x] `tests/load/api-load-test.ts` — VU-based concurrent runner: smoke/load/stress/spike profiles, weighted scenarios, p50/p95/p99 with threshold evaluation
+- [x] `tests/load/benchmark-report.md` — baseline latency targets, SLA thresholds, bottleneck analysis, monitoring guidance
+
+### T007+T008 — Deployment & Disaster Recovery Docs ✅
+- [x] `DEPLOYMENT.md` — pre-deploy checklist, startup sequence, env var reference, Replit deployment guide, rollback procedure
+- [x] `RUNBOOK.md` — 10-section operations runbook: server failure, DB outage, API outage, streaming failure, scheduler failure, high memory/CPU, security incident, backup/restore, disaster recovery, alert matrix
+
+### T009 — CI/CD Hardening ✅
+- [x] `.github/workflows/ci.yml` — 5 jobs: typecheck (blocking), build (blocking), OpenAPI validation (blocking), security audit (non-blocking), lint (non-blocking)
+- [x] `.github/workflows/release.yml` — pre-release validation + GitHub release creation on tag push
+
+### T010 — Production Dashboard Enhancements ✅
+- [x] `artifacts/dashboard/src/pages/production-status.tsx` — 5 tabs: Overview, Security Checks, Backup & Recovery, Performance, Notifications
+- [x] `App.tsx` — `/production-status` route wired with `ProtectedRoute`
+- [x] `sidebar.tsx` — "Production Status" nav link added to admin section (`Gauge` icon)
+
+### T011 — Documentation Updates ✅
+- [x] `CHANGELOG.md` — v0.16.0 entry with full added/changed inventory
+- [x] `DECISIONS.md` — ADR-034 through ADR-038 (backup strategy, notification engine, health probes, profiling, CI/CD)
+- [x] `TODO.md` — this file updated
+- [x] `AGENTS.md` — phase awareness updated to Phase 16
+- [x] `replit.md` — Phase 16 endpoints and architecture decisions documented

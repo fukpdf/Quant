@@ -23,6 +23,35 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.16.0] — 2026-06-04
+
+### Phase 16 — Production Readiness & Hardening
+
+#### Added
+- **6 new DB tables** — `backup_jobs`, `backup_runs`, `restore_tests`, `backup_audit_log`, `notification_channels`, `notification_deliveries`; applied via `pnpm --filter @workspace/db run push`
+- **7 new service files** — `backup-service.ts` (metadata-driven backup execution), `restore-service.ts` (checksum/row-count/schema/full restore validation), `backup-scheduler.ts` (5-min polling loop + 6-hr restore test loop), `notification-engine.ts` (multi-channel alert delivery with retry and cooldown), `webhook-provider.ts` (generic HTTP + Slack Block Kit delivery), `security-audit-service.ts` (19-control runtime security posture checker), `performance-profiler.ts` (in-memory p50/p95/p99 latency tracking with 5-min snapshots)
+- **5 new route files** — `ops-backups-route.ts` (backup job management + manual trigger), `ops-recovery-route.ts` (restore test history + on-demand testing), `ops-notifications-route.ts` (channel CRUD + delivery history), `ops-security-audit-route.ts` (cached audit with force-refresh), `ops-profiling-route.ts` (snapshots, per-endpoint latency, metrics history)
+- **Health check framework** — `/health/live` (liveness probe, no external deps), `/health/ready` (readiness probe: DB + event loop + memory), `/health/dependencies` (per-component status: database, AI, streaming, execution, billing, memory, event loop)
+- **CI/CD** — `.github/workflows/ci.yml` (5 jobs: typecheck, build, OpenAPI validation, security audit, lint); `.github/workflows/release.yml` (pre-release validation + GitHub release creation on tag push)
+- **Load testing suite** — `tests/load/api-load-test.ts` (concurrent VU-based load runner: smoke/load/stress/spike profiles, weighted scenario picker, p50/p95/p99 reporting, threshold evaluation); `tests/load/benchmark-report.md` (baseline latency targets and SLA thresholds)
+- **Security Audit Report** — `security-audit-report.md` (19-control review across auth, RBAC, API security, data security, execution safety, dependencies; score: 88/100; 0 critical/high findings)
+- **Deployment docs** — `DEPLOYMENT.md` (pre-deploy checklist, startup sequence, env var reference, rollback procedure, Replit deployment guide); `RUNBOOK.md` (10-section operations runbook: server failure, DB outage, API outage, streaming failure, scheduler failure, high memory/CPU, security response, backup/restore, disaster recovery, alert matrix)
+- **Dashboard** — `production-status.tsx` page with 5 tabs: Overview (server health, security audit, backup status, performance), Security Checks (per-control detail), Backup & Recovery, Performance (memory, p95/p99 API latency), Notifications (24h delivery stats, channel health)
+- **Sidebar** — "Production Status" nav link added to admin section with `Gauge` icon
+
+#### Changed
+- `artifacts/api-server/src/routes/health.ts` — extended with `/health/live`, `/health/ready`, `/health/dependencies` endpoints (legacy `/healthz` preserved unchanged)
+- `artifacts/api-server/src/index.ts` — `startBackupScheduler()` and `startProfilingSnapshots()` called on startup (both non-fatal)
+- `artifacts/api-server/src/routes/v1/index.ts` — 5 Phase 16 routers imported and mounted
+- `lib/db/src/schema/index.ts` — 6 Phase 16 tables exported
+- `lib/db/src/schema/notification-channels.ts` — `integer` import added (fix)
+
+---
+
+## [0.15.0] — 2026-06-03
+
+### Phase 15 — Billing, Subscriptions & SaaS Commercialization
+
 ## [0.14.0] — 2026-06-03
 
 ### Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation

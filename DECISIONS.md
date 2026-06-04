@@ -1162,3 +1162,136 @@ Subdomain routing requires DNS configuration per tenant and is impractical in a 
 **Consequences**
 - Frontend must set `X-Organization-Id` header after login when making org-scoped requests
 - Existing pre-Phase-14 endpoints continue to work without the header (non-breaking)
+
+---
+### ADR-034 — Metadata-Only Backup Strategy (Phase 16)
+
+**Date**: 2026-06-04
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Implement database backup as a two-level system: (1) metadata backup — row counts and schema checksums recorded in `backup_runs` via `pg_stat_user_tables`; (2) restore validation — checksum, row-count variance, and schema presence checks via `restore_tests`. Full `pg_dump` binary backup is documented in `RUNBOOK.md` as a shell-level operation, not automated in-process.
+
+**Context**
+Replit's environment does not provide shell access to `pg_dump` within the Node.js process. Implementing full dump-level backup requires OS-level access documented as an operator runbook step.
+
+**Rationale**
+- Metadata backup provides continuous visibility into table health and row count trends at zero runtime overhead
+- Restore test validates backup quality without requiring a production restore
+- `pg_dump` documented in RUNBOOK.md (Section 8) for when shell access is available
+- Audit log captures all backup operations immutably
+
+**Consequences**
+- Backup recovery requires shell access to `pg_restore` — not automatable from within the Node process
+- Metadata snapshots are always available and provide early warning of data loss
+
+**Review Trigger**
+If shell-level DB access becomes available within the runtime, upgrade to full `pg_dump` automation.
+
+---
+
+### ADR-035 — Multi-Channel Notification Engine (Phase 16)
+
+**Date**: 2026-06-04
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Alert delivery routes to all active notification channels matching the alert severity. Channels support email, webhook, and Slack-compatible formats. Delivery history stored in `notification_deliveries`. Retry with exponential backoff (up to `maxRetries`, default 3). Cooldown period prevents alert storms.
+
+**Context**
+Phase 12's alert engine fires alert events but had no delivery mechanism to external endpoints. Ops teams need multi-channel delivery with guaranteed delivery tracking.
+
+**Rationale**
+- Fan-out to all matching channels ensures no delivery path is single-point-of-failure
+- Cooldown per channel prevents duplicate delivery during sustained alert conditions
+- Delivery history enables audit and delivery rate monitoring
+- Slack Block Kit format enables rich alert presentation without a dedicated Slack SDK
+
+**Consequences**
+- All deliveries are async (fire-and-forget from the alert engine perspective)
+- Failed deliveries are recorded but do not block alert processing
+- Channel configuration is DB-backed — changes take effect without server restart
+
+---
+
+### ADR-036 — Layered Health Check Endpoints (Phase 16)
+
+**Date**: 2026-06-04
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Three health endpoints at different abstraction levels:
+- `/health/live` — pure liveness (no external deps, instant response)
+- `/health/ready` — readiness (DB ping + event loop lag + memory pressure)
+- `/health/dependencies` — full dependency inventory (all providers, billing, memory, event loop)
+
+Legacy `/healthz` preserved unchanged for backward compatibility.
+
+**Context**
+Kubernetes-style health probes require separate liveness and readiness checks. Load balancers and monitoring systems expect these on standard paths.
+
+**Rationale**
+- Liveness probe must not check external deps (a DB outage should not kill the process)
+- Readiness probe uses strict thresholds (DB error = not ready; high memory = not ready)
+- Dependency probe is slow-path diagnostic — not suitable for high-frequency polling
+- Three-tier design matches Kubernetes `livenessProbe` / `readinessProbe` / startup documentation standard
+
+**Consequences**
+- Liveness is always fast (< 1ms) — suitable for 15s poll intervals
+- Readiness adds DB ping (~2–50ms) — suitable for 30s poll intervals
+- Dependencies adds multiple checks (~10–100ms) — suitable for manual/monitoring use only
+
+---
+
+### ADR-037 — In-Memory Latency Profiler with Rolling Window (Phase 16)
+
+**Date**: 2026-06-04
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+Track API and DB latency in a 5-minute rolling in-memory window. Compute p50/p95/p99 from sorted samples. Take snapshots every 5 minutes (up to 288 — 24h of history). Expose via `/api/v1/ops/profiling`. No external APM dependency.
+
+**Context**
+Production performance visibility requires latency percentile data. APM tools (Datadog, New Relic) are heavyweight for a personal trading platform.
+
+**Rationale**
+- In-memory rolling window is zero-dependency, zero-cost, and available immediately
+- 5-minute window matches common monitoring intervals
+- p50/p95/p99 is sufficient for identifying hot endpoints
+- Snapshots stored in-memory (not DB) — profiling data is not durable, which is acceptable for live debugging
+
+**Consequences**
+- Profiling history is lost on server restart (by design — use system_metrics table for durable history)
+- Memory footprint: 10,000 samples × ~50 bytes = 500KB max per metric type (trivial)
+- Does not replace production APM for high-traffic deployments
+
+---
+
+### ADR-038 — CI Pipeline with Security Gate (Phase 16)
+
+**Date**: 2026-06-04
+**Status**: Accepted
+**Author**: AI agent
+
+**Decision**
+GitHub Actions CI pipeline with 5 jobs: typecheck (blocking), build (blocking), OpenAPI validation (blocking), security audit (non-blocking, `continue-on-error: true`), lint (non-blocking). Release pipeline gates on typecheck + build before creating GitHub release.
+
+**Context**
+No CI pipeline existed before Phase 16. Code quality enforcement was manual.
+
+**Rationale**
+- Typecheck and build must block — a TypeScript error or build failure must never reach main
+- OpenAPI validation blocks — broken API spec breaks code generation downstream
+- Security audit is non-blocking (`continue-on-error: true`) — audit warnings should not block hotfixes during incidents
+- Lint is non-blocking — formatting is developer preference, not a correctness gate
+- `cancel-in-progress: true` prevents queue buildup on rapid pushes
+- `--frozen-lockfile` in all install steps prevents dependency drift
+
+**Consequences**
+- PRs with TypeScript errors are blocked automatically
+- Security audit runs on every push — supply-chain issues surface immediately
+- Release process is two-stage: CI on push, release creation on tag push only

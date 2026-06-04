@@ -1,6 +1,6 @@
 # QuantForge
 
-A personal quantitative trading platform — ingests multi-market OHLCV data from provider abstractions, runs data quality checks, exposes a REST API for querying candles, providers, economic events, and news, and is now a full SaaS product with Stripe billing, plan management, usage metering, and revenue analytics.
+A personal quantitative trading platform — ingests multi-market OHLCV data from provider abstractions, runs data quality checks, exposes a REST API for querying candles, providers, economic events, and news, and is now a fully production-hardened SaaS product with Stripe billing, plan management, usage metering, revenue analytics, backup/recovery automation, multi-channel alert delivery, security auditing, performance profiling, and CI/CD pipeline.
 
 ## Run & Operate
 
@@ -43,6 +43,14 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - `artifacts/dashboard/src/pages/billing.tsx` — plan management, usage meters, revenue analytics
 - `artifacts/dashboard/src/pages/billing-invoices.tsx` — invoice history + Stripe PDF download
 - `artifacts/dashboard/src/pages/billing-payment-methods.tsx` — saved card management
+- `artifacts/api-server/src/services/backup-service.ts` — metadata backup execution (row counts, checksums)
+- `artifacts/api-server/src/services/restore-service.ts` — restore test validation (checksum, row-count, schema)
+- `artifacts/api-server/src/services/backup-scheduler.ts` — 5-min backup polling + 6-hr restore test loop
+- `artifacts/api-server/src/services/notification-engine.ts` — multi-channel alert fan-out (webhook, Slack, email)
+- `artifacts/api-server/src/services/webhook-provider.ts` — HTTP webhook + Slack Block Kit delivery
+- `artifacts/api-server/src/services/security-audit-service.ts` — 19-control runtime security posture (5-min cache)
+- `artifacts/api-server/src/services/performance-profiler.ts` — in-memory p50/p95/p99 latency, 5-min snapshots
+- `artifacts/dashboard/src/pages/production-status.tsx` — server health, security audit, backup, performance, alerts
 
 ## Architecture decisions
 
@@ -55,6 +63,10 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - **Stripe offline mode**: When `STRIPE_SECRET_KEY` is unset, all Stripe calls return null gracefully. Plan/quota logic works entirely from DB.
 - **Feature gating via DB**: Subscription state stored in DB; Stripe is payment authority, DB is feature-gate authority. `enforceQuota` is non-blocking in dev, hard-blocking in prod.
 - **Webhook raw body**: `/api/v1/billing/webhook` uses `express.raw()` registered before `express.json()` in `app.ts`.
+- **Health probes mount under `/api`**: All health routes are under `/api/health/*` (`/api/health/live`, `/api/health/ready`, `/api/health/dependencies`). They are NOT at root level — the router mounts at `app.use("/api", router)`.
+- **Backup is metadata-only in-process**: `backup-service.ts` records row counts and checksums via `pg_stat_user_tables`. Full `pg_dump` requires shell access — documented in `RUNBOOK.md` Section 8.
+- **Profiler is in-memory only**: `performance-profiler.ts` stores rolling windows in JS arrays — data does not survive restarts. For durable history use Phase 12 `system_metrics` table.
+- **Security audit cached 5 min**: `POST /api/v1/ops/security-audit/refresh` forces a fresh run. Never set cache TTL < 60s (audit makes DB queries).
 
 ## Product
 
@@ -63,6 +75,7 @@ Phase 2: Provider health monitoring, data quality framework (gap/dupe/stale/volu
 Phase 3–13: Strategy framework, backtesting, paper trading, risk engine, analytics, AI research assistant, streaming infrastructure, order management system, intelligence layer, observability/ops platform, multi-tenant auth/RBAC/security.
 Phase 14: Authentication, RBAC, multi-tenant SaaS & security foundation — JWT auth, sessions, API keys, org management, role/permission model, audit log, security events.
 Phase 15: Billing, Subscriptions & SaaS Commercialization — Stripe integration, 4-tier plan management (Free/Pro/Team/Enterprise), usage metering, customer portal, invoice management, revenue analytics (MRR/ARR/churn), plan middleware for feature gating — 9 new DB tables, 9 new endpoint groups, 3 new frontend pages.
+Phase 16: Production Readiness & Hardening — security audit (19 controls, 88/100 score), metadata backup/recovery system, multi-channel alert delivery (webhook/Slack/email), layered health probes (live/ready/dependencies), in-process performance profiling (p50/p95/p99), load testing suite, CI/CD pipeline (GitHub Actions), DEPLOYMENT.md + RUNBOOK.md, Production Status dashboard page — 6 new DB tables, 5 new route groups.
 
 ## REST Endpoints
 
@@ -101,6 +114,22 @@ Phase 15: Billing, Subscriptions & SaaS Commercialization — Stripe integration
 | `POST /api/v1/billing/revenue/snapshot` | Force revenue snapshot (admin) |
 | `GET /api/v1/billing/events` | Billing event audit log (admin) |
 | `POST /api/v1/billing/webhook` | Stripe webhook (raw body) |
+| `GET /api/health/live` | Liveness probe (no external deps) |
+| `GET /api/health/ready` | Readiness probe (DB + memory + event loop) |
+| `GET /api/health/dependencies` | Per-component dependency health |
+| `GET /api/v1/ops/backups` | Backup job list |
+| `POST /api/v1/ops/backups/:id/trigger` | Trigger manual backup |
+| `GET /api/v1/ops/backups/:id/runs` | Backup run history |
+| `GET /api/v1/ops/recovery` | Restore test history |
+| `POST /api/v1/ops/recovery/test` | Run on-demand restore test |
+| `GET /api/v1/ops/notification-channels` | Notification channel list + 24h stats |
+| `POST /api/v1/ops/notification-channels` | Create notification channel |
+| `GET /api/v1/ops/notification-channels/:id/deliveries` | Delivery history |
+| `GET /api/v1/ops/security-audit` | Runtime security posture (cached 5 min) |
+| `POST /api/v1/ops/security-audit/refresh` | Force fresh security audit |
+| `GET /api/v1/ops/profiling` | Current performance snapshot |
+| `GET /api/v1/ops/profiling/history` | Snapshot history (up to 288 = 24h) |
+| `POST /api/v1/ops/profiling/snapshot` | Force immediate snapshot |
 
 ## User preferences
 

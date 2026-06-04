@@ -110,6 +110,12 @@ import billingUsageRouter from "./billing-usage";
 import billingPortalRouter from "./billing-portal";
 import billingRevenueRouter from "./billing-revenue";
 import billingWebhookRouter from "./billing-webhook";
+// Phase 16 — Production Readiness & Hardening
+import opsBackupsRouter from "./ops-backups-route";
+import opsRecoveryRouter from "./ops-recovery-route";
+import opsNotificationsRouter from "./ops-notifications-route";
+import opsSecurityAuditRouter from "./ops-security-audit-route";
+import opsProfilingRouter from "./ops-profiling-route";
 // Phase 12 — Observability, Monitoring & Operations Platform
 import opsOverviewRouter from "./ops-overview";
 import opsServicesRouter from "./ops-services";
@@ -252,6 +258,13 @@ v1Router.use(billingUsageRouter);
 v1Router.use(billingPortalRouter);
 v1Router.use(billingRevenueRouter);
 v1Router.use(billingWebhookRouter);
+
+// Phase 16 endpoints — Production Readiness & Hardening
+v1Router.use(opsBackupsRouter);
+v1Router.use(opsRecoveryRouter);
+v1Router.use(opsNotificationsRouter);
+v1Router.use(opsSecurityAuditRouter);
+v1Router.use(opsProfilingRouter);
 
 // Phase 12 endpoints — Observability, Monitoring & Operations Platform
 v1Router.use(opsOverviewRouter);

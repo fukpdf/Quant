@@ -17,6 +17,8 @@ import { startOpsScheduler } from "./services/ops-scheduler";
 import { seedRolesAndPermissions } from "./services/rbac-service";
 import { ensureSuperAdminExists } from "./services/auth-service";
 import { seedBillingPlans } from "./services/subscription-service";
+import { startBackupScheduler } from "./services/backup-scheduler";
+import { startProfilingSnapshots } from "./services/performance-profiler";
 
 const rawPort = process.env["PORT"];
 
@@ -139,4 +141,14 @@ app.listen(port, async (err) => {
   } catch (err) {
     logger.error({ err }, "Failed to seed billing plans — continuing");
   }
+
+  // Phase 16 — Start backup scheduler (non-fatal — seeds default jobs and runs due backups)
+  try {
+    await startBackupScheduler();
+  } catch (err) {
+    logger.error({ err }, "Failed to start backup scheduler — continuing");
+  }
+
+  // Phase 16 — Start performance profiling snapshots (5-min interval)
+  startProfilingSnapshots();
 });

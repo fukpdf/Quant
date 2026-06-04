@@ -25,6 +25,7 @@ import {
   LogOut,
   CreditCard,
   FileText,
+  Gauge,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ const mainNav = [
 ];
 
 const adminNav = [
+  { href: "/production-status", label: "Production Status", icon: Gauge },
   { href: "/security", label: "Security", icon: Lock },
   { href: "/users", label: "Users", icon: Users },
   { href: "/org-settings", label: "Organization", icon: Building2 },
