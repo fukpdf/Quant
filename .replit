@@ -78,3 +78,17 @@ externalPort = 80
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+NODE_ENV = "development"
+PORT = "3000"
+LOG_LEVEL = "info"
+AI_PROVIDER = "mock"
+EXECUTION_MODE = "simulation"
+EXECUTION_ENABLED = "true"
+BILLING_MODE = "offline"
+PAPER_TRADING_STARTING_CAPITAL = "100000"
+RISK_MAX_DRAWDOWN_PCT = "0.15"
+RISK_MAX_POSITION_PCT = "0.05"
