@@ -13,3 +13,6 @@
 - [Dashboard Orval queryKey pattern](dashboard-orval-querykey.md) — Orval-generated UseQueryOptions requires queryKey; pass `{ query: { enabled, refetchInterval } as any }` to bypass without losing other type safety.
 - [Dashboard hook signatures](dashboard-hook-signatures.md) — key non-obvious arg shapes for portfolio/ops/streaming hooks that differ from the obvious pattern.
 - [Drizzle inArray for UUID arrays](drizzle-inarray-uuid.md) — never use sql`ANY(${ids}::uuid[])` with a JS array; use inArray(column, ids) from drizzle-orm instead.
+- [Billing unique index for ON CONFLICT](billing-unique-index.md) — usage_quotas ON CONFLICT (plan_slug, resource_type) requires a uniqueIndex in the Drizzle schema; omitting it causes a runtime Drizzle error on first upsert.
+- [Stripe API version pin](stripe-api-version.md) — Stripe SDK apiVersion must exactly match the installed package's supported string; current is "2026-05-27.dahlia". Mismatches are TS2322 errors caught at typecheck.
+- [Stripe webhook raw body](stripe-webhook-raw-body.md) — must mount express.raw({type:"application/json"}) at the webhook path BEFORE express.json() in app.ts; swapping order silently breaks signature verification.

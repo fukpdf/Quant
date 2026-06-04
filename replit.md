@@ -1,6 +1,6 @@
 # QuantForge
 
-A personal quantitative trading platform — ingests multi-market OHLCV data from provider abstractions, runs data quality checks, and exposes a REST API for querying candles, providers, economic events, and news.
+A personal quantitative trading platform — ingests multi-market OHLCV data from provider abstractions, runs data quality checks, exposes a REST API for querying candles, providers, economic events, and news, and is now a full SaaS product with Stripe billing, plan management, usage metering, and revenue analytics.
 
 ## Run & Operate
 
@@ -10,6 +10,7 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL`, `SESSION_SECRET`
+- Optional env (billing): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_YEARLY`, `STRIPE_PRICE_TEAM_MONTHLY`, `STRIPE_PRICE_TEAM_YEARLY`
 
 ## Stack
 
@@ -20,6 +21,7 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - API codegen: Orval (from OpenAPI spec → `lib/api-spec`)
 - Build: esbuild (ESM bundle)
 - Logging: pino + pino-http
+- Billing: Stripe SDK (graceful offline mode when `STRIPE_SECRET_KEY` is unset)
 
 ## Where things live
 
@@ -29,6 +31,18 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - `artifacts/api-server/src/services/` — business logic layer
 - `artifacts/api-server/src/providers/` — market data provider abstraction
 - `artifacts/api-server/src/ingestion/scheduler.ts` — background scheduler (ingestion, health, quality)
+- `artifacts/api-server/src/services/billing-types.ts` — plan definitions, quota definitions, billing type defs
+- `artifacts/api-server/src/services/billing-db.ts` — raw CRUD for all 9 billing tables
+- `artifacts/api-server/src/services/stripe-client.ts` — Stripe SDK wrapper (lazy singleton, offline-safe)
+- `artifacts/api-server/src/services/subscription-service.ts` — plan seeding, changePlan, cancelSubscription
+- `artifacts/api-server/src/services/usage-service.ts` — recordUsage, checkQuota, getOrgUsageSummary
+- `artifacts/api-server/src/services/invoice-service.ts` — Stripe invoice sync + event handling
+- `artifacts/api-server/src/services/revenue-analytics-service.ts` — MRR/ARR/churn/expansion metrics
+- `artifacts/api-server/src/middleware/plan-middleware.ts` — requirePlan, enforceQuota, trackUsage
+- `artifacts/dashboard/src/lib/billing-client.ts` — typed fetch wrapper for all billing endpoints
+- `artifacts/dashboard/src/pages/billing.tsx` — plan management, usage meters, revenue analytics
+- `artifacts/dashboard/src/pages/billing-invoices.tsx` — invoice history + Stripe PDF download
+- `artifacts/dashboard/src/pages/billing-payment-methods.tsx` — saved card management
 
 ## Architecture decisions
 
@@ -36,30 +50,57 @@ A personal quantitative trading platform — ingests multi-market OHLCV data fro
 - **Provider abstraction**: All market data flows through `IMarketDataProvider` interface. `ProviderRegistry` is a singleton; Binance is active, others are stubs.
 - **Two ingestion tables**: `ingestion_logs` (Phase 1, lightweight) kept for backward compat; `ingestion_jobs` (Phase 2) is the richer tracking table.
 - **Scheduler runs three loops**: ingestion every 5 min, health checks every 2 min, quality checks every 1 hr.
-- **DB seeding on startup**: markets and providers are upserted on every server start so new config is automatically reflected.
+- **DB seeding on startup**: markets, providers, strategy definitions, risk profiles, benchmarks, RBAC roles/permissions, and billing plans are all upserted on every server start.
+- **Billing is per-organization**: org context resolved from `req.auth.organizationId` or `req.tenant.organizationId`.
+- **Stripe offline mode**: When `STRIPE_SECRET_KEY` is unset, all Stripe calls return null gracefully. Plan/quota logic works entirely from DB.
+- **Feature gating via DB**: Subscription state stored in DB; Stripe is payment authority, DB is feature-gate authority. `enforceQuota` is non-blocking in dev, hard-blocking in prod.
+- **Webhook raw body**: `/api/v1/billing/webhook` uses `express.raw()` registered before `express.json()` in `app.ts`.
 
 ## Product
 
 Phase 1: Binance OHLCV ingestion for BTC/ETH/SOL/BNB, candles/markets/ingestion REST endpoints.
 Phase 2: Provider health monitoring, data quality framework (gap/dupe/stale/volume/coverage checks), ingestion job tracking, economic calendar schema, news schema, market metadata, provider registry — 7 new DB tables, 7 new endpoint groups.
+Phase 3–13: Strategy framework, backtesting, paper trading, risk engine, analytics, AI research assistant, streaming infrastructure, order management system, intelligence layer, observability/ops platform, multi-tenant auth/RBAC/security.
+Phase 14: Authentication, RBAC, multi-tenant SaaS & security foundation — JWT auth, sessions, API keys, org management, role/permission model, audit log, security events.
+Phase 15: Billing, Subscriptions & SaaS Commercialization — Stripe integration, 4-tier plan management (Free/Pro/Team/Enterprise), usage metering, customer portal, invoice management, revenue analytics (MRR/ARR/churn), plan middleware for feature gating — 9 new DB tables, 9 new endpoint groups, 3 new frontend pages.
 
 ## REST Endpoints
 
 | Path | Description |
 |------|-------------|
 | `GET /api/healthz` | Health check |
-| `GET /api/v1/markets` | List markets (filter: `type`, `active`) |
-| `GET /api/v1/candles` | OHLCV candles (filter: `symbol`, `interval`, `limit`, `from`, `to`) |
-| `GET /api/v1/latest-price` | Latest price for a symbol |
+| `GET /api/v1/markets` | List markets |
+| `GET /api/v1/candles` | OHLCV candles |
+| `GET /api/v1/latest-price` | Latest price |
 | `GET /api/v1/ingestion/status` | Ingestion log status |
 | `GET /api/v1/ingestion/jobs` | Ingestion job history |
-| `GET /api/v1/providers` | List market data providers |
+| `GET /api/v1/providers` | List providers |
 | `GET /api/v1/providers/health` | Provider health history |
-| `GET /api/v1/market-registry` | Markets with provider + metadata join |
-| `GET /api/v1/data-quality` | Data quality check results |
+| `GET /api/v1/market-registry` | Markets with provider + metadata |
+| `GET /api/v1/data-quality` | Quality check results |
 | `GET /api/v1/data-quality/report` | Aggregate quality report |
-| `GET /api/v1/economic-events` | Economic calendar events |
+| `GET /api/v1/economic-events` | Economic calendar |
 | `GET /api/v1/news` | News items |
+| `GET /api/v1/billing/plans` | List billing plans |
+| `GET /api/v1/billing/subscription` | Current org subscription |
+| `POST /api/v1/billing/subscription` | Create subscription |
+| `PATCH /api/v1/billing/subscription` | Change plan |
+| `DELETE /api/v1/billing/subscription` | Cancel subscription |
+| `GET /api/v1/billing/customer` | Billing customer record |
+| `POST /api/v1/billing/customer/sync` | Create/sync Stripe customer |
+| `GET /api/v1/billing/payment-methods` | List saved cards |
+| `DELETE /api/v1/billing/payment-methods/:id` | Remove card |
+| `PATCH /api/v1/billing/payment-methods/:id/default` | Set default card |
+| `GET /api/v1/billing/invoices` | Invoice history |
+| `GET /api/v1/billing/invoices/:id` | Single invoice |
+| `GET /api/v1/billing/usage` | Current period usage summary |
+| `POST /api/v1/billing/usage/record` | Record usage event |
+| `POST /api/v1/billing/portal/session` | Create Stripe customer portal session |
+| `GET /api/v1/billing/revenue` | Revenue metrics (admin) |
+| `GET /api/v1/billing/revenue/history` | Historical revenue snapshots (admin) |
+| `POST /api/v1/billing/revenue/snapshot` | Force revenue snapshot (admin) |
+| `GET /api/v1/billing/events` | Billing event audit log (admin) |
+| `POST /api/v1/billing/webhook` | Stripe webhook (raw body) |
 
 ## User preferences
 
@@ -71,6 +112,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 - **All imports in service files must be at the top of the file** — esbuild may mishandle non-top-level `import` statements, causing silent bundling failures.
 - `lib/db/package.json` exports point to TypeScript source (`./src/index.ts`), not `dist/`. esbuild resolves workspace packages directly to TS source.
 - When adding new DB tables, export them from `lib/db/src/schema/index.ts` AND re-run `pnpm --filter @workspace/api-spec run codegen` to rebuild the compiled declarations.
+- **`usage_quotas` needs a unique index on `(plan_slug, resource_type)`** for the upsert's `ON CONFLICT` clause to work. The index is `usage_quotas_plan_resource_uidx`. If missing, `seedBillingPlans()` will error at startup.
+- **Stripe webhook requires raw body** — `express.raw({ type: "application/json" })` is mounted at `/api/v1/billing/webhook` before `express.json()` in `app.ts`. Do not reorder these middlewares.
+- **Stripe API version** — must match the version string in the installed `stripe` npm package. Current: `"2026-05-27.dahlia"`. Mismatches cause a TS2322 at compile time.
 
 ## Pointers
 

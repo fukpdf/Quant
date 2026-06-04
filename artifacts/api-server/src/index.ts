@@ -16,6 +16,7 @@ import { startIntelligenceScheduler } from "./services/intelligence-scheduler";
 import { startOpsScheduler } from "./services/ops-scheduler";
 import { seedRolesAndPermissions } from "./services/rbac-service";
 import { ensureSuperAdminExists } from "./services/auth-service";
+import { seedBillingPlans } from "./services/subscription-service";
 
 const rawPort = process.env["PORT"];
 
@@ -130,5 +131,12 @@ app.listen(port, async (err) => {
     await ensureSuperAdminExists();
   } catch (err) {
     logger.error({ err }, "Failed to ensure super admin — continuing");
+  }
+
+  // Phase 15 — Seed billing plans and usage quotas (idempotent — safe to run every startup)
+  try {
+    await seedBillingPlans();
+  } catch (err) {
+    logger.error({ err }, "Failed to seed billing plans — continuing");
   }
 });

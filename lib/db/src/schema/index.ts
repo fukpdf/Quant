@@ -126,6 +126,16 @@ export * from "./incident-timeline";
 export * from "./uptime-history";
 export * from "./performance-snapshots";
 export * from "./monitoring-audit-log";
+// Phase 15 — Billing, Subscriptions & SaaS Commercialization
+export * from "./billing-plans";
+export * from "./billing-customers";
+export * from "./billing-subscriptions";
+export * from "./payment-methods";
+export * from "./invoices";
+export * from "./usage-records";
+export * from "./usage-quotas";
+export * from "./billing-events";
+export * from "./revenue-snapshots";
 // Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation
 export * from "./users";
 export * from "./sessions";

@@ -23,6 +23,8 @@ import {
   Building2,
   Lock,
   LogOut,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +47,11 @@ const adminNav = [
   { href: "/security", label: "Security", icon: Lock },
   { href: "/users", label: "Users", icon: Users },
   { href: "/org-settings", label: "Organization", icon: Building2 },
+];
+
+const billingNav = [
+  { href: "/billing", label: "Billing", icon: CreditCard },
+  { href: "/billing/invoices", label: "Invoices", icon: FileText },
 ];
 
 export function Sidebar() {
@@ -110,6 +117,21 @@ export function Sidebar() {
         <ul className="space-y-0.5 px-2">
           {mainNav.map(item => <NavItem key={item.href} {...item} />)}
         </ul>
+
+        {/* Billing section — visible to all authenticated users */}
+        {isAuthenticated && (
+          <>
+            {!collapsed && (
+              <p className="mt-4 mb-1 px-4 text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
+                Billing
+              </p>
+            )}
+            {collapsed && <div className="my-2 mx-2 border-t border-sidebar-border" />}
+            <ul className="space-y-0.5 px-2">
+              {billingNav.map(item => <NavItem key={item.href} {...item} />)}
+            </ul>
+          </>
+        )}
 
         {canSeeAdmin && (
           <>

@@ -100,6 +100,16 @@ import rbacPermissionsRouter from "./rbac-permissions";
 import securityEventsRouter from "./security-events-route";
 import auditEventsRouter from "./audit-events-route";
 import apiKeysRouter from "./api-keys-route";
+// Phase 15 — Billing, Subscriptions & SaaS Commercialization
+import billingPlansRouter from "./billing-plans";
+import billingSubscriptionRouter from "./billing-subscription";
+import billingCustomerRouter from "./billing-customer";
+import billingPaymentMethodsRouter from "./billing-payment-methods";
+import billingInvoicesRouter from "./billing-invoices";
+import billingUsageRouter from "./billing-usage";
+import billingPortalRouter from "./billing-portal";
+import billingRevenueRouter from "./billing-revenue";
+import billingWebhookRouter from "./billing-webhook";
 // Phase 12 — Observability, Monitoring & Operations Platform
 import opsOverviewRouter from "./ops-overview";
 import opsServicesRouter from "./ops-services";
@@ -231,6 +241,17 @@ v1Router.use(rbacPermissionsRouter);
 v1Router.use(securityEventsRouter);
 v1Router.use(auditEventsRouter);
 v1Router.use(apiKeysRouter);
+
+// Phase 15 endpoints — Billing, Subscriptions & SaaS Commercialization
+v1Router.use(billingPlansRouter);
+v1Router.use(billingSubscriptionRouter);
+v1Router.use(billingCustomerRouter);
+v1Router.use(billingPaymentMethodsRouter);
+v1Router.use(billingInvoicesRouter);
+v1Router.use(billingUsageRouter);
+v1Router.use(billingPortalRouter);
+v1Router.use(billingRevenueRouter);
+v1Router.use(billingWebhookRouter);
 
 // Phase 12 endpoints — Observability, Monitoring & Operations Platform
 v1Router.use(opsOverviewRouter);
