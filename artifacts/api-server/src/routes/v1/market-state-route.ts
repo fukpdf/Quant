@@ -17,14 +17,14 @@ const router = Router();
  *   symbol  (optional) — filter to a single symbol
  *   source  (optional) — "live" (default) | "snapshot" (DB snapshots)
  */
-router.get("/market-state", async (req, res) => {
+router.get("/market-state", async (req, res): Promise<void> => {
   try {
     const { symbol, source } = req.query as { symbol?: string; source?: string };
 
     if (source === "snapshot") {
       // Return DB snapshots
       const snapshots = await getLatestMarketState(symbol);
-      return res.json({
+      return void res.json({
         data: Array.isArray(snapshots) ? snapshots : [snapshots].filter(Boolean),
         source: "snapshot",
       });
@@ -37,23 +37,23 @@ router.get("/market-state", async (req, res) => {
         // Fallback to DB snapshot
         const snapshot = await getLatestMarketState(symbol);
         if (!snapshot) {
-          return res.status(404).json({
+          return void res.status(404).json({
             error: {
               code: "NOT_FOUND",
               message: `No market state available for ${symbol}. Is streaming active?`,
             },
           });
         }
-        return res.json({ data: snapshot, source: "snapshot" });
+        return void res.json({ data: snapshot, source: "snapshot" });
       }
-      return res.json({ data: state, source: "live" });
+      return void res.json({ data: state, source: "live" });
     }
 
     const allStates = getAllMarketStates();
     if (allStates.length === 0) {
       // Fallback: return DB snapshots
       const snapshots = await getLatestMarketState();
-      return res.json({
+      return void res.json({
         data: Array.isArray(snapshots) ? snapshots : [],
         source: "snapshot",
       });

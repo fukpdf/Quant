@@ -27,7 +27,7 @@ import {
   appendAnalyticsAuditLog,
 } from "./analytics-db";
 import { logger } from "../lib/logger";
-import type { PortfolioHealthScore, AllocationSnapshot, DiversificationAnalysis } from "./types-analytics";
+import type { PortfolioHealthScore, AllocationSnapshot } from "./types-analytics";
 
 // We import the analysis types
 import type { AllocationAnalysis } from "./allocation-tracker";

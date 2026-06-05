@@ -118,14 +118,14 @@ async function refreshSingleBenchmark(bm: PortfolioBenchmark): Promise<void> {
       eq(candlesTable.symbol, bm.symbol),
       eq(candlesTable.interval, "1d"),
     ))
-    .orderBy(desc(candlesTable.openTime))
+    .orderBy(desc(candlesTable.timestamp))
     .limit(2);
 
   if (candles.length === 0) return;
 
   const latestCandle = candles[0]!;
   const latestPrice = parseFloat(latestCandle.close);
-  const snapshotAt = new Date(latestCandle.closeTime);
+  const snapshotAt = new Date(latestCandle.timestamp);
 
   // Get previous snapshot for cumulative return calc
   const prevSnap = await getLatestBenchmarkSnapshot(bm.id);
@@ -156,7 +156,7 @@ async function refreshSingleBenchmark(bm: PortfolioBenchmark): Promise<void> {
       eq(candlesTable.symbol, bm.symbol),
       eq(candlesTable.interval, "1d"),
     ))
-    .orderBy(desc(candlesTable.openTime))
+    .orderBy(desc(candlesTable.timestamp))
     .limit(91);
 
   let return30d = 0, return90d = 0, volatility = 0, benchMaxDD = 0;

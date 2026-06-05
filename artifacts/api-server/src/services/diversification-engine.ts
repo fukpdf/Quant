@@ -75,7 +75,7 @@ export async function computeDiversificationAnalysis(accountId: string): Promise
     .limit(1);
   if (!accountRows[0]) throw new Error(`Account not found: ${accountId}`);
 
-  const equity = n(accountRows[0].equity);
+  const equity = n(accountRows[0].currentEquity);
 
   // Open positions
   const positions = await db
@@ -152,11 +152,11 @@ export async function computeDiversificationAnalysis(accountId: string): Promise
   const corrRows = await db
     .select()
     .from(correlationMatricesTable)
-    .orderBy(desc(correlationMatricesTable.computedAt))
+    .orderBy(desc(correlationMatricesTable.calculatedAt))
     .limit(1);
   if (corrRows[0]) {
     const matrix = corrRows[0].matrix as Record<string, Record<string, number>> | null;
-    corrAvailableAt = corrRows[0].computedAt;
+    corrAvailableAt = corrRows[0].calculatedAt;
     if (matrix) {
       const symbols = Object.keys(matrix);
       const pairCorrs: number[] = [];

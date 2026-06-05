@@ -73,7 +73,7 @@ export async function computeAndSaveAllocation(accountId: string): Promise<Alloc
   if (!accountRows[0]) throw new Error(`Account not found: ${accountId}`);
   const account = accountRows[0];
 
-  const equity = n(account.equity);
+  const equity = n(account.currentEquity);
   const cash = n(account.cashBalance);
 
   // Open positions

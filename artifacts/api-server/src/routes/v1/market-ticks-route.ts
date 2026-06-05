@@ -12,7 +12,7 @@ const router = Router();
  *   from     (optional) — ISO timestamp
  *   to       (optional) — ISO timestamp
  */
-router.get("/ticks", async (req, res) => {
+router.get("/ticks", async (req, res): Promise<void> => {
   try {
     const { symbol, from, to } = req.query as {
       symbol?: string;
@@ -21,7 +21,7 @@ router.get("/ticks", async (req, res) => {
     };
 
     if (!symbol) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "symbol query parameter is required" },
       });
     }
@@ -33,7 +33,7 @@ router.get("/ticks", async (req, res) => {
       const fromDate = new Date(from);
       const toDate = new Date(to);
       if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-        return res.status(400).json({
+        return void res.status(400).json({
           error: { code: "VALIDATION_ERROR", message: "Invalid from/to date format. Use ISO 8601." },
         });
       }

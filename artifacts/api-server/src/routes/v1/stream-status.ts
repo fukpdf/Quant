@@ -85,12 +85,12 @@ router.get("/streams/providers", (_req, res) => {
 });
 
 /** GET /v1/streams/health — per-provider health status */
-router.get("/streams/health", async (req, res) => {
+router.get("/streams/health", async (req, res): Promise<void> => {
   try {
     const { provider } = req.query as { provider?: string };
     if (provider) {
       const health = await getProviderHealth(provider);
-      return res.json({ data: health });
+      return void res.json({ data: health });
     }
     const all = await getAllProviderHealth();
     res.json({ data: all });
@@ -125,7 +125,7 @@ router.get("/streams/failures", async (req, res) => {
 });
 
 /** GET /v1/streams/latency — latency metrics */
-router.get("/streams/latency", async (req, res) => {
+router.get("/streams/latency", async (req, res): Promise<void> => {
   try {
     const { provider, metricType, summary } = req.query as {
       provider?: string;
@@ -135,7 +135,7 @@ router.get("/streams/latency", async (req, res) => {
 
     if (summary === "true") {
       const stats = getAllLatencyStats();
-      return res.json({ data: stats });
+      return void res.json({ data: stats });
     }
 
     const limit = Math.min(Number(req.query["limit"] ?? 200), 1000);

@@ -69,8 +69,8 @@ export async function computeAndSaveAttribution(
   // Load closed trades in the period
   const conditions = [
     eq(paperTradeHistoryTable.accountId, accountId),
-    gte(paperTradeHistoryTable.closedAt, pStart),
-    lte(paperTradeHistoryTable.closedAt, pEnd),
+    gte(paperTradeHistoryTable.exitedAt, pStart),
+    lte(paperTradeHistoryTable.exitedAt, pEnd),
   ];
   const trades = await db
     .select()

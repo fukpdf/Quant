@@ -220,11 +220,11 @@ async function executeBackup(backupType: string): Promise<BackupSnapshot> {
   const tableStatsQuery = `
     SELECT
       schemaname,
-      tablename,
+      relname AS tablename,
       n_live_tup as row_count,
-      pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(tablename)) as size_bytes
+      pg_total_relation_size(quote_ident(schemaname)||'.'||quote_ident(relname)) as size_bytes
     FROM pg_stat_user_tables
-    ORDER BY tablename
+    ORDER BY relname
   `;
 
   const rows = await db.execute(tableStatsQuery as unknown as Parameters<typeof db.execute>[0]);

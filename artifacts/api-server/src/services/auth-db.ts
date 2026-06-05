@@ -359,7 +359,8 @@ export async function getPermissionsForRole(roleId: string): Promise<Permission[
 export async function setRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
   await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.roleId, roleId));
   if (permissionIds.length > 0) {
-    await db.insert(rolePermissionsTable).values(permissionIds.map(pid => ({ roleId, permissionId: pid })));
+    const uniqueIds = [...new Set(permissionIds)];
+    await db.insert(rolePermissionsTable).values(uniqueIds.map(pid => ({ roleId, permissionId: pid }))).onConflictDoNothing();
   }
 }
 

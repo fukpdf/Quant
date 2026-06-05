@@ -143,7 +143,7 @@ function validateSymbol(symbol: string): ValidationResult {
   return { passed: true, stage };
 }
 
-async function validateAccount(accountId: string): ValidationResult {
+async function validateAccount(accountId: string): Promise<ValidationResult> {
   const stage: ValidationStage = "account";
 
   try {
@@ -280,12 +280,11 @@ async function validateKillSwitch(): Promise<ValidationResult> {
 
   try {
     const ks = getKillSwitchStatus();
-    if (ks && ks.isActive) {
+    if (ks && ks.tradingHalted) {
       return {
         passed: false,
         stage,
-        reason: `Kill switch active: ${ks.scope}`,
-        detail: { scope: ks.scope, reason: ks.reason },
+        reason: "Kill switch active: trading halted",
       };
     }
     return { passed: true, stage };

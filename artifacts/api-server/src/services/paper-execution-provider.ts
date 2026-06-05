@@ -63,8 +63,8 @@ export class PaperExecutionProvider implements IExecutionProvider {
       // Market order fill price simulation
       if (request.orderType === "market" && marketState) {
         const basePrice = request.side === "buy"
-          ? parseFloat(marketState.askPrice || String(marketState.lastPrice))
-          : parseFloat(marketState.bidPrice || String(marketState.lastPrice));
+          ? parseFloat(String(marketState.askPrice || marketState.lastPrice))
+          : parseFloat(String(marketState.bidPrice || marketState.lastPrice));
 
         // Apply slippage (adverse)
         const slippageFactor = request.side === "buy"
@@ -129,8 +129,8 @@ export class PaperExecutionProvider implements IExecutionProvider {
 
     if (request.orderType === "market") {
       const base = request.side === "buy"
-        ? parseFloat(marketState.askPrice || String(marketState.lastPrice))
-        : parseFloat(marketState.bidPrice || String(marketState.lastPrice));
+        ? parseFloat(String(marketState.askPrice || marketState.lastPrice))
+        : parseFloat(String(marketState.bidPrice || marketState.lastPrice));
       const slipFactor = request.side === "buy" ? 1 + SLIPPAGE_BPS / 10000 : 1 - SLIPPAGE_BPS / 10000;
       return (base * slipFactor).toFixed(8);
     }

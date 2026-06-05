@@ -14,12 +14,12 @@ const router = Router();
  * Query params:
  *   symbol (required)
  */
-router.get("/orderbook", async (req, res) => {
+router.get("/orderbook", async (req, res): Promise<void> => {
   try {
     const { symbol } = req.query as { symbol?: string };
 
     if (!symbol) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "symbol query parameter is required" },
       });
     }
@@ -30,7 +30,7 @@ router.get("/orderbook", async (req, res) => {
     ]);
 
     if (!orderbook) {
-      return res.status(404).json({
+      return void res.status(404).json({
         error: { code: "NOT_FOUND", message: `No order book data found for ${symbol}` },
       });
     }

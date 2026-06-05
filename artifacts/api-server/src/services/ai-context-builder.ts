@@ -144,7 +144,7 @@ async function buildRiskContext(accountId?: string): Promise<RiskContextData> {
       db.select().from(circuitBreakerEventsTable).orderBy(desc(circuitBreakerEventsTable.createdAt)).limit(5),
       db.select().from(killSwitchEventsTable).orderBy(desc(killSwitchEventsTable.createdAt)).limit(5),
       db.select().from(drawdownEventsTable).orderBy(desc(drawdownEventsTable.createdAt)).limit(5),
-      db.select().from(strategyRiskScoresTable).orderBy(desc(strategyRiskScoresTable.computedAt)).limit(10),
+      db.select().from(strategyRiskScoresTable).orderBy(desc(strategyRiskScoresTable.calculatedAt)).limit(10),
     ]);
 
     return {
@@ -203,11 +203,11 @@ async function buildResearchContext(): Promise<ResearchContextData> {
 async function buildBenchmarkContext(): Promise<BenchmarkContextData> {
   try {
     const [benchmarkRows] = await Promise.all([
-      db.select().from(portfolioBenchmarksTable).where(eq(portfolioBenchmarksTable.active, true)).limit(10),
+      db.select().from(portfolioBenchmarksTable).where(eq(portfolioBenchmarksTable.isActive, true)).limit(10),
     ]);
 
     const snapshotRows = benchmarkRows.length > 0
-      ? await db.select().from(benchmarkSnapshotsTable).where(eq(benchmarkSnapshotsTable.benchmarkId, benchmarkRows[0]!.id)).orderBy(desc(benchmarkSnapshotsTable.snapshotDate)).limit(30)
+      ? await db.select().from(benchmarkSnapshotsTable).where(eq(benchmarkSnapshotsTable.benchmarkId, benchmarkRows[0]!.id)).orderBy(desc(benchmarkSnapshotsTable.snapshotAt)).limit(30)
       : [];
 
     return {
@@ -226,21 +226,21 @@ async function buildHealthContext(accountId: string): Promise<HealthContextData>
       .select()
       .from(portfolioHealthScoresTable)
       .where(eq(portfolioHealthScoresTable.accountId, accountId))
-      .orderBy(desc(portfolioHealthScoresTable.computedAt))
+      .orderBy(desc(portfolioHealthScoresTable.scoredAt))
       .limit(1);
 
     const latest = rows[0];
     if (!latest) return {};
 
     return {
-      score: parseFloat(latest.compositeScore ?? "0"),
+      score: parseFloat(latest.overallScore ?? "0"),
       grade: latest.grade,
       dimensions: {
         diversification: latest.diversificationScore,
         performance: latest.performanceScore,
         risk: latest.riskScore,
-        activity: latest.activityScore,
-        drawdown: latest.drawdownScore,
+        consistency: latest.consistencyScore,
+        capitalEfficiency: latest.capitalEfficiencyScore,
       },
     };
   } catch (err) {
@@ -256,7 +256,7 @@ async function buildRecommendationContext(accountId: string): Promise<Recommenda
       .from(portfolioRecommendationsTable)
       .where(and(
         eq(portfolioRecommendationsTable.accountId, accountId),
-        eq(portfolioRecommendationsTable.dismissed, false),
+        eq(portfolioRecommendationsTable.isAcknowledged, false),
       ))
       .orderBy(desc(portfolioRecommendationsTable.createdAt))
       .limit(10);

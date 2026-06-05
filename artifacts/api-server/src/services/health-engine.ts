@@ -76,11 +76,11 @@ export async function computeAndSaveHealthScore(accountId: string): Promise<Port
 
   const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  const [snapshots, trades, positions, assignments, allocSnap] = await Promise.all([
+  const [rawSnaps, trades, positions, assignments, allocSnap] = await Promise.all([
     db.select().from(paperDailySnapshotsTable)
       .where(and(
         eq(paperDailySnapshotsTable.accountId, accountId),
-        gte(paperDailySnapshotsTable.snapshotDate, cutoff),
+        gte(paperDailySnapshotsTable.snapshotDate, cutoff.toISOString().split('T')[0]!),
       ))
       .orderBy(paperDailySnapshotsTable.snapshotDate),
     db.select().from(paperTradeHistoryTable)
@@ -98,9 +98,10 @@ export async function computeAndSaveHealthScore(accountId: string): Promise<Port
     getLatestAllocationSnapshot(accountId),
   ]);
 
+  const snapshots = rawSnaps.map(s => ({ ...s, snapshotDate: new Date(s.snapshotDate) }));
   const equityPoints = snapshots.map(s => n(s.equity));
   const initialCapital = n(account.initialCapital);
-  const currentEquity = n(account.equity);
+  const currentEquity = n(account.currentEquity);
   const totalTrades = trades.length;
 
   // ----- Performance Score (0-100) -----
@@ -182,7 +183,7 @@ export async function computeAndSaveHealthScore(accountId: string): Promise<Port
     const monthlyReturns: number[] = [];
     const monthMap = new Map<string, number[]>();
     for (const s of snapshots) {
-      const key = `${s.snapshotDate.getFullYear()}-${s.snapshotDate.getMonth()}`;
+      const key = `${new Date(s.snapshotDate).getFullYear()}-${new Date(s.snapshotDate).getMonth()}`;
       if (!monthMap.has(key)) monthMap.set(key, []);
       monthMap.get(key)!.push(n(s.equity));
     }

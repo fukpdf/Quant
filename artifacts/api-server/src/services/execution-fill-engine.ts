@@ -230,8 +230,8 @@ function computeFillPrice(opts: {
     if (marketState) {
       if (orderType === "market") {
         const base = side === "buy"
-          ? parseFloat(marketState.askPrice || String(marketState.lastPrice))
-          : parseFloat(marketState.bidPrice || String(marketState.lastPrice));
+          ? parseFloat(String(marketState.askPrice || marketState.lastPrice))
+          : parseFloat(String(marketState.bidPrice || marketState.lastPrice));
         const slipFactor = side === "buy" ? 1.0005 : 0.9995;
         return (base * slipFactor).toFixed(8);
       }

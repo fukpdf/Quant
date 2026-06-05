@@ -58,7 +58,7 @@ router.get("/portfolio/analytics", async (req, res) => {
         diversificationScore: diversification ? String(diversification.overallDiversificationScore) : null,
         openPositions: allocation?.activePositionCount ?? 0,
         activeStrategies: allocation?.activeStrategyCount ?? 0,
-        currentEquity: String(accountRows[0].equity),
+        currentEquity: String(accountRows[0].currentEquity),
         cashBalance: String(accountRows[0].cashBalance),
       });
 

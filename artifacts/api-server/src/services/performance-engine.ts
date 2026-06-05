@@ -162,14 +162,15 @@ export async function computeAndSavePerformance(
 
   // Load daily snapshots (up to 2 years)
   const cutoff = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000);
-  const snapshots = await db
+  const rawSnaps = await db
     .select()
     .from(paperDailySnapshotsTable)
     .where(and(
       eq(paperDailySnapshotsTable.accountId, accountId),
-      gte(paperDailySnapshotsTable.snapshotDate, cutoff),
+      gte(paperDailySnapshotsTable.snapshotDate, cutoff.toISOString().split('T')[0]!),
     ))
     .orderBy(paperDailySnapshotsTable.snapshotDate);
+  const snapshots = rawSnaps.map(s => ({ ...s, snapshotDate: new Date(s.snapshotDate) }));
 
   if (snapshots.length < 2) {
     await appendAnalyticsAuditLog({

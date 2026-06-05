@@ -21,7 +21,7 @@ const VALID_SPEEDS: ReplaySpeed[] = [1, 5, 10, 100];
  *   speed       (optional, default 1) — replay speed: 1 | 5 | 10 | 100
  *   streamTypes (optional) — default ["ticker"]
  */
-router.post("/replay/start", async (req, res) => {
+router.post("/replay/start", async (req, res): Promise<void> => {
   try {
     const { symbol, from, to, speed = 1, streamTypes = ["ticker"] } = req.body as {
       symbol?: string;
@@ -32,12 +32,12 @@ router.post("/replay/start", async (req, res) => {
     };
 
     if (!symbol) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "symbol is required" },
       });
     }
     if (!from || !to) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "from and to (ISO timestamps) are required" },
       });
     }
@@ -45,12 +45,12 @@ router.post("/replay/start", async (req, res) => {
     const fromDate = new Date(from);
     const toDate = new Date(to);
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "Invalid date format. Use ISO 8601." },
       });
     }
     if (fromDate >= toDate) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: { code: "VALIDATION_ERROR", message: "from must be before to" },
       });
     }

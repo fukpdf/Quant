@@ -16,3 +16,7 @@
 - [Billing unique index for ON CONFLICT](billing-unique-index.md) — usage_quotas ON CONFLICT (plan_slug, resource_type) requires a uniqueIndex in the Drizzle schema; omitting it causes a runtime Drizzle error on first upsert.
 - [Stripe API version pin](stripe-api-version.md) — Stripe SDK apiVersion must exactly match the installed package's supported string; current is "2026-05-27.dahlia". Mismatches are TS2322 errors caught at typecheck.
 - [Stripe webhook raw body](stripe-webhook-raw-body.md) — must mount express.raw({type:"application/json"}) at the webhook path BEFORE express.json() in app.ts; swapping order silently breaks signature verification.
+- [Drizzle date() columns return strings](drizzle-date-column-strings.md) — Drizzle date() columns return string not Date; format cutoff as ISO date string for gte queries; map results with new Date(s.snapshotDate) before using Date methods.
+- [pg_stat_user_tables column name](pg-stat-user-tables.md) — PostgreSQL pg_stat_user_tables uses relname not tablename; use `relname AS tablename` in raw SQL queries against this view.
+- [RBAC seeding duplicate key](rbac-seeding-duplicate.md) — setRolePermissions DELETE+INSERT pattern can get duplicate permissionIds from callers; deduplicate with [...new Set(ids)] and add .onConflictDoNothing() to the INSERT.
+- [Express 5 async handlers Promise void](express5-async-handlers.md) — TS7030 on Express handlers fixed by adding Promise<void> return type; all return res.json() calls must then be return void res.json() to avoid TS2322.

@@ -90,7 +90,7 @@ async function checkStrategyHealth(strategyName: string, strategyId: string) {
 
       if (metrics) {
         sharpe = metrics.sharpeRatio ? parseFloat(String(metrics.sharpeRatio)) : null;
-        maxDrawdownPct = metrics.maxDrawdown ? parseFloat(String(metrics.maxDrawdown)) : null;
+        maxDrawdownPct = metrics.maxDrawdownPct ? parseFloat(String(metrics.maxDrawdownPct)) : null;
         winRate = metrics.winRate ? parseFloat(String(metrics.winRate)) : null;
       }
     }
