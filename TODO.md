@@ -1,7 +1,7 @@
 # TODO.md — QuantForge Phased Roadmap
 
-> Last updated: 2026-06-03
-> Current phase: **Phase 14 — Authentication, RBAC, Multi-Tenant SaaS & Security Foundation** ✅ COMPLETE
+> Last updated: 2026-06-05
+> Current phase: **Stabilization Sprint** ✅ COMPLETE — platform fully operational, all runtime errors fixed, browser preview verified
 
 ---
 

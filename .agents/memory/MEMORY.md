@@ -20,3 +20,6 @@
 - [pg_stat_user_tables column name](pg-stat-user-tables.md) — PostgreSQL pg_stat_user_tables uses relname not tablename; use `relname AS tablename` in raw SQL queries against this view.
 - [RBAC seeding duplicate key](rbac-seeding-duplicate.md) — setRolePermissions DELETE+INSERT pattern can get duplicate permissionIds from callers; deduplicate with [...new Set(ids)] and add .onConflictDoNothing() to the INSERT.
 - [Express 5 async handlers Promise void](express5-async-handlers.md) — TS7030 on Express handlers fixed by adding Promise<void> return type; all return res.json() calls must then be return void res.json() to avoid TS2322.
+- [Dashboard preview port conflict](dashboard-preview-port.md) — mockup-sandbox artifact (port 8081) competes with Dashboard (port 5000) for externalPort=80; fix via configureWorkflow on the Dashboard to reassert webview ownership.
+- [Drizzle db.execute returns QueryResult](drizzle-db-execute-queryresult.md) — db.execute() with node-postgres returns QueryResult {rows:[...]}, not a plain array; extract with (result as any).rows ?? result before iterating.
+- [API route prefix patterns](api-route-prefix-patterns.md) — streaming=streams/*, paper-trading=paper/*, research=research/*, backup trigger=ops/backups/:id/run, profiling history=ops/profiling/snapshots.

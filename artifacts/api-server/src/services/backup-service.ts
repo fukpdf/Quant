@@ -227,8 +227,8 @@ async function executeBackup(backupType: string): Promise<BackupSnapshot> {
     ORDER BY relname
   `;
 
-  const rows = await db.execute(tableStatsQuery as unknown as Parameters<typeof db.execute>[0]);
-  const tables = rows as unknown as Array<{ tablename: string; row_count: string; size_bytes: string; schemaname: string }>;
+  const rawResult = await db.execute(tableStatsQuery as unknown as Parameters<typeof db.execute>[0]);
+  const tables = (Array.isArray(rawResult) ? rawResult : ((rawResult as any).rows ?? [])) as Array<{ tablename: string; row_count: string; size_bytes: string; schemaname: string }>;
 
   const tableCount = tables.length;
   const rowCount = tables.reduce((sum, t) => sum + parseInt(t.row_count ?? "0", 10), 0);

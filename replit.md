@@ -91,7 +91,6 @@ Phase 16: Production Readiness & Hardening — security audit (19 controls, 88/1
 | `GET /api/v1/providers/health` | Provider health history |
 | `GET /api/v1/market-registry` | Markets with provider + metadata |
 | `GET /api/v1/data-quality` | Quality check results |
-| `GET /api/v1/data-quality/report` | Aggregate quality report |
 | `GET /api/v1/economic-events` | Economic calendar |
 | `GET /api/v1/news` | News items |
 | `GET /api/v1/billing/plans` | List billing plans |
@@ -118,7 +117,7 @@ Phase 16: Production Readiness & Hardening — security audit (19 controls, 88/1
 | `GET /api/health/ready` | Readiness probe (DB + memory + event loop) |
 | `GET /api/health/dependencies` | Per-component dependency health |
 | `GET /api/v1/ops/backups` | Backup job list |
-| `POST /api/v1/ops/backups/:id/trigger` | Trigger manual backup |
+| `POST /api/v1/ops/backups/:id/run` | Trigger manual backup |
 | `GET /api/v1/ops/backups/:id/runs` | Backup run history |
 | `GET /api/v1/ops/recovery` | Restore test history |
 | `POST /api/v1/ops/recovery/test` | Run on-demand restore test |
@@ -128,7 +127,7 @@ Phase 16: Production Readiness & Hardening — security audit (19 controls, 88/1
 | `GET /api/v1/ops/security-audit` | Runtime security posture (cached 5 min) |
 | `POST /api/v1/ops/security-audit/refresh` | Force fresh security audit |
 | `GET /api/v1/ops/profiling` | Current performance snapshot |
-| `GET /api/v1/ops/profiling/history` | Snapshot history (up to 288 = 24h) |
+| `GET /api/v1/ops/profiling/snapshots` | Snapshot history (up to 288 = 24h) |
 | `POST /api/v1/ops/profiling/snapshot` | Force immediate snapshot |
 
 ## User preferences
@@ -144,6 +143,11 @@ _Populate as you build — explicit user instructions worth remembering across s
 - **`usage_quotas` needs a unique index on `(plan_slug, resource_type)`** for the upsert's `ON CONFLICT` clause to work. The index is `usage_quotas_plan_resource_uidx`. If missing, `seedBillingPlans()` will error at startup.
 - **Stripe webhook requires raw body** — `express.raw({ type: "application/json" })` is mounted at `/api/v1/billing/webhook` before `express.json()` in `app.ts`. Do not reorder these middlewares.
 - **Stripe API version** — must match the version string in the installed `stripe` npm package. Current: `"2026-05-27.dahlia"`. Mismatches cause a TS2322 at compile time.
+- **`db.execute()` returns QueryResult, not array** — Drizzle's `db.execute()` with node-postgres returns `{ rows: [...] }`, not a plain array. Always extract with `(result as any).rows ?? result` before iterating.
+- **Dashboard frontend routes** — home is `/`, not `/dashboard`. Full route list: `/`, `/operations`, `/service-health`, `/alerts`, `/incidents`, `/portfolio`, `/strategy-rankings`, `/risk`, `/execution`, `/streaming`, `/ai-insights`, `/profile`, `/security`, `/users`, `/org-settings`, `/billing`, `/billing/invoices`, `/billing/payment-methods`, `/production-status`.
+- **Backup trigger path** — correct path is `POST /api/v1/ops/backups/:id/run`, not `/trigger`.
+- **Profiling history path** — correct path is `GET /api/v1/ops/profiling/snapshots`, not `/history`.
+- **Browser preview port conflict** — if "Component Preview Server" appears instead of the dashboard, the mockup-sandbox artifact (port 8081) is competing for externalPort 80. Fix by calling `configureWorkflow` for the Dashboard to reassert port 5000 as the exclusive webview.
 
 ## Pointers
 

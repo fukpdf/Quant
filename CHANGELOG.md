@@ -16,7 +16,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Nothing yet
 
 ### Fixed
-- Nothing yet
+- **Browser preview showing "Component Preview Server" instead of QuantForge dashboard**: Root cause was duplicate `externalPort = 80` in `.replit` for both port 5000 (dashboard) and port 8081 (mockup-sandbox artifact). Fixed by reconfiguring the Dashboard workflow via the Replit workflow API, which reasserted port 5000 as the exclusive webview.
+- **Backup service `tables.reduce is not a function`**: `db.execute()` returns a Drizzle `QueryResult` object (with `.rows` array), not a bare array. Fixed by extracting `rawResult.rows ?? rawResult` before iterating.
+- **18 TypeScript compile errors across 15 files** (previous session): wrong column names, date string/Date mismatches, Express 5 async handler return types, missing imports, stream route TS7030 errors — all resolved; `pnpm run typecheck` now passes with zero errors.
+- **RBAC seeding duplicate key error on restart**: `setRolePermissions` could insert duplicate permission IDs; fixed with `[...new Set(ids)]` deduplication and `.onConflictDoNothing()` on the INSERT.
+- **Backup SQL `pg_stat_user_tables.tablename` column**: Correct PostgreSQL catalog column is `relname`; fixed with `relname AS tablename`.
 
 ### Removed
 - Nothing yet
